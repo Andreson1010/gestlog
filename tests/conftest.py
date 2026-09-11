@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.tools import BaseTool
+from sqlalchemy.orm import Session
+
+from gestlog.config import Settings
+from gestlog.db import build_engine, build_session_factory, init_db
 
 
 class FakeChatModel:
@@ -55,3 +60,14 @@ class FakeChatModel:
 @pytest.fixture
 def fake_model_cls() -> type[FakeChatModel]:
     return FakeChatModel
+
+
+@pytest.fixture
+def db_session() -> Iterator[Session]:
+    """Sessão SQLAlchemy em SQLite em memória com todas as tabelas criadas."""
+    settings = Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:")
+    engine = build_engine(settings)
+    init_db(engine)
+    factory = build_session_factory(engine)
+    with factory() as session:
+        yield session
