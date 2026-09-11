@@ -7,9 +7,9 @@
 
 - Projeto **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque), com tools `@tool` de dados mockados.
-- **Repositório git inicializado** (`git init -b main`, commit raiz `31c7368`).
-  Sem remote configurado ainda — `feature-factory` (Fase 0) usa `origin/main` e
-  precisará de um remote.
+- **Repositório git inicializado** e remoto: `origin` =
+  https://github.com/Andreson1010/gestlog (privado); `main` rastreia `origin/main`
+  (a Fase 0 do `feature-factory` já tem base).
 - Suíte: **17 testes passando, 99,21% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
@@ -39,7 +39,8 @@
   read-only no MVP, HITL na F2, importação→API, LLM hospedado, LGPD com redação
   de PII, fases sem datas) registradas em `.specs/project/STATE.md` (AD-001..006).
 - **Git inicializado** (`git init -b main`) + `.gitignore` (com `.opencode/worktrees/`
-  e `.opencode/node_modules/`) + commit raiz `31c7368` (57 arquivos).
+  e `.opencode/node_modules/`) + commit raiz `31c7368` (57 arquivos). Remote
+  `origin` criado (privado, GitHub `Andreson1010/gestlog`) e `main` publicado.
 
 ## Decisões e regras (não esquecer)
 
@@ -52,16 +53,14 @@
 
 ## Próximos passos / bloqueios
 
-1. **Pendente:** configurar um **remote** (`origin`) no GitHub — o `feature-factory`
-   usa `origin/main`; sem remote, criar worktree a partir de `origin/main` falha.
-2. Opcional: avaliar o plugin `@opencode-ai/plugin` — se for usado, rodar
+1. Opcional: avaliar o plugin `@opencode-ai/plugin` — se for usado, rodar
    `npm install` dentro de `.opencode/` (o `node_modules/` não foi copiado).
-3. Próxima etapa de produto: design da **F1** (stack web, modelo de tenancy,
+2. Próxima etapa de produto: design da **F1** (stack web, modelo de tenancy,
    formato do golden set) — ver `.specs/project/ROADMAP.md`.
 
 ## WIP local (não commitado)
 
-- Limpo: tudo commitado em `31c7368`. Sem alterações pendentes.
+- Limpo: todas as mudanças commitadas em `main`.
 
 ## Artefatos do graphify
 

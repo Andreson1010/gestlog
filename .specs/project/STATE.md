@@ -64,8 +64,8 @@ DPA/zero-retention.
 Nenhum bloqueio ativo.
 
 _(B-001 — repositório não era git — resolvido em 2026-09-11: `git init -b main`,
-`.gitignore` atualizado e commit raiz `31c7368`. Falta apenas configurar um
-remote `origin`, necessário ao `feature-factory`.)_
+`.gitignore` atualizado, commit raiz `31c7368` e remote `origin` publicado em
+https://github.com/Andreson1010/gestlog (privado).)_
 
 ---
 
@@ -88,6 +88,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 001 | Copiar e generalizar `.opencode/` (skills, agentes, commands) + `CONTEXT.md` | 2026-09-11 | — (sem git) | ✅ Done |
 | 002 | Escrever PRD + artefatos TLC (`PROJECT`/`ROADMAP`/`STATE`) | 2026-09-11 | — (sem git) | ✅ Done |
 | 003 | Inicializar git e commit raiz | 2026-09-11 | 31c7368 | ✅ Done |
+| 004 | Configurar remote `origin` e publicar `main` | 2026-09-11 | 871f0be | ✅ Done |
 
 ---
 
@@ -101,6 +102,5 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Configurar remote `origin` no GitHub (necessário ao `feature-factory`).
 - [ ] Design da F1: stack web, modelo de tenancy, formato do golden set.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
