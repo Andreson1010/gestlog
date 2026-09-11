@@ -11,6 +11,7 @@
 explicadas nos 4 domínios, com aceitação/descarte medidos.
 **Target (critérios de saída):** conta por empresa funcionando; importação de
 CSV/planilha; 4 domínios respondendo; PII redigida antes do LLM; KPIs coletados.
+**Plan:** `.specs/features/f1-mvp/spec.md` · `design.md` · `tasks.md` (33 tarefas).
 
 ### Features
 

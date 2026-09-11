@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-11
-**Current Work:** Definição de produto — PRD e roadmap inicial (nenhuma feature em implementação)
+**Current Work:** F1 (MVP) — planejamento concluído (`spec`/`design`/`tasks`), aguardando aprovação para executar
 
 ---
 
@@ -57,6 +57,16 @@ DPA/zero-retention.
 **Trade-off:** menos previsibilidade de datas externa.
 **Impact:** planejamento guiado por `.specs/project/ROADMAP.md`.
 
+### AD-007: Stack da F1 (FastAPI + Jinja/HTMX + Postgres + FastAPI Users) (2026-09-11)
+
+**Decision:** backend FastAPI; UI SSR com Jinja2 + HTMX + SSE; Postgres único com
+`tenant_id`; autenticação self-hosted com FastAPI Users; copiloto reaproveita o
+grafo LangGraph existente.
+**Reason:** máxima reutilização do core Python/LangGraph, mínimo de peças para dev
+solo, isolamento por tenant simples e padrão de mercado.
+**Trade-off:** SSR/HTMX é menos flexível que uma SPA; migrar para SPA depois custa.
+**Impact:** tasks T1–T33 em `.specs/features/f1-mvp/tasks.md` seguem esse stack.
+
 ---
 
 ## Active Blockers
@@ -89,6 +99,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 002 | Escrever PRD + artefatos TLC (`PROJECT`/`ROADMAP`/`STATE`) | 2026-09-11 | — (sem git) | ✅ Done |
 | 003 | Inicializar git e commit raiz | 2026-09-11 | 31c7368 | ✅ Done |
 | 004 | Configurar remote `origin` e publicar `main` | 2026-09-11 | 871f0be | ✅ Done |
+| 005 | Planejar F1 (spec/design/tasks + TESTING) | 2026-09-11 | — | ✅ Done |
 
 ---
 
@@ -102,5 +113,5 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Design da F1: stack web, modelo de tenancy, formato do golden set.
+- [ ] Executar a F1 (T1–T33) após aprovação; começar por T1/T2.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
