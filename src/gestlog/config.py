@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     recursion_limit: int = Field(default=25, gt=0)
     log_level: str = "INFO"
 
+    database_url: str = "postgresql+psycopg://gestlog:gestlog@localhost:5432/gestlog"
+    auth_secret: str = "dev-secret-change-me"
+    session_expire_minutes: int = Field(default=1440, gt=0)
+    default_retention_days: int = Field(default=365, gt=0)
+    llm_monthly_token_quota: int = Field(default=1_000_000, gt=0)
+
     @property
     def supervisor_llm_model(self) -> str:
         """Modelo do supervisor; cai para ``llm_model`` quando não definido."""
