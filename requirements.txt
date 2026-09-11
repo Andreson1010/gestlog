@@ -1,0 +1,6 @@
+# Runtime (mantido em sincronia com [project.dependencies] do pyproject.toml)
+langgraph>=0.2.60
+langchain-core>=0.3.30
+langchain-openai>=0.2.14
+pydantic>=2.9
+pydantic-settings>=2.6

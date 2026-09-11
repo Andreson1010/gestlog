@@ -1,0 +1,22 @@
+# Hooks locais de qualidade (repo: local, language: system).
+# Usam o venv do uv. Fallback (Windows/pwsh): uv run pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black (formatação)
+        entry: black --check src/ tests/
+        language: system
+        types: [python]
+
+      - id: ruff
+        name: ruff (lint)
+        entry: ruff check src/ tests/
+        language: system
+        types: [python]
+
+      - id: pytest
+        name: pytest (testes + gate de cobertura)
+        entry: pytest
+        language: system
+        pass_filenames: false
