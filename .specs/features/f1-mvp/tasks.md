@@ -107,7 +107,7 @@ T5 → T32
 ### T1: Adicionar dependências da F1
 
 **What**: Adicionar FastAPI, uvicorn, jinja2, python-multipart, sqlalchemy,
-alembic, psycopg, fastapi-users, passlib[bcrypt], pandas/openpyxl ao
+alembic, psycopg, fastapi-users, pwdlib[argon2], pandas/openpyxl ao
 `pyproject.toml` e sincronizar.
 **Where**: `pyproject.toml`, `requirements*.txt` (espelho)
 **Depends on**: None · **Reuses**: `pyproject.toml` · **Requirement**: infra
