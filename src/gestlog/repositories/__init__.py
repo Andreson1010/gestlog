@@ -1,8 +1,8 @@
-"""Repositórios com escopo de tenant do gestlog."""
+"""Repositórios com escopo de empresa do gestlog."""
 
 from __future__ import annotations
 
-from gestlog.repositories.base import TenantScopedRepository
+from gestlog.repositories.base import EmpresaScopedRepository
 from gestlog.repositories.catalog import (
     StockRepository,
     SupplierRepository,
@@ -14,12 +14,12 @@ from gestlog.repositories.conversations import (
     MessageRepository,
     RecommendationRepository,
 )
+from gestlog.repositories.empresas import EmpresaRepository, MembershipRepository
 from gestlog.repositories.imports import ImportJobRepository
 from gestlog.repositories.telemetry import AuditRepository, UsageRepository
-from gestlog.repositories.tenants import MembershipRepository, TenantRepository
 
 __all__ = [
-    "TenantScopedRepository",
+    "EmpresaScopedRepository",
     "StockRepository",
     "SupplierRepository",
     "TransportRepository",
@@ -31,5 +31,5 @@ __all__ = [
     "AuditRepository",
     "UsageRepository",
     "MembershipRepository",
-    "TenantRepository",
+    "EmpresaRepository",
 ]

@@ -5,19 +5,19 @@ from __future__ import annotations
 from uuid import UUID
 
 from gestlog.db.models import ImportError, ImportJob
-from gestlog.repositories.base import TenantScopedRepository
+from gestlog.repositories.base import EmpresaScopedRepository
 
 
-class ImportJobRepository(TenantScopedRepository[ImportJob]):
-    """Importações e seus erros, sempre por tenant."""
+class ImportJobRepository(EmpresaScopedRepository[ImportJob]):
+    """Importações e seus erros, sempre por empresa."""
 
     model = ImportJob
 
     def create_job(
-        self, tenant_id: UUID, tipo: str, status: str = "processando"
+        self, empresa_id: UUID, tipo: str, status: str = "processando"
     ) -> ImportJob:
         """Cria uma execução de importação."""
-        return self.add(ImportJob(tenant_id=tenant_id, tipo=tipo, status=status))
+        return self.add(ImportJob(empresa_id=empresa_id, tipo=tipo, status=status))
 
     def add_error(self, job: ImportJob, linha: int, motivo: str) -> ImportError:
         """Registra um erro de linha e incrementa o contador de rejeitadas."""

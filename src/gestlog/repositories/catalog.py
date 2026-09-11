@@ -7,37 +7,37 @@ from uuid import UUID
 from sqlalchemy import select
 
 from gestlog.db.models import StockItem, Supplier, TransportRecord
-from gestlog.repositories.base import TenantScopedRepository
+from gestlog.repositories.base import EmpresaScopedRepository
 
 
-class StockRepository(TenantScopedRepository[StockItem]):
-    """Itens de estoque por tenant."""
+class StockRepository(EmpresaScopedRepository[StockItem]):
+    """Itens de estoque por empresa."""
 
     model = StockItem
 
-    def get_by_sku(self, tenant_id: UUID, sku: str) -> StockItem | None:
-        """Busca um item pelo SKU dentro do tenant."""
+    def get_by_sku(self, empresa_id: UUID, sku: str) -> StockItem | None:
+        """Busca um item pelo SKU dentro do empresa."""
         stmt = select(StockItem).where(
-            StockItem.tenant_id == tenant_id,
+            StockItem.empresa_id == empresa_id,
             StockItem.sku == sku.strip().upper(),
         )
         return self.session.execute(stmt).scalar_one_or_none()
 
     def upsert(
         self,
-        tenant_id: UUID,
+        empresa_id: UUID,
         sku: str,
         nome: str,
         quantidade: int,
         minimo: int,
         local: str,
     ) -> StockItem:
-        """Insere ou atualiza um item de estoque do tenant."""
-        item = self.get_by_sku(tenant_id, sku)
+        """Insere ou atualiza um item de estoque do empresa."""
+        item = self.get_by_sku(empresa_id, sku)
         if item is None:
             return self.add(
                 StockItem(
-                    tenant_id=tenant_id,
+                    empresa_id=empresa_id,
                     sku=sku.strip().upper(),
                     nome=nome,
                     quantidade=quantidade,
@@ -53,24 +53,24 @@ class StockRepository(TenantScopedRepository[StockItem]):
         return item
 
 
-class SupplierRepository(TenantScopedRepository[Supplier]):
-    """Fornecedores por tenant."""
+class SupplierRepository(EmpresaScopedRepository[Supplier]):
+    """Fornecedores por empresa."""
 
     model = Supplier
 
     def get_by_fornecedor_id(
-        self, tenant_id: UUID, fornecedor_id: str
+        self, empresa_id: UUID, fornecedor_id: str
     ) -> Supplier | None:
-        """Busca um fornecedor pelo identificador dentro do tenant."""
+        """Busca um fornecedor pelo identificador dentro do empresa."""
         stmt = select(Supplier).where(
-            Supplier.tenant_id == tenant_id,
+            Supplier.empresa_id == empresa_id,
             Supplier.fornecedor_id == fornecedor_id.strip().upper(),
         )
         return self.session.execute(stmt).scalar_one_or_none()
 
     def upsert(
         self,
-        tenant_id: UUID,
+        empresa_id: UUID,
         fornecedor_id: str,
         nome: str,
         categoria: str,
@@ -78,12 +78,12 @@ class SupplierRepository(TenantScopedRepository[Supplier]):
         avaliacao: float,
         ativo: bool,
     ) -> Supplier:
-        """Insere ou atualiza um fornecedor do tenant."""
-        fornecedor = self.get_by_fornecedor_id(tenant_id, fornecedor_id)
+        """Insere ou atualiza um fornecedor do empresa."""
+        fornecedor = self.get_by_fornecedor_id(empresa_id, fornecedor_id)
         if fornecedor is None:
             return self.add(
                 Supplier(
-                    tenant_id=tenant_id,
+                    empresa_id=empresa_id,
                     fornecedor_id=fornecedor_id.strip().upper(),
                     nome=nome,
                     categoria=categoria,
@@ -101,34 +101,34 @@ class SupplierRepository(TenantScopedRepository[Supplier]):
         return fornecedor
 
 
-class TransportRepository(TenantScopedRepository[TransportRecord]):
-    """Registros de transporte por tenant."""
+class TransportRepository(EmpresaScopedRepository[TransportRecord]):
+    """Registros de transporte por empresa."""
 
     model = TransportRecord
 
-    def get_by_codigo(self, tenant_id: UUID, codigo: str) -> TransportRecord | None:
-        """Busca um registro pelo código de rastreio dentro do tenant."""
+    def get_by_codigo(self, empresa_id: UUID, codigo: str) -> TransportRecord | None:
+        """Busca um registro pelo código de rastreio dentro do empresa."""
         stmt = select(TransportRecord).where(
-            TransportRecord.tenant_id == tenant_id,
+            TransportRecord.empresa_id == empresa_id,
             TransportRecord.codigo_rastreio == codigo.strip().upper(),
         )
         return self.session.execute(stmt).scalar_one_or_none()
 
     def upsert(
         self,
-        tenant_id: UUID,
+        empresa_id: UUID,
         codigo_rastreio: str,
         origem: str,
         destino: str,
         peso_kg: float,
         status: str,
     ) -> TransportRecord:
-        """Insere ou atualiza um registro de transporte do tenant."""
-        registro = self.get_by_codigo(tenant_id, codigo_rastreio)
+        """Insere ou atualiza um registro de transporte do empresa."""
+        registro = self.get_by_codigo(empresa_id, codigo_rastreio)
         if registro is None:
             return self.add(
                 TransportRecord(
-                    tenant_id=tenant_id,
+                    empresa_id=empresa_id,
                     codigo_rastreio=codigo_rastreio.strip().upper(),
                     origem=origem,
                     destino=destino,

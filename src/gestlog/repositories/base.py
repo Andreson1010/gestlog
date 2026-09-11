@@ -1,4 +1,4 @@
-"""Repositório base que sempre filtra pelo tenant da sessão."""
+"""Repositório base que sempre filtra pelo empresa da sessão."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from sqlalchemy.orm import Session
 ModelT = TypeVar("ModelT")
 
 
-class TenantScopedRepository(Generic[ModelT]):
-    """Acesso a dados restrito a um ``tenant_id``.
+class EmpresaScopedRepository(Generic[ModelT]):
+    """Acesso a dados restrito a um ``empresa_id``.
 
     Subclasses definem o atributo de classe ``model``. Todos os métodos de
-    leitura incluem o filtro de tenant, garantindo o isolamento entre clientes.
+    leitura incluem o filtro de empresa, garantindo o isolamento entre clientes.
     """
 
     model: type[ModelT]
@@ -29,17 +29,17 @@ class TenantScopedRepository(Generic[ModelT]):
         self.session.flush()
         return obj
 
-    def get(self, tenant_id: UUID, obj_id: UUID) -> ModelT | None:
-        """Busca um objeto pelo id, restrito ao tenant."""
+    def get(self, empresa_id: UUID, obj_id: UUID) -> ModelT | None:
+        """Busca um objeto pelo id, restrito ao empresa."""
         stmt = select(self.model).where(
-            self.model.tenant_id == tenant_id,  # type: ignore[attr-defined]
+            self.model.empresa_id == empresa_id,  # type: ignore[attr-defined]
             self.model.id == obj_id,  # type: ignore[attr-defined]
         )
         return self.session.execute(stmt).scalar_one_or_none()
 
-    def list(self, tenant_id: UUID) -> list[ModelT]:
-        """Lista os objetos do tenant."""
+    def list(self, empresa_id: UUID) -> list[ModelT]:
+        """Lista os objetos do empresa."""
         stmt = select(self.model).where(
-            self.model.tenant_id == tenant_id  # type: ignore[attr-defined]
+            self.model.empresa_id == empresa_id  # type: ignore[attr-defined]
         )
         return list(self.session.execute(stmt).scalars().all())

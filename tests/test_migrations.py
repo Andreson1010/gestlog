@@ -26,7 +26,7 @@ def test_upgrade_head_cria_tabelas(alembic_config: tuple[Config, str]) -> None:
     command.upgrade(cfg, "head")
 
     tabelas = set(inspect(create_engine(db_url)).get_table_names())
-    assert {"tenant", "user", "stock_item", "audit_log"} <= tabelas
+    assert {"empresa", "user", "stock_item", "audit_log"} <= tabelas
     assert "alembic_version" in tabelas
 
 
@@ -36,4 +36,4 @@ def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> No
     command.downgrade(cfg, "base")
 
     tabelas = set(inspect(create_engine(db_url)).get_table_names())
-    assert "tenant" not in tabelas
+    assert "empresa" not in tabelas

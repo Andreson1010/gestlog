@@ -138,6 +138,9 @@ graph TD
 
 ## Data Models
 
+> Nomenclatura: "tenant" é o termo de domínio; no código o modelo/coluna chama-se
+> `Empresa`/`empresa_id` (ver AD-008 no STATE.md).
+
 ```python
 class Tenant:            # id, nome, criado_em, retencao_dias
 class User:              # id, email, hash, ativo (FastAPI Users)

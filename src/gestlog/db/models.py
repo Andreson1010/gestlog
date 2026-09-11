@@ -1,6 +1,6 @@
 """Modelos ORM do gestlog.
 
-Todas as tabelas de dados carregam ``tenant_id`` para garantir o isolamento
+Todas as tabelas de dados carregam ``empresa_id`` para garantir o isolamento
 entre empresas-clientes. O modelo ``User`` estende a base do FastAPI Users.
 """
 
@@ -34,10 +34,10 @@ def _agora() -> datetime:
     return datetime.now(UTC)
 
 
-class Tenant(Base):
-    """Empresa-cliente (tenant) do SaaS."""
+class Empresa(Base):
+    """Empresa-cliente (empresa) do SaaS."""
 
-    __tablename__ = "tenant"
+    __tablename__ = "empresa"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(120))
@@ -47,7 +47,7 @@ class Tenant(Base):
     )
 
     members: Mapped[list[Membership]] = relationship(
-        back_populates="tenant", cascade="all, delete-orphan"
+        back_populates="empresa", cascade="all, delete-orphan"
     )
 
 
@@ -58,20 +58,20 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
 
 class Membership(Base):
-    """Vínculo de um usuário a um tenant, com papel."""
+    """Vínculo de um usuário a um empresa, com papel."""
 
     __tablename__ = "membership"
-    __table_args__ = (UniqueConstraint("user_id", "tenant_id", name="uq_membership"),)
+    __table_args__ = (UniqueConstraint("user_id", "empresa_id", name="uq_membership"),)
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("user.id"))
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     papel: Mapped[str] = mapped_column(String(20), default="operador")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
 
-    tenant: Mapped[Tenant] = relationship(back_populates="members")
+    empresa: Mapped[Empresa] = relationship(back_populates="members")
 
 
 class ImportJob(Base):
@@ -80,7 +80,7 @@ class ImportJob(Base):
     __tablename__ = "import_job"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     tipo: Mapped[str] = mapped_column(String(30))
     status: Mapped[str] = mapped_column(String(20), default="processando")
     aceitas: Mapped[int] = mapped_column(Integer, default=0)
@@ -108,13 +108,15 @@ class ImportError(Base):
 
 
 class StockItem(Base):
-    """Item de estoque de um tenant."""
+    """Item de estoque de um empresa."""
 
     __tablename__ = "stock_item"
-    __table_args__ = (UniqueConstraint("tenant_id", "sku", name="uq_stock_tenant_sku"),)
+    __table_args__ = (
+        UniqueConstraint("empresa_id", "sku", name="uq_stock_empresa_sku"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     sku: Mapped[str] = mapped_column(String(40))
     nome: Mapped[str] = mapped_column(String(120))
     quantidade: Mapped[int] = mapped_column(Integer, default=0)
@@ -123,15 +125,15 @@ class StockItem(Base):
 
 
 class Supplier(Base):
-    """Fornecedor de um tenant."""
+    """Fornecedor de um empresa."""
 
     __tablename__ = "supplier"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "fornecedor_id", name="uq_supplier_tenant"),
+        UniqueConstraint("empresa_id", "fornecedor_id", name="uq_supplier_empresa"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     fornecedor_id: Mapped[str] = mapped_column(String(40))
     nome: Mapped[str] = mapped_column(String(120))
     categoria: Mapped[str] = mapped_column(String(60), default="")
@@ -141,15 +143,15 @@ class Supplier(Base):
 
 
 class TransportRecord(Base):
-    """Registro de transporte/frete/rastreio de um tenant."""
+    """Registro de transporte/frete/rastreio de um empresa."""
 
     __tablename__ = "transport_record"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "codigo_rastreio", name="uq_transport_tenant"),
+        UniqueConstraint("empresa_id", "codigo_rastreio", name="uq_transport_empresa"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     codigo_rastreio: Mapped[str] = mapped_column(String(40))
     origem: Mapped[str] = mapped_column(String(80), default="")
     destino: Mapped[str] = mapped_column(String(80), default="")
@@ -158,12 +160,12 @@ class TransportRecord(Base):
 
 
 class Conversation(Base):
-    """Conversa de um usuário dentro de um tenant."""
+    """Conversa de um usuário dentro de um empresa."""
 
     __tablename__ = "conversation"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("user.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
@@ -217,12 +219,12 @@ class Feedback(Base):
 
 
 class UsageRecord(Base):
-    """Consumo de LLM atribuído a um tenant."""
+    """Consumo de LLM atribuído a um empresa."""
 
     __tablename__ = "usage_record"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     modelo: Mapped[str] = mapped_column(String(80))
     tokens: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -231,12 +233,12 @@ class UsageRecord(Base):
 
 
 class AuditLog(Base):
-    """Evento de auditoria por tenant."""
+    """Evento de auditoria por empresa."""
 
     __tablename__ = "audit_log"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("tenant.id"))
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("user.id"), nullable=True
     )

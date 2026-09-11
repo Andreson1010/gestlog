@@ -67,6 +67,15 @@ solo, isolamento por tenant simples e padrão de mercado.
 **Trade-off:** SSR/HTMX é menos flexível que uma SPA; migrar para SPA depois custa.
 **Impact:** tasks T1–T33 em `.specs/features/f1-mvp/tasks.md` seguem esse stack.
 
+### AD-008: Nomenclatura — Empresa (tenant) em português (2026-09-11)
+
+**Decision:** no código, usar `Empresa`/`empresa_id` (modelo, tabela e colunas) em
+vez de `Tenant`/`tenant_id`, seguindo a convenção de nomes em português do `AGENTS.md`.
+**Reason:** consistência com o restante do código (tools, repositórios, docstrings).
+**Trade-off:** afasta do vocabulário SaaS em inglês; docs mantêm "tenant" entre parênteses.
+**Impact:** migration inicial regenerada com tabela `empresa`; AD-007 e specs usam
+"tenant" como termo de domínio, "Empresa" como nome de código.
+
 ---
 
 ## Active Blockers

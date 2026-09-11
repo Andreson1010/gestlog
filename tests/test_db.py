@@ -35,7 +35,7 @@ def test_sqlite_memoria_usa_static_pool() -> None:
 
 def test_tabelas_criadas(engine: Engine) -> None:
     esperadas = {
-        "tenant",
+        "empresa",
         "user",
         "membership",
         "import_job",
@@ -58,26 +58,26 @@ def test_user_tem_colunas_do_fastapi_users() -> None:
     assert {"id", "email", "hashed_password", "is_active", "is_verified"} <= colunas
 
 
-def test_dados_isolados_por_tenant(session: Session) -> None:
-    t1 = models.Tenant(nome="A")
-    t2 = models.Tenant(nome="B")
+def test_dados_isolados_por_empresa(session: Session) -> None:
+    t1 = models.Empresa(nome="A")
+    t2 = models.Empresa(nome="B")
     session.add_all([t1, t2])
     session.commit()
     session.add(
-        models.StockItem(tenant_id=t1.id, sku="SKU-1", nome="Caixa", quantidade=10)
+        models.StockItem(empresa_id=t1.id, sku="SKU-1", nome="Caixa", quantidade=10)
     )
     session.commit()
 
     do_t1 = (
         session.execute(
-            select(models.StockItem).where(models.StockItem.tenant_id == t1.id)
+            select(models.StockItem).where(models.StockItem.empresa_id == t1.id)
         )
         .scalars()
         .all()
     )
     do_t2 = (
         session.execute(
-            select(models.StockItem).where(models.StockItem.tenant_id == t2.id)
+            select(models.StockItem).where(models.StockItem.empresa_id == t2.id)
         )
         .scalars()
         .all()
@@ -86,23 +86,23 @@ def test_dados_isolados_por_tenant(session: Session) -> None:
     assert do_t2 == []
 
 
-def test_sku_unico_por_tenant(session: Session) -> None:
-    t = models.Tenant(nome="A")
+def test_sku_unico_por_empresa(session: Session) -> None:
+    t = models.Empresa(nome="A")
     session.add(t)
     session.commit()
-    session.add(models.StockItem(tenant_id=t.id, sku="SKU-1", nome="a"))
+    session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="a"))
     session.commit()
-    session.add(models.StockItem(tenant_id=t.id, sku="SKU-1", nome="b"))
+    session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="b"))
     with pytest.raises(IntegrityError):
         session.commit()
     session.rollback()
 
 
 def test_import_job_com_erros(session: Session) -> None:
-    t = models.Tenant(nome="A")
+    t = models.Empresa(nome="A")
     session.add(t)
     session.commit()
-    job = models.ImportJob(tenant_id=t.id, tipo="estoque")
+    job = models.ImportJob(empresa_id=t.id, tipo="estoque")
     job.errors.append(models.ImportError(linha=2, motivo="sku ausente"))
     session.add(job)
     session.commit()

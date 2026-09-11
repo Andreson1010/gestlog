@@ -8,23 +8,23 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from gestlog.db.models import Conversation, Feedback, Message, Recommendation
-from gestlog.repositories.base import TenantScopedRepository
+from gestlog.repositories.base import EmpresaScopedRepository
 
 
-class ConversationRepository(TenantScopedRepository[Conversation]):
-    """Conversas por tenant."""
+class ConversationRepository(EmpresaScopedRepository[Conversation]):
+    """Conversas por empresa."""
 
     model = Conversation
 
-    def create(self, tenant_id: UUID, user_id: UUID) -> Conversation:
-        """Cria uma conversa para o usuário no tenant."""
-        return self.add(Conversation(tenant_id=tenant_id, user_id=user_id))
+    def create(self, empresa_id: UUID, user_id: UUID) -> Conversation:
+        """Cria uma conversa para o usuário no empresa."""
+        return self.add(Conversation(empresa_id=empresa_id, user_id=user_id))
 
 
 class MessageRepository:
     """Mensagens de uma conversa.
 
-    O isolamento por tenant é garantido ao obter a conversa via
+    O isolamento por empresa é garantido ao obter a conversa via
     :class:`ConversationRepository` antes de listar/gravar mensagens.
     """
 
