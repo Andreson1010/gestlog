@@ -1,19 +1,20 @@
 # Contexto da Sessão — Scaffolding opencode + PRD do gestlog
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-11.
-> Branch: — (não é repositório git) · HEAD: —
+> Branch: main · HEAD: 31c7368
 
 ## Estado atual
 
 - Projeto **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque), com tools `@tool` de dados mockados.
-- **Não é um repositório git** (`git rev-parse` falha; sem `.git/`). Isso quebra
-  `/start`/`/end` (usam `git status/log/worktree`) e o `feature-factory` (Fase 0
-  cria worktrees a partir de `origin/main`). Rodar `git init` quando fizer sentido.
+- **Repositório git inicializado** (`git init -b main`, commit raiz `31c7368`).
+  Sem remote configurado ainda — `feature-factory` (Fase 0) usa `origin/main` e
+  precisará de um remote.
 - Suíte: **17 testes passando, 99,21% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
-  `agents/`, `tools/`) e `tests/` espelhando `src/`. Sem `.specs/` nem `docs/`.
+  `agents/`, `tools/`) e `tests/` espelhando `src/`. Produto documentado em
+  `docs/business/PRD.md` + `.specs/project/`.
 
 ## O que foi feito nesta sessão
 
@@ -37,6 +38,8 @@
   `STATE.md` em `.specs/project/`. Decisões de produto (SaaS multi-cliente,
   read-only no MVP, HITL na F2, importação→API, LLM hospedado, LGPD com redação
   de PII, fases sem datas) registradas em `.specs/project/STATE.md` (AD-001..006).
+- **Git inicializado** (`git init -b main`) + `.gitignore` (com `.opencode/worktrees/`
+  e `.opencode/node_modules/`) + commit raiz `31c7368` (57 arquivos).
 
 ## Decisões e regras (não esquecer)
 
@@ -49,17 +52,16 @@
 
 ## Próximos passos / bloqueios
 
-1. **Bloqueio:** gestlog não é repo git → `/start`, `/end` e `feature-factory`
-   (worktrees/PR) não funcionam. Decidir se roda `git init` (+ remote).
+1. **Pendente:** configurar um **remote** (`origin`) no GitHub — o `feature-factory`
+   usa `origin/main`; sem remote, criar worktree a partir de `origin/main` falha.
 2. Opcional: avaliar o plugin `@opencode-ai/plugin` — se for usado, rodar
    `npm install` dentro de `.opencode/` (o `node_modules/` não foi copiado).
-3. Opcional: adicionar `.opencode/` (ou itens como `worktrees/`) ao `.gitignore`
-   quando o git for inicializado.
+3. Próxima etapa de produto: design da **F1** (stack web, modelo de tenancy,
+   formato do golden set) — ver `.specs/project/ROADMAP.md`.
 
 ## WIP local (não commitado)
 
-- Sem git: **tudo** é untracked por definição. As mudanças desta sessão estão sob
-  `.opencode/`, `docs/` e `.specs/` (ver "O que foi feito nesta sessão").
+- Limpo: tudo commitado em `31c7368`. Sem alterações pendentes.
 
 ## Artefatos do graphify
 
@@ -86,4 +88,5 @@
 # Histórico (sessões anteriores, resumido)
 
 - **2026-09-11 (esta sessão):** scaffolding do `.opencode/` copiado do medasist e
-  generalizado (skills + agentes).
+  generalizado (skills + agentes); PRD + artefatos TLC escritos; git inicializado
+  (`31c7368`).

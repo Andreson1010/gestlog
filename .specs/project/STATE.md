@@ -61,14 +61,11 @@ DPA/zero-retention.
 
 ## Active Blockers
 
-### B-001: Repositório não é git
+Nenhum bloqueio ativo.
 
-**Discovered:** 2026-09-11
-**Impact:** `/start`, `/end` e o pipeline `feature-factory` (worktrees, PR) não
-funcionam; sem histórico/versionamento.
-**Workaround:** nenhum no momento.
-**Resolution:** `git init` (+ remote), `.gitignore` e estratégia de branches
-(`feat/`, `fix/`, `refactor/`, `data/`).
+_(B-001 — repositório não era git — resolvido em 2026-09-11: `git init -b main`,
+`.gitignore` atualizado e commit raiz `31c7368`. Falta apenas configurar um
+remote `origin`, necessário ao `feature-factory`.)_
 
 ---
 
@@ -90,6 +87,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | --- | ----------- | ---- | ------ | ------ |
 | 001 | Copiar e generalizar `.opencode/` (skills, agentes, commands) + `CONTEXT.md` | 2026-09-11 | — (sem git) | ✅ Done |
 | 002 | Escrever PRD + artefatos TLC (`PROJECT`/`ROADMAP`/`STATE`) | 2026-09-11 | — (sem git) | ✅ Done |
+| 003 | Inicializar git e commit raiz | 2026-09-11 | 31c7368 | ✅ Done |
 
 ---
 
@@ -103,6 +101,6 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Inicializar git (B-001) e commitar o estado atual.
+- [ ] Configurar remote `origin` no GitHub (necessário ao `feature-factory`).
 - [ ] Design da F1: stack web, modelo de tenancy, formato do golden set.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
