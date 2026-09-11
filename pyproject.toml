@@ -50,6 +50,7 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+src = ["src"]
 extend-exclude = [".venv", "__pycache__", "build", "dist"]
 
 [tool.ruff.lint]
