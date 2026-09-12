@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block titulo %}{{ titulo | default("gestlog") }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}" />
+    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  </head>
+  <body>
+    <header class="topo">
+      <strong>gestlog</strong>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/importar">Importar</a>
+        <a href="/chat">Chat</a>
+      </nav>
+    </header>
+    <main class="conteudo">
+      {% block conteudo %}
+      <p>Bem-vindo ao gestlog.</p>
+      {% endblock %}
+    </main>
+  </body>
+</html>

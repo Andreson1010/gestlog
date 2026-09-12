@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
+from gestlog.web.app import create_app
 from gestlog.web.onboarding import create_onboarding_router
 from gestlog.web.schemas import ContaCreate, ConviteCreate
 
-__all__ = ["ContaCreate", "ConviteCreate", "create_onboarding_router"]
+__all__ = ["ContaCreate", "ConviteCreate", "create_app", "create_onboarding_router"]

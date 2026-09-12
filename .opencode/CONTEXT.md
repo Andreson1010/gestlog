@@ -11,9 +11,9 @@
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch `feat/f1-mvp`: Fase 1 (T1–T5) concluída +
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
-  **T6 (login/logout), T7 (tenancy/guards) e T8 (onboarding/convites) concluídos**;
-  Fase 3 (T9 shell web / T10 home autenticada) pendente.
-- Suíte: **54 testes passando, 97,40% de cobertura** (`uv run pytest`),
+  **T6–T8 (auth/tenancy/onboarding) e T9 (app factory + layout) concluídos**;
+  T10 (home autenticada + navegação) pendente.
+- Suíte: **56 testes passando, 97,47% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
   `tools/`, `db/`, `repositories/`, `auth/`), `alembic/`, `tests/` espelhando `src/`.
@@ -75,6 +75,9 @@
 - **T8 concluído** (2026-09-12): `auth/accounts.py` (`criar_conta`/`convidar_usuario`)
   e `web/` (`__init__`, `schemas.py`, `onboarding.py`) com `POST /onboarding` (empresa
   + admin) e `POST /empresa/convites` (admin). 5 testes de integração.
+- **T9 concluído** (2026-09-12): `web/app.py` (`create_app`: estáticos + auth +
+  onboarding + rota base), `web/templates/base.html` (Jinja2 + htmx via CDN),
+  `web/static/app.css`. 2 testes de integração (página base e asset).
 
 ## Decisões e regras (não esquecer)
 
@@ -97,8 +100,8 @@
 
 ## Próximos passos / bloqueios
 
-1. Continuar a F1 na **Fase 3**: **T9** (app factory FastAPI + layout Jinja/HTMX)
-   → **T10** (home autenticada + navegação). Ver
+1. Continuar a F1 na **Fase 3**: **T10** (home autenticada + navegação para
+   Importar/Chat; não autenticado redireciona ao login). Ver
    `docs/specs/features/f1-mvp/tasks.md`.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
@@ -110,12 +113,11 @@
 
 ## WIP local (não commitado)
 
-- **T8 não commitado**: `src/gestlog/auth/accounts.py`, `src/gestlog/web/`
-  (`__init__`, `schemas.py`, `onboarding.py`), `tests/web/test_onboarding.py`,
-  docs (STATE/CONTEXT/tasks). Sugerido commitar como
-  `feat(f1): adiciona onboarding da conta e convites (T8)`.
-- **T6/T7 commitados** em `68bc21e` e `4dfdbdc`.
-- HEAD em `4dfdbdc`; **10 commits** à frente de `origin/main`, nenhum push.
+- **T9 não commitado**: `src/gestlog/web/app.py`, `web/templates/base.html`,
+  `web/static/app.css`, `web/__init__.py`, `tests/web/test_app.py`, docs.
+  Sugerido commitar como `feat(f1): adiciona app factory e layout (T9)`.
+- **T6–T8 commitados** em `68bc21e`, `4dfdbdc` e `c42f710`.
+- HEAD em `c42f710`; **11 commits** à frente de `origin/main`, nenhum push.
 
 ## Artefatos do graphify
 
@@ -151,4 +153,4 @@
   (AD-010); reorganização docs-as-code `.specs/` → `docs/specs/` versionada
   (AD-011, commit `4da4153`); fronteiras do pacote único (AD-012); T6 login/logout
   por cookie com camada async isolada (AD-013, commit `68bc21e`); T7 tenancy/guards
-  (`4dfdbdc`); T8 onboarding/convites.
+  (`4dfdbdc`); T8 onboarding/convites (`c42f710`); T9 app factory + layout.

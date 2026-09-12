@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5), T6 (login/logout), T7 (tenancy/guards) e T8 (onboarding/convites) concluídos; Fase 3 (T9–T10) pendente
+**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5), T6 (login/logout), T7 (tenancy/guards) e T8 (onboarding/convites) e T9 (app factory + layout) concluídos; T10 (home autenticada) pendente
 
 ---
 
@@ -191,6 +191,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 010 | Executar F1 Fase 2 — T6 login/logout por cookie (FastAPI Users) | 2026-09-12 | — | ✅ Done |
 | 011 | Executar F1 Fase 2 — T7 tenancy, `get_current_empresa` e guards | 2026-09-12 | — | ✅ Done |
 | 012 | Executar F1 Fase 2 — T8 onboarding da conta e convites | 2026-09-12 | — | ✅ Done |
+| 013 | Executar F1 Fase 3 — T9 app factory + layout Jinja/HTMX | 2026-09-12 | — | ✅ Done |
 
 ---
 
