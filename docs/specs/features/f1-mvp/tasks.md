@@ -1,6 +1,6 @@
 # F1 — MVP do gestlog — Tasks
 
-**Design**: `.specs/features/f1-mvp/design.md`
+**Design**: `docs/specs/features/f1-mvp/design.md`
 **Status**: Draft (awaiting approval)
 
 ---
@@ -46,14 +46,15 @@ T10 ──────────────→ T13
 ```
 T5 ─┬→ T14 [P]
     ├→ T15 [P]
-    └→ T16 [P]
+    ├→ T16 [P]
+    └→ T34 [P]
 ```
 
 ### Phase 6 — Copiloto
 
 ```
-T14,T15,T16 → T17 → T18 ─┬→ T19
-                         └→ T20
+T14,T15,T16,T34 → T17 → T18 ─┬→ T19
+                             └→ T20
 T7 ──────────────────────┘
 T10 ─────────────────────→ T19
 ```
@@ -208,24 +209,35 @@ fornecedores, transporte), com erros por linha.
 ### T14: Tools de estoque por tenant [P]
 
 **What**: `consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes` lendo do
-repositório do tenant (mesmas assinaturas).
+repositório do tenant (mesmas assinaturas) + novas tools de análise
+`prever_demanda`/`otimizar_armazem`/`otimizar_custos` (ver catálogo no design.md).
 **Where**: `src/gestlog/tools/inventory.py` (modify) · **Depends on**: T5 · **Reuses**: assinaturas atuais
 **Requirement**: COP-02 · **Tests**: unit (fake repo) · **Gate**: quick
-**Done when**: tools retornam dados do tenant; SKU ausente tratado; testes passam.
+**Done when**: tools retornam dados do tenant; SKU ausente tratado; novas tools read-only; testes passam.
 
 ### T15: Tools de fornecedores por tenant [P]
 
-**What**: Tools de fornecedores lendo do repositório do tenant.
+**What**: Tools de fornecedores lendo do repositório do tenant + nova
+`tratar_conformidade` (checagem read-only na F1).
 **Where**: `src/gestlog/tools/suppliers.py` (modify) · **Depends on**: T5 · **Reuses**: assinaturas atuais
 **Requirement**: COP-02 · **Tests**: unit (fake repo) · **Gate**: quick
 **Done when**: tools retornam dados do tenant; ausência tratada; testes passam.
 
 ### T16: Tools de transporte por tenant [P]
 
-**What**: Tools de frete/prazo/rastreio com dados do tenant (mantendo cálculo).
+**What**: Tools de frete/prazo/rastreio com dados do tenant (mantendo cálculo) +
+nova `otimizar_entrega` (read-only).
 **Where**: `src/gestlog/tools/transport.py` (modify) · **Depends on**: T5 · **Reuses**: assinaturas atuais
 **Requirement**: COP-02 · **Tests**: unit (fake repo) · **Gate**: quick
 **Done when**: tools retornam dados do tenant; testes passam.
+
+### T34: Tool comum `enviar_resposta_logistica` [P]
+
+**What**: Tool read-only compartilhada pelos três especialistas que compõe a
+resposta logística (sem envio externo na F1); fonte única em `tools/common.py`.
+**Where**: `src/gestlog/tools/common.py` (new), `src/gestlog/tools/__init__.py` (modify) · **Depends on**: T5
+**Reuses**: padrões de `@tool` atuais · **Requirement**: COP-02 · **Tests**: unit (fake repo) · **Gate**: quick
+**Done when**: os três especialistas expõem a tool; teste confirma composição da resposta.
 
 ### T17: Copilot Service (grafo + contexto do tenant)
 
@@ -363,8 +375,8 @@ Phase 1:  T2 → T3 → T4 ; T3 → T5
 Phase 2:  T4 → T6 → T7 → T8
 Phase 3:  T7 → T9 → T10
 Phase 4:  T11 [P] (após T2) ; T12 (T5,T11) → T13 (T10,T12)
-Phase 5:  T14 [P] , T15 [P] , T16 [P]  (após T5)
-Phase 6:  T17 (T14-16) → T18 (T17,T7) → { T19 (T10,T18) ; T20 (T18) }
+Phase 5:  T14 [P] , T15 [P] , T16 [P] , T34 [P]  (após T5)
+Phase 6:  T17 (T14-16,T34) → T18 (T17,T7) → { T19 (T10,T18) ; T20 (T18) }
 Phase 7:  T21 (T17) → T22 (T21) → T23 (T19,T22)
 Phase 8:  T24 [P] (T1) → T25 (T17,T24) ; T26 (T5,T17)
 Phase 9:  T27 (T5) → T28 (T17,T27)
@@ -396,6 +408,7 @@ parallel-safe (unit). Integração/e2e são sempre sequenciais (Testing.md).
 | T12 import service | 1 serviço | ✅ |
 | T13 upload UI | 1 tela | ✅ |
 | T14–T16 tools | 1 módulo cada | ✅ |
+| T34 tool comum | 1 módulo compartilhado | ✅ |
 | T17 copilot | 1 serviço | ✅ |
 | T18 SSE | 1 endpoint | ✅ |
 | T19 chat UI | 1 tela | ✅ |
@@ -431,7 +444,8 @@ parallel-safe (unit). Integração/e2e são sempre sequenciais (Testing.md).
 | T12 | T5,T11 | T5→T12, T11→T12 | ✅ |
 | T13 | T10,T12 | T10→T13, T12→T13 | ✅ |
 | T14–T16 | T5 | T5→T14/15/16 | ✅ |
-| T17 | T14,T15,T16 | →T17 | ✅ |
+| T34 | T5 | T5→T34 | ✅ |
+| T17 | T14,T15,T16,T34 | →T17 | ✅ |
 | T18 | T17,T7 | →T18 | ✅ |
 | T19 | T10,T18 | →T19 | ✅ |
 | T20 | T18 | →T20 | ✅ |
@@ -467,6 +481,7 @@ parallel-safe (unit). Integração/e2e são sempre sequenciais (Testing.md).
 | T12 | ingestion/repo | integration | integration | ✅ |
 | T13 | web | integration | integration | ✅ |
 | T14–T16 | tools | unit | unit | ✅ |
+| T34 | tools/common | unit | unit | ✅ |
 | T17 | copilot | unit | unit | ✅ |
 | T18 | web/SSE | integration | integration | ✅ |
 | T19 | web | integration | integration | ✅ |

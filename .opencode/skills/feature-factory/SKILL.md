@@ -54,7 +54,7 @@ Planning follows the **`tlc-spec-driven`** skill for **artifacts and auto-sizing
 
 **Product requirements source of truth:** `STATE.approved_story` from Checkpoint 1. Phase 3 **translates** that story into technical specs — it does **not** re-run TLC Specify as a second interview or rewrite acceptance criteria from scratch.
 
-**Context to load before Phase 3** (when files exist): `.specs/project/PROJECT.md`, `.specs/project/STATE.md`, `.specs/codebase/CONCERNS.md`, relevant `.specs/codebase/*.md`.
+**Context to load before Phase 3** (when files exist): `docs/specs/project/PROJECT.md`, `docs/specs/project/STATE.md`, `docs/specs/codebase/CONCERNS.md`, relevant `docs/specs/codebase/*.md`.
 
 **Project specifics:** read `AGENTS.md` for the backend/frontend roots, config module, test layout, and gate checks. Do not assume another project's stack.
 
@@ -74,7 +74,7 @@ STATE = {
   story:                [set after Phase 2 — nil in Quick Mode]
   approved_story:       [set after Checkpoint 1 — nil in Quick Mode]
   tlc_scope:            [medium | large | complex — set at start of Phase 3]
-  spec_paths:           [set after Phase 3 — paths under <worktree_path>/.specs/features/<slug>/]
+  spec_paths:           [set after Phase 3 — paths under <worktree_path>/docs/specs/features/<slug>/]
   spec:                 [set after Phase 3 — summary or pointer; nil in Quick Mode]
   approved_spec:        [set after Checkpoint 2 — approved spec_paths + key contents]
   backend_summary:      [set after Phase 4]
@@ -156,10 +156,10 @@ expected_changes: [
 feature_request: STATE.feature_request
 worktree_path:   STATE.worktree_path
 feature_branch:  STATE.feature_branch
-brownfield_docs: [if present, paths under .specs/codebase/*.md — load CONCERNS.md when planning]
+brownfield_docs: [if present, paths under docs/specs/codebase/*.md — load CONCERNS.md when planning]
 ```
 
-**What it produces:** A structured research report covering files & roles, existing patterns, similar features, risks, and tests to update. Cross-reference `.specs/codebase/` when it exists instead of re-mapping the whole stack.
+**What it produces:** A structured research report covering files & roles, existing patterns, similar features, risks, and tests to update. Cross-reference `docs/specs/codebase/` when it exists instead of re-mapping the whole stack.
 
 **On completion:** Store output as `STATE.researcher_output`. Proceed immediately to Phase 2.
 
@@ -209,7 +209,7 @@ This checkpoint is not skippable. Implementation does not begin until the story 
 
 ### Phase 3 — TLC Planning (`spec-writer` + `tlc-spec-driven`)
 
-**Before spawning:** Read the **`tlc-spec-driven`** skill. Choose `STATE.tlc_scope` using the table in [TLC Spec-Driven Integration](#tlc-spec-driven-integration-phase-3). `STATE.feature_slug` was already set in Phase 0 — reuse it. The `spec-writer` creates `<worktree_path>/.specs/features/<feature_slug>/` when writing artifacts.
+**Before spawning:** Read the **`tlc-spec-driven`** skill. Choose `STATE.tlc_scope` using the table in [TLC Spec-Driven Integration](#tlc-spec-driven-integration-phase-3). `STATE.feature_slug` was already set in Phase 0 — reuse it. The `spec-writer` creates `<worktree_path>/docs/specs/features/<feature_slug>/` when writing artifacts.
 
 **Spawn subagent:** `spec-writer`
 
@@ -222,7 +222,7 @@ tlc_scope:         STATE.tlc_scope
 approved_story:    STATE.approved_story
 researcher_output: STATE.researcher_output
 project_instructions:         [contents of AGENTS.md from the project root]
-tlc_context:       [paths that exist: PROJECT.md, STATE.md, CONCERNS.md, other .specs/codebase/*.md]
+tlc_context:       [paths that exist: PROJECT.md, STATE.md, CONCERNS.md, other docs/specs/codebase/*.md]
 tlc_skill_refs:    Specify → references/specify.md (technical translation only)
                    Design  → references/design.md (only if tlc_scope is large or complex)
                    Tasks   → references/tasks.md (only if tlc_scope is large or complex)
@@ -232,7 +232,7 @@ tlc_skill_refs:    Specify → references/specify.md (technical translation only
 
 | `tlc_scope` | Files |
 |-------------|-------|
-| `medium` | `.specs/features/<slug>/spec.md` |
+| `medium` | `docs/specs/features/<slug>/spec.md` |
 | `large` or `complex` | `spec.md`, `design.md`, `tasks.md` |
 
 Each file follows **`tlc-spec-driven`** templates extended with the technical sections in `spec-writer.md`. Requirement IDs in `spec.md` must trace to `STATE.approved_story` acceptance criteria. `tasks.md` lists atomic work for builders — **not** TLC Execute.
@@ -270,7 +270,7 @@ Changes after this point cost 10x more.
 **Wait for explicit human input.**
 
 - If human says **APPROVE**: set `STATE.approved_spec = { spec_paths: STATE.spec_paths, tlc_scope: STATE.tlc_scope, feature_slug: STATE.feature_slug }`, proceed to Phase 4.
-- If human provides feedback: re-spawn `spec-writer` with original inputs plus feedback. Overwrite the same paths under `.specs/features/<slug>/`. Loop until approved.
+- If human provides feedback: re-spawn `spec-writer` with original inputs plus feedback. Overwrite the same paths under `docs/specs/features/<slug>/`. Loop until approved.
 
 ---
 

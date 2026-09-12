@@ -1,6 +1,6 @@
 # F1 — MVP do gestlog (copiloto read-only) — Specification
 
-**Path:** `.specs/features/f1-mvp/spec.md`
+**Path:** `docs/specs/features/f1-mvp/spec.md`
 **TLC scope:** complex
 **Based on story:** gestlog como SaaS multi-cliente: PME importa seus dados e o operador recebe recomendações explicadas nos 4 domínios.
 **Status:** Awaiting human approval

@@ -1,6 +1,6 @@
 # F1 — MVP do gestlog (copiloto read-only) — Design
 
-**Spec**: `.specs/features/f1-mvp/spec.md`
+**Spec**: `docs/specs/features/f1-mvp/spec.md`
 **Status**: Draft (awaiting approval)
 
 ---
@@ -160,6 +160,78 @@ class AuditLog:          # id, tenant_id, user_id, evento, detalhe, criado_em
 
 **Relationships**: tudo pendurado em `Tenant` via `tenant_id`; `Membership` liga
 `User`↔`Tenant`; conversas → mensagens → recomendações → feedback.
+
+---
+
+## Catálogo de ferramentas (F1)
+
+> Decisões AD-009/AD-010 no STATE.md. Nomes canônicos em **português** (AD-008). A
+> F1 é **read-only** (AD-001): só entram tools de **leitura** e **análise**. As de
+> **escrita/ação** ficam registradas para a **F2** com HITL (confirmação humana
+> antes de mutar dados). A troca do mock pelo repositório do tenant preserva as
+> **assinaturas** das tools existentes (Tech Decisions).
+
+### Tool comum (todos os especialistas)
+
+| Tool | Origem | F1 | F2 |
+| --- | --- | --- | --- |
+| `enviar_resposta_logistica` | `send_logistics_response` | compõe a resposta ao usuário (sem envio externo) | envio real a stakeholders (e-mail/API) |
+
+Fonte única em `src/gestlog/tools/common.py`; os três especialistas a importam,
+evitando duplicação.
+
+### Estoque
+
+| Tool | Origem | F1 / F2 |
+| --- | --- | --- |
+| `consultar_estoque` (existente) | — | F1 leitura |
+| `calcular_reposicao` (existente) | — | F1 leitura |
+| `listar_movimentacoes` (existente) | — | F1 leitura |
+| `prever_demanda` | `forecast_demand` | F1 análise |
+| `otimizar_armazem` | `optimize_warehouse` | F1 análise |
+| `otimizar_custos` | `optimize-costs` | F1 análise |
+| `gerenciar_inventario` | `manage_inventory` | F2 escrita (HITL) |
+| `gerenciar_qualidade` | `manage_quality` | F2 escrita (HITL) |
+| `escalar_operacoes` | `scale operations` | F2 escrita (HITL) |
+
+### Transporte
+
+| Tool | Origem | F1 / F2 |
+| --- | --- | --- |
+| `calcular_frete` (existente) | — | F1 leitura |
+| `consultar_prazo` (existente) | — | F1 leitura |
+| `rastrear_entrega` (existente) | `track_shipments` | F1 leitura |
+| `otimizar_entrega` | `optimize_delivery` | F1 análise |
+| `organizar_envio` | `arrange_shipping` | F2 escrita (HITL) |
+| `coordenar_operacoes` | `coordinate_operations` | F2 escrita (HITL) |
+| `gerenciar_manuseio_especial` | `manage_specialist_handling` | F2 escrita (HITL) |
+| `processar_devolucoes` | `process_returns` | F2 escrita (HITL) |
+| `gerenciar_disrupcoes` | `manage_disruption` | F2 escrita (HITL) |
+
+### Fornecedores
+
+| Tool | Origem | F1 / F2 |
+| --- | --- | --- |
+| `listar_fornecedores` (existente) | — | F1 leitura |
+| `consultar_fornecedor` (existente) | — | F1 leitura |
+| `avaliar_desempenho` (existente) | `evaluate_suppliers` | F1 leitura |
+| `tratar_conformidade` | `handle_compliance` | F1 análise (checagem) · F2 ação (regularização) |
+
+### Reconciliação com a proposta anterior (AD-009)
+
+As 4 tools provisórias de leitura da AD-009 ficam **substituídas** pelo inventário
+acima, com suas capacidades incorporadas às tools nomeadas:
+
+| Provisória (AD-009) | Ferramenta do catálogo |
+| --- | --- |
+| `listar_abaixo_minimo` | `prever_demanda` + `consultar_estoque` |
+| `dias_de_cobertura` | `prever_demanda` |
+| `comparar_fornecedores` | `avaliar_desempenho` |
+| `listar_entregas_atrasadas` | `otimizar_entrega` + `rastrear_entrega` |
+
+**Total F1**: 9 tools existentes (reapontadas ao repositório do tenant) + 6 novas
+read-only/análise (`prever_demanda`, `otimizar_armazem`, `otimizar_custos`,
+`otimizar_entrega`, `tratar_conformidade`, `enviar_resposta_logistica`) = **15**.
 
 ---
 

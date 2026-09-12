@@ -1,7 +1,7 @@
 # State
 
-**Last Updated:** 2026-09-11
-**Current Work:** F1 (MVP) — planejamento concluído (`spec`/`design`/`tasks`), aguardando aprovação para executar
+**Last Updated:** 2026-09-12
+**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5) concluída, catálogo de tools fechado (AD-010), docs reorganizados em `docs/` e versionados (AD-011); Fase 2 (T6–T8) pendente
 
 ---
 
@@ -55,7 +55,7 @@ DPA/zero-retention.
 **Decision:** fases M1–M5 sem calendário; critérios de saída por fase.
 **Reason:** execução individual.
 **Trade-off:** menos previsibilidade de datas externa.
-**Impact:** planejamento guiado por `.specs/project/ROADMAP.md`.
+**Impact:** planejamento guiado por `docs/specs/project/ROADMAP.md`.
 
 ### AD-007: Stack da F1 (FastAPI + Jinja/HTMX + Postgres + FastAPI Users) (2026-09-11)
 
@@ -65,7 +65,7 @@ grafo LangGraph existente.
 **Reason:** máxima reutilização do core Python/LangGraph, mínimo de peças para dev
 solo, isolamento por tenant simples e padrão de mercado.
 **Trade-off:** SSR/HTMX é menos flexível que uma SPA; migrar para SPA depois custa.
-**Impact:** tasks T1–T33 em `.specs/features/f1-mvp/tasks.md` seguem esse stack.
+**Impact:** tasks T1–T33 em `docs/specs/features/f1-mvp/tasks.md` seguem esse stack.
 
 ### AD-008: Nomenclatura — Empresa (tenant) em português (2026-09-11)
 
@@ -75,6 +75,48 @@ vez de `Tenant`/`tenant_id`, seguindo a convenção de nomes em português do `A
 **Trade-off:** afasta do vocabulário SaaS em inglês; docs mantêm "tenant" entre parênteses.
 **Impact:** migration inicial regenerada com tabela `empresa`; AD-007 e specs usam
 "tenant" como termo de domínio, "Empresa" como nome de código.
+
+### AD-009: Catálogo de ferramentas da F1 (2026-09-11)
+
+**Decision:** formalizar um "Catálogo de ferramentas (F1)" no `design.md` antes da
+Fase 5, com 4 tools read-only novas (`listar_entregas_atrasadas`,
+`comparar_fornecedores`, `listar_abaixo_minimo`, `dias_de_cobertura`) além das 9
+existentes. Tools de cadastros (read/sugerir) e de escrita (HITL) ficam para a F2.
+**Reason:** os agentes precisam de tools de busca e comparação para recomendar nos
+4 domínios; decidir capacidade é papel do design, não do Execute.
+**Trade-off:** exige tabelas de apoio (movimentações de estoque, histórico de
+fornecedor, datas de previsão/entrega no transporte).
+**Impact:** adicionar tasks ao `tasks.md` da F1. **Pendente:** o usuário indicou que
+tem tools próprias a incluir — capturar antes de fechar o catálogo.
+**Status:** ✅ resolvida em 2026-09-12 pela AD-010; as 4 tools provisórias foram
+substituídas por tools nomeadas (mapeamento no `design.md`).
+
+### AD-010: Inventário real de tools do usuário (2026-09-12)
+
+**Decision:** adotar como catálogo canônico no `design.md` o inventário fornecido
+pelo usuário — 1 tool comum (`enviar_resposta_logistica`) + tools por domínio
+(estoque, transporte, fornecedores). A F1 implementa **apenas leitura/análise**;
+as de **escrita/ação** ficam registradas para a F2 com HITL. Nomes em português
+(AD-008). As 4 tools provisórias da AD-009 foram substituídas por tools nomeadas.
+Nova task **T34** (tool comum); T14–T16 ampliadas.
+**Reason:** o usuário especificou as tools dos especialistas; a F1 é read-only
+(AD-002), então só entram leitura/análise.
+**Trade-off:** exige tabelas de apoio para análise (movimentações, histórico) e a
+tool comum altera o binding de tools dos três especialistas.
+**Impact:** `design.md` §"Catálogo de ferramentas (F1)"; `tasks.md` T14–T16 + T34;
+T17 passa a depender de T34.
+
+### AD-011: Docs-as-code — documentação em `docs/`, versionada (2026-09-12)
+
+**Decision:** isolar o contexto conceitual do código executável: specs/planejamento
+passam de `.specs/` para `docs/specs/` (ao lado de `docs/business/`), e `docs/` é
+**versionado** no git. Nada de docs em `.gitignore`. Referências atualizadas em
+`docs/` e no scaffold `.opencode/`.
+**Reason:** organização docs-as-code; docs e código vivem no mesmo repo, mas em
+árvores separadas e revisáveis.
+**Trade-off:** commits passam a misturar código e documentação; sem impacto técnico.
+**Impact:** estrutura macro do repo = `src/` (executável) + `docs/` (conceitual) +
+`tests/`; `.specs/` deixa de existir.
 
 ---
 
@@ -109,11 +151,18 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 003 | Inicializar git e commit raiz | 2026-09-11 | 31c7368 | ✅ Done |
 | 004 | Configurar remote `origin` e publicar `main` | 2026-09-11 | 871f0be | ✅ Done |
 | 005 | Planejar F1 (spec/design/tasks + TESTING) | 2026-09-11 | — | ✅ Done |
+| 006 | Executar F1 Fase 1 (T1–T5) + rename `Tenant`→`Empresa` | 2026-09-11 | 8438baa | ✅ Done |
+| 007 | Capturar inventário de tools e formalizar catálogo F1 (AD-010) | 2026-09-12 | — | ✅ Done |
+| 008 | Reorganizar docs-as-code: `.specs/` → `docs/specs/` e versionar (AD-011) | 2026-09-12 | — | ✅ Done |
 
 ---
 
 ## Deferred Ideas
 
+- [x] **Tools específicas do usuário** — capturadas em 2026-09-12 (AD-010) — Captured during: F1
+- [x] Catálogo de tools F1 — fechado no `design.md` (AD-010); substitui as 4 provisórias da AD-009 — Captured during: F1
+- [ ] Tools de escrita/ação (HITL): estoque (`gerenciar_inventario`, `gerenciar_qualidade`, `escalar_operacoes`), transporte (`organizar_envio`, `coordenar_operacoes`, `gerenciar_manuseio_especial`, `processar_devolucoes`, `gerenciar_disrupcoes`), fornecedores (`tratar_conformidade` ação) e envio externo de `enviar_resposta_logistica` — Captured during: F2
+- [ ] Tools de comparação de rotas/modal — Captured during: F1/F2
 - [ ] Benchmarking anonimizado entre tenants — Captured during: definição de produto
 - [ ] Marketplace de conectores de terceiros — Captured during: definição de produto
 - [ ] Novos domínios (contratos, devoluções, inventário) — Captured during: definição de produto
@@ -122,5 +171,5 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 (T1–T33) após aprovação; começar por T1/T2.
+- [ ] Executar a F1 Fase 2 (T6 auth → T7 guards → T8 onboarding).
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
