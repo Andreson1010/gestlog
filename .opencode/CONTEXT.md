@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-12.
-> Branch: feat/f1-mvp · HEAD: 8438baa (7 commits à frente de `origin/main`)
+> Branch: feat/f1-mvp · HEAD: 4da4153 (8 commits à frente de `origin/main`)
 
 ## Estado atual
 
@@ -10,12 +10,13 @@
 - **Repositório git** com remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch `feat/f1-mvp`: Fase 1 (T1–T5) concluída +
-  rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010); Fase 2
-  (T6–T8, auth/tenancy) pendente.
-- Suíte: **39 testes passando, 97,25% de cobertura** (`uv run pytest`),
+  rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
+  **T6 (login/logout por cookie) concluído** (Fase 2 iniciada); T7 (guards) e T8
+  (onboarding) pendentes.
+- Suíte: **45 testes passando, 97,42% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
-  `tools/`, `db/`, `repositories/`), `alembic/`, `tests/` espelhando `src/`.
+  `tools/`, `db/`, `repositories/`, `auth/`), `alembic/`, `tests/` espelhando `src/`.
   Produto documentado em `docs/business/PRD.md` + `docs/specs/`.
 
 ## O que foi feito nesta sessão
@@ -58,6 +59,14 @@
 - **Docs-as-code**: specs movidas de `.specs/` para `docs/specs/` (isolando o
   contexto conceitual do código executável em `src/`); referências atualizadas.
   **Docs são versionados** (decisão de 2026-09-12) — `docs/` entra no git.
+- **Fronteiras fixadas** (AD-012): pacote único, mas com camadas conceituais
+  `apps → agents → libs` documentadas no `AGENTS.md` §"Estrutura e fronteiras".
+  Não virar monorepo multi-pacote enquanto não houver deploy independente.
+- **T6 concluído** (2026-09-12): `src/gestlog/auth/` (`db.py`, `manager.py`,
+  `backend.py`, `routes.py`) com login/logout por cookie + JWT (FastAPI Users).
+  Camada **async isolada** para o auth (AD-013): `db/session.py` ganhou engine/
+  session async + `aiosqlite` (dev); `config.py` ganhou `auth_cookie_name`/
+  `auth_cookie_secure`. Repos/copilot seguem sync. 6 testes de integração.
 
 ## Decisões e regras (não esquecer)
 
@@ -72,11 +81,17 @@
 - **Docs-as-code**: documentação conceitual em `docs/` (`business/`, `specs/`)
   separada do código executável em `src/`; docs **são versionados** (nada em
   `.gitignore`).
+- **Estrutura: pacote único com fronteiras conceituais** (AD-012), não monorepo:
+  `apps` (`cli.py`, `web/`, `auth/`, `copilot/`) → `agents` (`graph.py`, `state.py`,
+  `agents/`, `tools/`) → `libs` (`config.py`, `llm.py`, `db/`, `repositories/`).
+  Só extrair para pacotes quando houver deploy independente. Ver `AGENTS.md`
+  §"Estrutura e fronteiras".
 
 ## Próximos passos / bloqueios
 
-1. Retomar a F1 na **Fase 2** (T6 auth → T7 guards → T8 onboarding). Ver
-   `docs/specs/features/f1-mvp/tasks.md`.
+1. Continuar a F1 na **Fase 2**: **T7** (membership, resolução de empresa e
+   guards: `get_current_tenant`, 401 sem sessão, 404 entre empresas) → **T8**
+   (onboarding/convites). Ver `docs/specs/features/f1-mvp/tasks.md`.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -87,15 +102,13 @@
 
 ## WIP local (não commitado)
 
-- **Reorganização docs-as-code** (`git mv .specs docs/specs`, histórico preservado)
-  + referências `.specs/` → `docs/specs/` atualizadas em `docs/` e `.opencode/`
-  (`CONTEXT.md`, `command/end.md`, `agent/spec-writer.md`,
-  `skills/feature-factory/SKILL.md`). Contextos conceituais isolados do código em
-  `docs/`. Ainda não commitado.
-- **Catálogo de tools (AD-010)** + handoff também não commitados.
-- **Decisão:** `docs/` é **versionado** (doc-as-code) — sem entrada no `.gitignore`.
-- A branch `feat/f1-mvp` tem **7 commits não enviados** ao `origin/main`
-  (nenhum push desde a criação da branch).
+- **T6 não commitado** (nem AGENTS.md/`docs/specs` das decisões AD-012/013):
+  `src/gestlog/auth/` (novo), `src/gestlog/db/{session,__init__}.py`,
+  `src/gestlog/config.py`, `tests/auth/test_auth.py`, `.env.example`,
+  `pyproject.toml`, `requirements-dev.txt`, `AGENTS.md`, docs. Sugerido commitar
+  como `feat(f1): adiciona login/logout por cookie (T6)`.
+- HEAD em `4da4153` (`docs: move specs para docs/ ...`); **8 commits** à frente de
+  `origin/main`, nenhum push desde a criação da branch.
 
 ## Artefatos do graphify
 
@@ -127,5 +140,7 @@
   generalizado (skills + agentes); PRD + artefatos TLC escritos; git inicializado
   e remoto (`31c7368`); F1 planejada e iniciada — Fase 1 concluída na branch
   `feat/f1-mvp` (`8438baa`); rename `Tenant`→`Empresa`.
-- **2026-09-12 (esta sessão):** inventário de tools do usuário capturado e
-  formalizado (AD-010); catálogo no `design.md`, T34 no `tasks.md`.
+- **2026-09-12 (esta sessão):** inventário de tools capturado e formalizado
+  (AD-010); reorganização docs-as-code `.specs/` → `docs/specs/` versionada
+  (AD-011, commit `4da4153`); fronteiras do pacote único (AD-012); T6 login/logout
+  por cookie com camada async isolada (AD-013).

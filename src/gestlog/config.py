@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://gestlog:gestlog@localhost:5432/gestlog"
     auth_secret: str = "dev-secret-change-me"
+    auth_cookie_name: str = "gestlog_auth"
+    auth_cookie_secure: bool = True
     session_expire_minutes: int = Field(default=1440, gt=0)
     default_retention_days: int = Field(default=365, gt=0)
     llm_monthly_token_quota: int = Field(default=1_000_000, gt=0)

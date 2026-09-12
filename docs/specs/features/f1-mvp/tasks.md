@@ -1,7 +1,8 @@
 # F1 — MVP do gestlog — Tasks
 
 **Design**: `docs/specs/features/f1-mvp/design.md`
-**Status**: Draft (awaiting approval)
+**Status**: In progress
+**Progresso**: T1–T5 ✅ · T6 ✅ · T7–T33/T34 pendentes
 
 ---
 

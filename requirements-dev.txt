@@ -1,6 +1,7 @@
 -r requirements.txt
 
 # Qualidade (mantido em sincronia com [project.optional-dependencies].dev)
+aiosqlite>=0.20
 black>=24.10
 httpx>=0.28.1
 pytest>=8.3

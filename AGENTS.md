@@ -55,6 +55,34 @@ START -> supervisor --(state["next"])--> transporte | fornecedores | estoque
   em testes. `run_query` é o helper de invocação (`recursion_limit`).
 - **`src/gestlog/cli.py`** — REPL; `main` marcado `# pragma: no cover`.
 
+### Estrutura e fronteiras
+
+**Pacote único** (`src/gestlog/`), fatiado em três fronteiras conceituais. **Não é**
+monorepo multi-pacote (ver AD-012 em `docs/specs/project/STATE.md`); a extração para
+pacotes separados só se justifica quando houver deploy/escala independentes.
+
+```
+apps   (entrada / deploy)     cli.py, web/, auth/, copilot/
+agents (grafo e domínio)      graph.py, state.py, agents/, tools/
+libs   (fundação compartilh.) config.py, llm.py, db/, repositories/
+```
+
+Direção de dependência — **nunca invertida**:
+
+```
+apps  →  agents  →  libs
+  └──────────────→  libs
+```
+
+Regra de bolso para escolher onde uma coisa nova mora:
+
+- endpoint / página / autenticação → `apps` (`web/`, `auth/`, `copilot/`);
+- nó / prompt / ferramenta / roteamento → `agents` (`agents/`, `tools/`, `graph.py`);
+- modelo / repositório / config / integração base → `libs` (`db/`, `repositories/`, `config.py`).
+
+`db/` + `repositories/` são a **única** porta de acesso ao banco; nada fora de `libs`
+escreve SQL. `docs/` é conceitual e nunca é importado pelo código.
+
 ### Adicionar um especialista
 
 Cinco pontos precisam mudar juntos:

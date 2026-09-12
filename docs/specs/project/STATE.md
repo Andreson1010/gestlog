@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5) concluída, catálogo de tools fechado (AD-010), docs reorganizados em `docs/` e versionados (AD-011); Fase 2 (T6–T8) pendente
+**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5) concluída, catálogo de tools fechado (AD-010), docs versionados (AD-011), estrutura definida (AD-012) e T6 (login/logout) concluído; T7–T8 pendentes
 
 ---
 
@@ -118,6 +118,39 @@ passam de `.specs/` para `docs/specs/` (ao lado de `docs/business/`), e `docs/` 
 **Impact:** estrutura macro do repo = `src/` (executável) + `docs/` (conceitual) +
 `tests/`; `.specs/` deixa de existir.
 
+### AD-012: Pacote único com fronteiras conceituais (não monorepo) (2026-09-12)
+
+**Decision:** manter um **único pacote** (`src/gestlog/`) no F1, organizado em três
+fronteiras conceituais: `apps` (entrada/deploy: `cli.py`, `web/`, `auth/`,
+`copilot/`), `agents` (grafo e domínio: `graph.py`, `state.py`, `agents/`, `tools/`)
+e `libs` (fundação: `config.py`, `llm.py`, `db/`, `repositories/`). Direção de
+dependência `apps → agents → libs` (+ `apps → libs`), nunca invertida. `db/` +
+`repositories/` são a única porta de SQL.
+**Reason:** driver é **clareza**, não deploy independente. O gestlog é um único
+deployable e o multiagente roda in-process (nós do LangGraph, não serviços). Um
+monorepo multi-pacote traria workspace uv, múltiplos `pyproject`, tooling de
+fronteiras e refatoração de T1–T5 sem consumidor que justifique.
+**Trade-off:** fronteiras são convenção (não impostas por ferramenta); exige
+disciplina de imports.
+**Impact:** `AGENTS.md` §"Estrutura e fronteiras" vira a fonte de verdade de onde
+cada coisa mora. **Gatilho de migração:** extrair para pacotes só quando houver
+deploy/escala independentes (ex.: worker de alertas da F4 ou UI como app próprio),
+de forma incremental (`libs/*` → `agents/` → `apps/`).
+
+### AD-013: Camada async isolada para o auth (FastAPI Users) (2026-09-12)
+
+**Decision:** o FastAPI Users 15 só oferece `SQLAlchemyUserDatabase` com
+`AsyncSession`. Adicionar `build_async_engine`/`build_async_session_factory`/
+`init_async_db` em `libs/db` e concentrar o uso de `AsyncSession` na camada de auth
+(`auth/db.py`). Repositórios e copilot seguem **sync**. `aiosqlite` entra como dep
+de dev (testes); em produção o engine async usa o mesmo `DATABASE_URL`
+(`postgresql+psycopg`).
+**Reason:** menor custo que refatorar T3–T5 para async, mantendo FastAPI Users
+nativo.
+**Trade-off:** duas camadas de sessão (sync + async) e dois pools na mesma app.
+**Impact:** T6; `config.py` ganha `auth_cookie_name`/`auth_cookie_secure`;
+`AGENTS.md` §"Estrutura e fronteiras" (libs sync, apps pode async).
+
 ---
 
 ## Active Blockers
@@ -154,6 +187,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 006 | Executar F1 Fase 1 (T1–T5) + rename `Tenant`→`Empresa` | 2026-09-11 | 8438baa | ✅ Done |
 | 007 | Capturar inventário de tools e formalizar catálogo F1 (AD-010) | 2026-09-12 | — | ✅ Done |
 | 008 | Reorganizar docs-as-code: `.specs/` → `docs/specs/` e versionar (AD-011) | 2026-09-12 | — | ✅ Done |
+| 009 | Definir fronteiras do pacote único (AD-012) e camada async do auth (AD-013) | 2026-09-12 | — | ✅ Done |
+| 010 | Executar F1 Fase 2 — T6 login/logout por cookie (FastAPI Users) | 2026-09-12 | — | ✅ Done |
 
 ---
 
