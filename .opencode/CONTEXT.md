@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-12.
-> Branch: feat/f1-mvp · HEAD: 68bc21e (9 commits à frente de `origin/main`)
+> Branch: feat/f1-mvp · HEAD: 943f0cb · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
 
 ## Estado atual
 
@@ -13,6 +13,9 @@
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
   **T6–T8 (auth/tenancy/onboarding) e T9 (app factory + layout) concluídos**;
   T10 (home autenticada + navegação) pendente.
+- **PRs incrementais abertos** (stacked): **#1** Fase 1 (`main` ← `feat/f1-fase1`),
+  **#2** Fase 2 (`feat/f1-fase1` ← `feat/f1-fase2`), **#3** Fase 3 draft
+  (`feat/f1-fase2` ← `feat/f1-mvp`). `main` e branches publicados no `origin`.
 - Suíte: **56 testes passando, 97,47% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
@@ -98,6 +101,15 @@
   Só extrair para pacotes quando houver deploy independente. Ver `AGENTS.md`
   §"Estrutura e fronteiras".
 
+## PRs incrementais (stacked)
+
+- **#1** `main` ← `feat/f1-fase1` (T1–T5 + docs) — pronto para review.
+- **#2** `feat/f1-fase1` ← `feat/f1-fase2` (T6–T8) — stacked sobre #1; merge na ordem.
+- **#3** `feat/f1-fase2` ← `feat/f1-mvp` (T9–T10) — **draft**; pronto quando o T10 fechar.
+- Regra: PRs por fase, base = fase anterior; só abrir/mergear na ordem. `main` foi
+  publicado (era 1 commit local à frente). Continuar a trabalhar em `feat/f1-mvp`
+  (o #3 acompanha) e, a cada fase concluída, apontar a branch de fase e abrir o PR.
+
 ## Próximos passos / bloqueios
 
 1. Continuar a F1 na **Fase 3**: **T10** (home autenticada + navegação para
@@ -113,11 +125,11 @@
 
 ## WIP local (não commitado)
 
-- **T9 não commitado**: `src/gestlog/web/app.py`, `web/templates/base.html`,
-  `web/static/app.css`, `web/__init__.py`, `tests/web/test_app.py`, docs.
-  Sugerido commitar como `feat(f1): adiciona app factory e layout (T9)`.
-- **T6–T8 commitados** em `68bc21e`, `4dfdbdc` e `c42f710`.
-- HEAD em `c42f710`; **11 commits** à frente de `origin/main`, nenhum push.
+- Apenas este `.opencode/CONTEXT.md` (handoff da sessão), a commitar.
+- Código limpo: **T1–T9 commitados e publicados** em `origin/feat/f1-mvp`
+  (`68bc21e` T6, `4dfdbdc` T7, `c42f710` T8, `943f0cb` T9).
+- `main` publicado (`dabd69a`); **11 commits** de F1 à frente de `origin/main`.
+- Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify
 
@@ -153,4 +165,6 @@
   (AD-010); reorganização docs-as-code `.specs/` → `docs/specs/` versionada
   (AD-011, commit `4da4153`); fronteiras do pacote único (AD-012); T6 login/logout
   por cookie com camada async isolada (AD-013, commit `68bc21e`); T7 tenancy/guards
-  (`4dfdbdc`); T8 onboarding/convites (`c42f710`); T9 app factory + layout.
+  (`4dfdbdc`); T8 onboarding/convites (`c42f710`); T9 app factory + layout
+  (`943f0cb`); **PRs incrementais stacked #1/#2/#3** (Fase 1/2/3) e push de
+  `main` + branches para o `origin`. Retomada da F1 prevista para 2026-09-13 (T10).
