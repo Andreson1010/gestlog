@@ -52,6 +52,7 @@ async def app(engine: AsyncEngine) -> AsyncIterator[FastAPI]:
             yield session
 
     aplicacao.dependency_overrides[get_async_session] = _override_session
+    aplicacao.dependency_overrides[get_settings] = _settings
     yield aplicacao
 
 

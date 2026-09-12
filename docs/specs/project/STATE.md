@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5) concluída, catálogo de tools fechado (AD-010), docs versionados (AD-011), estrutura definida (AD-012) e T6 (login/logout) concluído; T7–T8 pendentes
+**Current Work:** F1 (MVP) — em execução na branch `feat/f1-mvp`; Fase 1 (T1–T5) concluída, catálogo de tools fechado (AD-010), docs versionados (AD-011), estrutura definida (AD-012), T6 (login/logout) e T7 (tenancy/guards) concluídos; T8 pendente
 
 ---
 
@@ -189,6 +189,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 008 | Reorganizar docs-as-code: `.specs/` → `docs/specs/` e versionar (AD-011) | 2026-09-12 | — | ✅ Done |
 | 009 | Definir fronteiras do pacote único (AD-012) e camada async do auth (AD-013) | 2026-09-12 | — | ✅ Done |
 | 010 | Executar F1 Fase 2 — T6 login/logout por cookie (FastAPI Users) | 2026-09-12 | — | ✅ Done |
+| 011 | Executar F1 Fase 2 — T7 tenancy, `get_current_empresa` e guards | 2026-09-12 | — | ✅ Done |
 
 ---
 

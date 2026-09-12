@@ -102,6 +102,8 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 - Logging com `logger = logging.getLogger(__name__)`, nunca `print()` (a CLI é exceção).
 - Não adicionar comentários fora dos docstrings.
 - Todo agente/nó sem cobertura de teste deve ser testado com o modelo fake.
+- Secrets: apenas em `.env`; referência em `.env.example`
+- Limites de código: funções com até 50 linhas, aninhamento até 4 níveis e arquivos com até 800 linhas; acima disso, extrair/módularizar.
 
 ## Testes
 

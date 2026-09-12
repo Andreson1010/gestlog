@@ -2,7 +2,7 @@
 
 **Design**: `docs/specs/features/f1-mvp/design.md`
 **Status**: In progress
-**Progresso**: T1–T5 ✅ · T6 ✅ · T7–T33/T34 pendentes
+**Progresso**: T1–T5 ✅ · T6 ✅ · T7 ✅ · T8–T33/T34 pendentes
 
 ---
 

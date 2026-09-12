@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-12.
-> Branch: feat/f1-mvp · HEAD: 4da4153 (8 commits à frente de `origin/main`)
+> Branch: feat/f1-mvp · HEAD: 68bc21e (9 commits à frente de `origin/main`)
 
 ## Estado atual
 
@@ -11,9 +11,8 @@
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch `feat/f1-mvp`: Fase 1 (T1–T5) concluída +
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
-  **T6 (login/logout por cookie) concluído** (Fase 2 iniciada); T7 (guards) e T8
-  (onboarding) pendentes.
-- Suíte: **45 testes passando, 97,42% de cobertura** (`uv run pytest`),
+  **T6 (login/logout) e T7 (tenancy/guards) concluídos**; T8 (onboarding) pendente.
+- Suíte: **49 testes passando, 97,14% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
   `tools/`, `db/`, `repositories/`, `auth/`), `alembic/`, `tests/` espelhando `src/`.
@@ -67,6 +66,11 @@
   Camada **async isolada** para o auth (AD-013): `db/session.py` ganhou engine/
   session async + `aiosqlite` (dev); `config.py` ganhou `auth_cookie_name`/
   `auth_cookie_secure`. Repos/copilot seguem sync. 6 testes de integração.
+- **T7 concluído** (2026-09-12): `src/gestlog/auth/deps.py` com
+  `get_current_user`/`get_current_membership`/`get_current_empresa`,
+  `verificar_empresa_do_recurso` (404 entre empresas) e `exigir_papel(...)` (403).
+  Usa `Authenticator` (v15 removeu `FastAPIUsers.current_user`) e `get_jwt_strategy`
+  resolvido por `Depends(get_settings)`. 4 testes de tenancy.
 
 ## Decisões e regras (não esquecer)
 
@@ -89,9 +93,9 @@
 
 ## Próximos passos / bloqueios
 
-1. Continuar a F1 na **Fase 2**: **T7** (membership, resolução de empresa e
-   guards: `get_current_tenant`, 401 sem sessão, 404 entre empresas) → **T8**
-   (onboarding/convites). Ver `docs/specs/features/f1-mvp/tasks.md`.
+1. Continuar a F1 na **Fase 2**: **T8** (onboarding da conta, convites e papéis:
+   criar conta → convidar → acesso restrito à empresa). Ver
+   `docs/specs/features/f1-mvp/tasks.md`.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -102,13 +106,12 @@
 
 ## WIP local (não commitado)
 
-- **T6 não commitado** (nem AGENTS.md/`docs/specs` das decisões AD-012/013):
-  `src/gestlog/auth/` (novo), `src/gestlog/db/{session,__init__}.py`,
-  `src/gestlog/config.py`, `tests/auth/test_auth.py`, `.env.example`,
-  `pyproject.toml`, `requirements-dev.txt`, `AGENTS.md`, docs. Sugerido commitar
-  como `feat(f1): adiciona login/logout por cookie (T6)`.
-- HEAD em `4da4153` (`docs: move specs para docs/ ...`); **8 commits** à frente de
-  `origin/main`, nenhum push desde a criação da branch.
+- **T7 não commitado**: `src/gestlog/auth/deps.py` (novo),
+  `src/gestlog/auth/{__init__,backend}.py`, `tests/auth/test_tenancy.py`,
+  `tests/auth/test_auth.py`, docs (STATE/CONTEXT/tasks). Sugerido commitar como
+  `feat(f1): adiciona tenancy e guards de acesso (T7)`.
+- **T6 commitado** em `68bc21e` (`feat(f1): adiciona login/logout por cookie (T6)`).
+- HEAD em `68bc21e`; **9 commits** à frente de `origin/main`, nenhum push.
 
 ## Artefatos do graphify
 
@@ -143,4 +146,4 @@
 - **2026-09-12 (esta sessão):** inventário de tools capturado e formalizado
   (AD-010); reorganização docs-as-code `.specs/` → `docs/specs/` versionada
   (AD-011, commit `4da4153`); fronteiras do pacote único (AD-012); T6 login/logout
-  por cookie com camada async isolada (AD-013).
+  por cookie com camada async isolada (AD-013, commit `68bc21e`); T7 tenancy/guards.
