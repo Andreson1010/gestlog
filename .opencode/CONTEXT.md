@@ -11,8 +11,8 @@
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch `feat/f1-mvp`: Fase 1 (T1–T5) concluída +
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
-  **T6–T8 (auth/tenancy/onboarding) e T9 (app factory + layout) concluídos**;
-  T10 (home autenticada + navegação) pendente.
+  **T6–T8 (auth/tenancy/onboarding), T9 (app factory + layout) e T10 (home
+  autenticada + redirect ao login) concluídos**; 25 tasks restantes (T11–T34).
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
   integração do épico; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
   code review; release único `feat/f1-mvp → main` + tag no fim. Os PRs stacked
@@ -125,9 +125,11 @@
 
 ## Próximos passos / bloqueios
 
-1. Executar **T10** em branch curta `feat/f1-t10-home-auth` (home autenticada +
-   navegação Importar/Chat; não autenticado redireciona ao login) → PR contra
-   `feat/f1-mvp`. Ver `docs/specs/features/f1-mvp/tasks.md`.
+1. Executar **T11** (parsers e validadores de importação) em branch curta
+   `feat/f1-t11-parsers` → PR contra `feat/f1-mvp` (CI + code review). T11 é `[P]`
+   e depende só de T2. Depois T12 → T13. Ver `docs/specs/features/f1-mvp/tasks.md`.
+   - T10 entregue no PR #6 (`5c10370`); home `/` exige sessão (303 → `/login`) e
+     `GET /login` renderiza o formulário.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -144,7 +146,8 @@
 - **Stacked #1/#2/#3 fechados**; PR #4 (CI) mergeado em `main`.
 - **Backups locais** `backup/f1-fase1|f1-fase2|f1-mvp` ainda existem (pré-rewrite);
   remover quando o stacked reescrito fizer sentido.
-- Nenhuma task nova em andamento; T10 é a próxima.
+- **T10 concluído** (PR #6, `5c10370`) na integração; nenhuma task em andamento;
+  T11 é a próxima.
 - Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify
