@@ -103,7 +103,7 @@ def test_import_job_com_erros(session: Session) -> None:
     session.add(t)
     session.commit()
     job = models.ImportJob(empresa_id=t.id, tipo="estoque")
-    job.errors.append(models.ImportError(linha=2, motivo="sku ausente"))
+    job.errors.append(models.ImportJobError(linha=2, motivo="sku ausente"))
     session.add(job)
     session.commit()
     assert len(job.errors) == 1

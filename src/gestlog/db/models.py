@@ -7,7 +7,6 @@ entre empresas-clientes. O modelo ``User`` estende a base do FastAPI Users.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
@@ -24,10 +23,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gestlog.db.base import Base
-
-Papel = Literal["admin", "operador", "gestor"]
-StatusImport = Literal["processando", "concluido", "falhou"]
-Decisao = Literal["aceita", "descartada"]
 
 
 def _agora() -> datetime:
@@ -89,12 +84,12 @@ class ImportJob(Base):
         DateTime(timezone=True), default=_agora
     )
 
-    errors: Mapped[list[ImportError]] = relationship(
+    errors: Mapped[list[ImportJobError]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
 
 
-class ImportError(Base):
+class ImportJobError(Base):
     """Erro de validação em uma linha importada."""
 
     __tablename__ = "import_error"
