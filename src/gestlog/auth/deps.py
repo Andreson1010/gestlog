@@ -24,6 +24,7 @@ from gestlog.db.models import Empresa, Membership, User
 auth_backend = build_auth_backend(get_settings())
 authenticator = Authenticator([auth_backend], get_user_manager)
 current_active_user = authenticator.current_user(active=True)
+current_active_user_optional = authenticator.current_user(active=True, optional=True)
 
 
 async def get_current_user(

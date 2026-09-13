@@ -13,8 +13,8 @@ def _client() -> TestClient:
     return TestClient(create_app(settings))
 
 
-def test_pagina_base_renderiza() -> None:
-    resposta = _client().get("/")
+def test_pagina_de_login_renderiza() -> None:
+    resposta = _client().get("/login")
 
     assert resposta.status_code == 200
     assert "gestlog" in resposta.text
