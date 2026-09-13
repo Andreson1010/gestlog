@@ -151,6 +151,28 @@ nativo.
 **Impact:** T6; `config.py` ganha `auth_cookie_name`/`auth_cookie_secure`;
 `AGENTS.md` §"Estrutura e fronteiras" (libs sync, apps pode async).
 
+### AD-014: `AMBIENTE=prod` exige `AUTH_SECRET` forte (2026-09-13)
+
+**Decision:** `config.py` ganha `ambiente` (`dev`|`prod`). Em `prod`, a
+inicialização falha se `auth_secret` for o placeholder de dev
+(`dev-secret-change-me`) ou tiver menos de 32 caracteres. Em `dev` o placeholder
+continua valendo.
+**Reason:** code review do PR #2 (CRITICAL) — JWT assinado com segredo público
+permitiria forjar qualquer sessão (inclusive admin) em produção.
+**Trade-off:** exige configurar `AUTH_SECRET`/`AMBIENTE` no deploy; sem custo em dev.
+**Impact:** `config.py` (`SEGREDO_DEV`, `TAMANHO_MINIMO_SEGREDO`, validador),
+`.env.example`, testes de config.
+
+### AD-015: Hardening de auth adiado (rate limiting e convite por token) (2026-09-13)
+
+**Decision:** no MVP, `/auth/login`, `/onboarding` e `/empresa/convites` ficam sem
+rate limiting e o convite continua recebendo a senha do usuário pelo admin.
+**Reason:** rate limiting confiável exige estado compartilhado (Redis) ou desenho
+multi-worker, e convite por token exige envio de e-mail — ambos fora do escopo F1.
+**Trade-off:** aceita risco de brute-force/abuso e de o admin conhecer a senha do
+convidado até o hardening.
+**Impact:** capturado em Deferred Ideas; revisar antes de abrir o produto ao público.
+
 ---
 
 ## Active Blockers
@@ -193,6 +215,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 012 | Executar F1 Fase 2 — T8 onboarding da conta e convites | 2026-09-12 | — | ✅ Done |
 | 013 | Executar F1 Fase 3 — T9 app factory + layout Jinja/HTMX | 2026-09-12 | — | ✅ Done |
 | 014 | Abrir PRs incrementais stacked (#1 Fase 1, #2 Fase 2, #3 Fase 3 draft) | 2026-09-12 | — | ✅ Done |
+| 015 | Code review dos 3 PRs + correções (segredo/prod, tenancy determinística, onboarding atômico) | 2026-09-13 | — | ✅ Done |
 
 ---
 
@@ -205,6 +228,9 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [ ] Benchmarking anonimizado entre tenants — Captured during: definição de produto
 - [ ] Marketplace de conectores de terceiros — Captured during: definição de produto
 - [ ] Novos domínios (contratos, devoluções, inventário) — Captured during: definição de produto
+- [ ] Rate limiting em `/auth/login`, `/onboarding` e `/empresa/convites` (AD-015) — Captured during: code review F1
+- [ ] Convite por token/e-mail (sem o admin definir a senha do convidado) (AD-015) — Captured during: code review F1
+- [ ] Seleção de "empresa ativa" para usuários com múltiplos vínculos (hoje usa o mais antigo) — Captured during: code review F1
 
 ---
 

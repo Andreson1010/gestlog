@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-13.
-> Branch: feat/f1-mvp · HEAD: c46ad06 · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
+> Branch: feat/f1-mvp · HEAD: 1f6d76c · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
 
 ## Estado atual
 
@@ -16,8 +16,11 @@
 - **PRs incrementais abertos** (stacked): **#1** Fase 1 (`main` ← `feat/f1-fase1`),
   **#2** Fase 2 (`feat/f1-fase1` ← `feat/f1-fase2`), **#3** Fase 3 draft
   (`feat/f1-fase2` ← `feat/f1-mvp`). `main` e branches publicados no `origin`.
-- Suíte: **56 testes passando, 97,47% de cobertura** (`uv run pytest`),
+- Suíte: **61 testes passando, 97,52% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
+- **Code review dos 3 PRs feito e achados corrigidos** (2026-09-13): AD-014
+  (`AMBIENTE=prod` exige `AUTH_SECRET` forte), tenancy determinística e
+  onboarding/convite atômicos. Pendências de hardening registradas em AD-015.
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
   `tools/`, `db/`, `repositories/`, `auth/`), `alembic/`, `tests/` espelhando `src/`.
   Produto documentado em `docs/business/PRD.md` + `docs/specs/`.
@@ -81,6 +84,12 @@
 - **T9 concluído** (2026-09-12): `web/app.py` (`create_app`: estáticos + auth +
   onboarding + rota base), `web/templates/base.html` (Jinja2 + htmx via CDN),
   `web/static/app.css`. 2 testes de integração (página base e asset).
+- **Code review dos 3 PRs + correções** (2026-09-13): skill `code-reviewer` nos PRs
+  #1/#2/#3. Corrigidos: CRITICAL (segredo de JWT público → `AMBIENTE=prod` exige
+  `AUTH_SECRET` forte, AD-014), MEDIUM (tenancy determinística via `order_by`;
+  onboarding/convite atômicos numa única transação usando `PasswordHelper`) e LOWs
+  (Literals mortos removidos; `ImportError`→`ImportJobError`; SRI no htmx). Rate
+  limiting e convite por token adiados (AD-015). Suíte 61 testes/97,52%.
 
 ## Decisões e regras (não esquecer)
 
@@ -104,7 +113,8 @@
 ## PRs incrementais (stacked)
 
 - **#1** `main` ← `feat/f1-fase1` (T1–T5 + docs) — pronto para review.
-- **#2** `feat/f1-fase1` ← `feat/f1-fase2` (T6–T8) — stacked sobre #1; merge na ordem.
+- **#2** `feat/f1-fase1` ← `feat/f1-fase2` (T6–T8) — stacked sobre #1; **blocker de
+  review resolvido** (AD-014: segredo de prod); merge na ordem.
 - **#3** `feat/f1-fase2` ← `feat/f1-mvp` (T9–T10) — **draft**; pronto quando o T10 fechar.
 - Regra: PRs por fase, base = fase anterior; só abrir/mergear na ordem. `main` foi
   publicado (era 1 commit local à frente). Continuar a trabalhar em `feat/f1-mvp`
@@ -115,6 +125,9 @@
 1. Continuar a F1 na **Fase 3**: **T10** (home autenticada + navegação para
    Importar/Chat; não autenticado redireciona ao login). Ver
    `docs/specs/features/f1-mvp/tasks.md`.
+   - Code review dos PRs #1/#2/#3 **concluído**; achados corrigidos e já
+     propagados às branches de fase (ver AD-014/AD-015 no `STATE.md` e "WIP local").
+     Falta o force-push do stacked reescrito.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -125,12 +138,17 @@
 
 ## WIP local (não commitado)
 
-- **Árvore limpa** (fora este `CONTEXT.md`). Commits locais: `c46ad06`
-  (AGENTS.md "Fluxo de Code Review" + MCP `playwright`/`graphify` no `opencode.json`)
-  e `3df948a` (handoff). Nenhum código de F1 pendente.
-- **T1–T9 commitados e publicados** em `origin/feat/f1-mvp` (`68bc21e` T6,
-  `4dfdbdc` T7, `c42f710` T8, `943f0cb` T9, `3df948a` handoff).
-- `main` publicado (`dabd69a`); `c46ad06` ainda não empurrado para `origin/feat/f1-mvp`.
+- **Stacked reescrito para propagar os fixes** (2026-09-13): as três branches foram
+  reconstruídas em cadeia, com um commit de fix por fase:
+  - `feat/f1-fase1` ← FIX1 (`ImportError`→`ImportJobError`).
+  - `feat/f1-fase2` ← FIX2 (segredo/prod, tenancy determinística, onboarding atômico).
+  - `feat/f1-mvp` ← FIX3 (SRI do htmx) + docs (STATE AD-014/015).
+  Requer **force-push** (`--force-with-lease`) das 3 branches. Backups locais em
+  `backup/f1-fase1`, `backup/f1-fase2`, `backup/f1-mvp` até validar.
+- **Antes do rewrite:** `feat/f1-mvp` tinha `1f6d76c` (fix combinado) + `fe82904`
+  (docs). O conteúdo final é equivalente; mudou só a distribuição por fase.
+- `main` publicado (`dabd69a`); `origin/*` ainda aponta para as versões pré-rewrite
+  (`fase1=4da4153`, `fase2=c42f710`, `mvp=f3a59ed`).
 - Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify
