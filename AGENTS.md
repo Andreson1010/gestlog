@@ -131,6 +131,22 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 - Branches: `feat/`, `fix/`, `refactor/`, `data/`.
 - Commits em português, imperativo: `feat: adiciona especialista em estoque`.
 
+### Fluxo da feature (épico + task)
+
+Features grandes (ex.: F1, 34 tasks) usam uma **branch de integração** e um PR por
+task — nunca uma branch longa com force-push.
+
+- **Integração**: `feat/f1-mvp` acumula as tasks da F1. `main` só recebe a F1 no
+  fim, via um PR de release (`feat/f1-mvp → main`) + tag (`v0.1.0`).
+- **Task**: uma branch curta por task, cortada da integração, nomeada
+  `feat/f1-tXX-<slug>` (ex.: `feat/f1-t10-home-auth`).
+- **PR**: um PR por task contra a branch de integração (não contra `main`), sempre
+  com `tasks.md` e testes no mesmo PR. `main` nunca recebe push direto.
+- **Gate antes do merge**: CI verde (`black --check`, `ruff check`, `pytest`) +
+  code review com o skill **code-reviewer**. Squash-merge e apaga a branch.
+- **Sem reescrever branch compartilhada**: nada de `force-push` em `main` ou na
+  integração; corrigir com commits novos.
+
 ## Fluxo de Code Review
 
   Antes de abrir qualquer PR, executar code review com o skill **code-reviewer**.
