@@ -6,6 +6,7 @@ from gestlog.auth.backend import build_auth_backend, get_jwt_strategy
 from gestlog.auth.db import get_async_engine, get_async_session, get_user_db
 from gestlog.auth.deps import (
     current_active_user,
+    current_active_user_optional,
     exigir_papel,
     get_current_empresa,
     get_current_membership,
@@ -20,6 +21,7 @@ __all__ = [
     "build_auth_backend",
     "create_auth_router",
     "current_active_user",
+    "current_active_user_optional",
     "exigir_papel",
     "get_async_engine",
     "get_async_session",

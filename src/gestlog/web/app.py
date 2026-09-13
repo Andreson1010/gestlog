@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, Request, Response, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from gestlog.auth import create_auth_router
+from gestlog.auth import create_auth_router, current_active_user_optional
 from gestlog.config import Settings, get_settings
+from gestlog.db.models import User
 from gestlog.web.onboarding import create_onboarding_router
 
 _BASE_DIR = Path(__file__).parent
@@ -30,7 +32,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     aplicacao.include_router(create_onboarding_router())
 
     @aplicacao.get("/", response_class=HTMLResponse)
-    async def home(request: Request) -> HTMLResponse:
-        return _TEMPLATES.TemplateResponse(request, "base.html", {"titulo": "gestlog"})
+    async def home(
+        request: Request,
+        usuario: Annotated[User | None, Depends(current_active_user_optional)],
+    ) -> Response:
+        """Página inicial autenticada; sem sessão redireciona ao login."""
+        if usuario is None:
+            return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        return _TEMPLATES.TemplateResponse(
+            request, "home.html", {"titulo": "gestlog", "email": usuario.email}
+        )
+
+    @aplicacao.get("/login", response_class=HTMLResponse)
+    async def login(
+        request: Request,
+        usuario: Annotated[User | None, Depends(current_active_user_optional)],
+    ) -> Response:
+        """Formulário de login; com sessão ativa redireciona à home."""
+        if usuario is not None:
+            return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        return _TEMPLATES.TemplateResponse(
+            request, "login.html", {"titulo": "Entrar · gestlog"}
+        )
 
     return aplicacao

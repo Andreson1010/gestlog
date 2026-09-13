@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — branch `feat/f1-mvp`; T1–T9 concluídos, T10 (home autenticada) pendente. PRs incrementais stacked: #1 Fase 1, #2 Fase 2, #3 Fase 3 (draft). Retomada em 2026-09-13
+**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp`; T1–T10 concluídos, T11 (parsers de importação) é a próxima. Fluxo épico + 1 PR por task com CI (AD-016)
 
 ---
 
@@ -231,6 +231,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 013 | Executar F1 Fase 3 — T9 app factory + layout Jinja/HTMX | 2026-09-12 | — | ✅ Done |
 | 014 | Abrir PRs incrementais stacked (#1 Fase 1, #2 Fase 2, #3 Fase 3 draft) | 2026-09-12 | — | ✅ Done |
 | 015 | Code review dos 3 PRs + correções (segredo/prod, tenancy determinística, onboarding atômico) | 2026-09-13 | — | ✅ Done |
+| 016 | CI (GitHub Actions) + fluxo épico/task (AD-016; PRs #4 e #5) | 2026-09-13 | — | ✅ Done |
+| 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
 
 ---
 
