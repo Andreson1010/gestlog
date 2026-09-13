@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-13.
-> Branch: feat/f1-mvp · HEAD: 1f6d76c · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
+> Branch: feat/f1-mvp · último commit de código: c699312 · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
 
 ## Estado atual
 
@@ -143,8 +143,8 @@
   - `feat/f1-fase1` ← FIX1 (`ImportError`→`ImportJobError`).
   - `feat/f1-fase2` ← FIX2 (segredo/prod, tenancy determinística, onboarding atômico).
   - `feat/f1-mvp` ← FIX3 (SRI do htmx) + docs (STATE AD-014/015).
-  Requer **force-push** (`--force-with-lease`) das 3 branches. Backups locais em
-  `backup/f1-fase1`, `backup/f1-fase2`, `backup/f1-mvp` até validar.
+  Force-push (`--force-with-lease`) aplicado nas 3 branches. Backups locais em
+  `backup/f1-fase1`, `backup/f1-fase2`, `backup/f1-mvp` (remover quando estável).
 - **Antes do rewrite:** `feat/f1-mvp` tinha `1f6d76c` (fix combinado) + `fe82904`
   (docs). O conteúdo final é equivalente; mudou só a distribuição por fase.
 - `main` publicado (`dabd69a`); `origin/*` ainda aponta para as versões pré-rewrite
