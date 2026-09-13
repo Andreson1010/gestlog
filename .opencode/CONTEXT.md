@@ -13,9 +13,10 @@
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
   **T6–T8 (auth/tenancy/onboarding) e T9 (app factory + layout) concluídos**;
   T10 (home autenticada + navegação) pendente.
-- **PRs incrementais abertos** (stacked): **#1** Fase 1 (`main` ← `feat/f1-fase1`),
-  **#2** Fase 2 (`feat/f1-fase1` ← `feat/f1-fase2`), **#3** Fase 3 draft
-  (`feat/f1-fase2` ← `feat/f1-mvp`). `main` e branches publicados no `origin`.
+- **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
+  integração do épico; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
+  code review; release único `feat/f1-mvp → main` + tag no fim. Os PRs stacked
+  #1/#2/#3 foram fechados; PR #4 (CI) já mergeado em `main` (`f639f36`).
 - Suíte: **61 testes passando, 97,52% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - **Code review dos 3 PRs feito e achados corrigidos** (2026-09-13): AD-014
@@ -110,24 +111,23 @@
   Só extrair para pacotes quando houver deploy independente. Ver `AGENTS.md`
   §"Estrutura e fronteiras".
 
-## PRs incrementais (stacked)
+## Fluxo git (épico + task) — AD-016
 
-- **#1** `main` ← `feat/f1-fase1` (T1–T5 + docs) — pronto para review.
-- **#2** `feat/f1-fase1` ← `feat/f1-fase2` (T6–T8) — stacked sobre #1; **blocker de
-  review resolvido** (AD-014: segredo de prod); merge na ordem.
-- **#3** `feat/f1-fase2` ← `feat/f1-mvp` (T9–T10) — **draft**; pronto quando o T10 fechar.
-- Regra: PRs por fase, base = fase anterior; só abrir/mergear na ordem. `main` foi
-  publicado (era 1 commit local à frente). Continuar a trabalhar em `feat/f1-mvp`
-  (o #3 acompanha) e, a cada fase concluída, apontar a branch de fase e abrir o PR.
+- **`main` sempre verde**; recebe CI (`f639f36`) e **nunca** push direto.
+- **`feat/f1-mvp` = branch de integração da F1**; recebe as tasks via PR.
+- **Por task**: branch curta `feat/f1-tXX-<slug>` a partir de `feat/f1-mvp` → PR
+  **contra `feat/f1-mvp`** (não `main`), com `tasks.md` + testes no mesmo PR.
+- **Gate**: CI verde (`.github/workflows/ci.yml`: black/ruff/pytest) + skill
+  **code-reviewer**; squash-merge e apaga a branch.
+- **Release**: no fim da F1, um único PR `feat/f1-mvp → main` + tag `v0.1.0`.
+- **Proibido force-push** em `main`/`feat/f1-mvp`.
+- PRs stacked #1/#2/#3 foram **aposentados/fechados** (conteúdo já na integração).
 
 ## Próximos passos / bloqueios
 
-1. Continuar a F1 na **Fase 3**: **T10** (home autenticada + navegação para
-   Importar/Chat; não autenticado redireciona ao login). Ver
-   `docs/specs/features/f1-mvp/tasks.md`.
-   - Code review dos PRs #1/#2/#3 **concluído**; achados corrigidos e já
-     propagados às branches de fase (ver AD-014/AD-015 no `STATE.md` e "WIP local").
-     Falta o force-push do stacked reescrito.
+1. Executar **T10** em branch curta `feat/f1-t10-home-auth` (home autenticada +
+   navegação Importar/Chat; não autenticado redireciona ao login) → PR contra
+   `feat/f1-mvp`. Ver `docs/specs/features/f1-mvp/tasks.md`.
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -138,17 +138,13 @@
 
 ## WIP local (não commitado)
 
-- **Stacked reescrito para propagar os fixes** (2026-09-13): as três branches foram
-  reconstruídas em cadeia, com um commit de fix por fase:
-  - `feat/f1-fase1` ← FIX1 (`ImportError`→`ImportJobError`).
-  - `feat/f1-fase2` ← FIX2 (segredo/prod, tenancy determinística, onboarding atômico).
-  - `feat/f1-mvp` ← FIX3 (SRI do htmx) + docs (STATE AD-014/015).
-  Force-push (`--force-with-lease`) aplicado nas 3 branches. Backups locais em
-  `backup/f1-fase1`, `backup/f1-fase2`, `backup/f1-mvp` (remover quando estável).
-- **Antes do rewrite:** `feat/f1-mvp` tinha `1f6d76c` (fix combinado) + `fe82904`
-  (docs). O conteúdo final é equivalente; mudou só a distribuição por fase.
-- `main` publicado (`dabd69a`); `origin/*` ainda aponta para as versões pré-rewrite
-  (`fase1=4da4153`, `fase2=c42f710`, `mvp=f3a59ed`).
+- **Árvore limpa** (fora este `CONTEXT.md`/`AGENTS.md`/`STATE.md` desta sessão).
+- **`main`** = `f639f36` (CI). **`feat/f1-mvp`** (integração) = merges do CI
+  (`1ccf172`); branches de fase propagadas e publicadas.
+- **Stacked #1/#2/#3 fechados**; PR #4 (CI) mergeado em `main`.
+- **Backups locais** `backup/f1-fase1|f1-fase2|f1-mvp` ainda existem (pré-rewrite);
+  remover quando o stacked reescrito fizer sentido.
+- Nenhuma task nova em andamento; T10 é a próxima.
 - Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify

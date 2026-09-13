@@ -173,6 +173,21 @@ multi-worker, e convite por token exige envio de e-mail — ambos fora do escopo
 convidado até o hardening.
 **Impact:** capturado em Deferred Ideas; revisar antes de abrir o produto ao público.
 
+### AD-016: Fluxo épico + 1 PR por task com CI obrigatório (2026-09-13)
+
+**Decision:** tratar a F1 como produto maduro: `feat/f1-mvp` é a branch de
+integração do épico; cada task T10–T34 vira uma branch curta
+(`feat/f1-tXX-<slug>`) com PR contra a integração, `tasks.md` + testes no mesmo
+PR, CI verde (`black --check`, `ruff check`, `pytest`) e code review antes do
+squash-merge. `main` só recebe a F1 no PR de release + tag `v0.1.0`. Proibido
+`force-push` em branch compartilhada.
+**Reason:** 34 tasks exigem histórico versionado e rastreável; o modelo anterior
+(branch longa + stacked + force-push) não é aceitável para produto maduro.
+**Trade-off:** mais overhead por task (branch/PR/review) e `main` fica atrás até o
+release da F1.
+**Impact:** `.github/workflows/ci.yml` (novo); `AGENTS.md` §"Fluxo da feature
+(épico + task)"; PRs stacked #1/#2/#3 aposentados.
+
 ---
 
 ## Active Blockers
