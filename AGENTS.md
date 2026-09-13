@@ -130,3 +130,7 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 
 - Branches: `feat/`, `fix/`, `refactor/`, `data/`.
 - Commits em português, imperativo: `feat: adiciona especialista em estoque`.
+
+## Fluxo de Code Review
+
+  Antes de abrir qualquer PR, executar code review com o skill **code-reviewer**.
