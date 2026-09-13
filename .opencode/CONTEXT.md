@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-13.
-> Branch: feat/f1-mvp · último commit de código: c699312 · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
+> Branch: feat/f1-mvp (integração F1) · HEAD: bb96f39 · Entrega: épico + 1 PR por task (AD-016)
 
 ## Estado atual
 
@@ -15,11 +15,11 @@
   **T11 (parsers de importação)**; **24 tasks restantes** (T12–T34).
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
   integração do épico; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
-  code review; release único `feat/f1-mvp → main` + tag no fim. Os PRs stacked
-  #1/#2/#3 foram fechados; PR #4 (CI) já mergeado em `main` (`f639f36`).
-- Suíte: **61 testes passando, 97,52% de cobertura** (`uv run pytest`),
+  code review; release único `feat/f1-mvp → main` + tag no fim. Detalhes em
+  `AGENTS.md` §"Fluxo da feature (épico + task)" e neste arquivo §"Fluxo git".
+- Suíte: **81 testes passando, 96,76% de cobertura** (`uv run pytest`),
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
-- **Code review dos 3 PRs feito e achados corrigidos** (2026-09-13): AD-014
+- **Code review dos PRs antigos feito e achados corrigidos** (2026-09-13): AD-014
   (`AMBIENTE=prod` exige `AUTH_SECRET` forte), tenancy determinística e
   onboarding/convite atômicos. Pendências de hardening registradas em AD-015.
 - Estrutura: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`, `agents/`,
@@ -91,6 +91,18 @@
   onboarding/convite atômicos numa única transação usando `PasswordHelper`) e LOWs
   (Literals mortos removidos; `ImportError`→`ImportJobError`; SRI no htmx). Rate
   limiting e convite por token adiados (AD-015). Suíte 61 testes/97,52%.
+- **Fluxo maduro de entrega (AD-016)** — a pedido do usuário, para tratar a F1
+  (34 tasks) como produto maduro: CI no GitHub Actions (`.github/workflows/ci.yml`,
+  `main` em `f639f36`; PR #4) + **épico `feat/f1-mvp` com 1 PR por task** (branch
+  `feat/f1-tXX-*`), gate de CI + `code-reviewer`, squash-merge, release único
+  `feat/f1-mvp → main` + tag `v0.1.0`, proibido force-push. Documentado no
+  `AGENTS.md` §"Fluxo da feature (épico + task)" (PR #5). Stacked #1/#2/#3 fechados.
+- **T10 concluído** (PR #6, `5c10370`): `GET /` exige sessão (303 → `/login`) e
+  `GET /login` renderiza o formulário (HTMX → `POST /auth/login`); com sessão, vai
+  à home. Nova dep `current_active_user_optional`. 4 testes de integração.
+- **T11 concluído** (PR #8, `debdddd`): pacote `src/gestlog/ingestion/` — leitura
+  CSV (`,`/`;`, UTF-8/latin-1) e XLSX, validação/normalização por tipo
+  (estoque/fornecedores/transporte) com erros por linha. 17 testes unitários.
 
 ## Decisões e regras (não esquecer)
 
@@ -143,11 +155,12 @@
 ## WIP local (não commitado)
 
 - **Árvore limpa** (fora este `CONTEXT.md`/`AGENTS.md`/`STATE.md` desta sessão).
-- **`main`** = `f639f36` (CI). **`feat/f1-mvp`** (integração) = `debdddd`.
-- **Fechados**: stacked #1/#2/#3; PRs #4/#5 (CI/processo), #6 (T10), #7 (handoff),
-  #8 (T11). Nenhum PR aberto.
+- **`main`** = `f639f36` (CI). **`feat/f1-mvp`** (integração) = `bb96f39`.
+- **Fechados**: stacked #1/#2/#3; PRs #4 (CI), #5 (processo), #6 (T10), #7
+  (handoff), #8 (T11), #9 (handoff). **Nenhum PR aberto.**
 - **T10 e T11 concluídos** na integração (`5c10370`, `debdddd`); nenhuma task em
   andamento; **T12** é a próxima.
+- Sessão encerrada em 2026-09-13; árvore limpa (só este handoff a commitar).
 - **Backups locais** `backup/f1-fase1|f1-fase2|f1-mvp` ainda existem (pré-rewrite);
   remover quando o stacked reescrito fizer sentido.
 - Worktrees: nenhum (`git worktree list` = só o principal).
@@ -181,6 +194,11 @@
 ---
 # Histórico (sessões anteriores, resumido)
 
+- **2026-09-13:** validação do handoff anterior; commits locais e push; code review
+  dos 3 PRs stacked (skill `code-reviewer`) com correções CRITICAL/MEDIUM/LOW
+  (AD-014/AD-015); stacked reescrito para propagar os fixes; adoção do fluxo
+  épico + 1 PR por task com CI (AD-016, PR #4/#5); T10 (home autenticada) no PR #6
+  e T11 (parsers de importação) no PR #8.
 - **2026-09-11 (esta sessão):** scaffolding do `.opencode/` copiado do medasist e
   generalizado (skills + agentes); PRD + artefatos TLC escritos; git inicializado
   e remoto (`31c7368`); F1 planejada e iniciada — Fase 1 concluída na branch
