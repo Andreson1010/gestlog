@@ -1,7 +1,7 @@
 # State
 
 **Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp`; T1–T10 concluídos, T11 (parsers de importação) é a próxima. Fluxo épico + 1 PR por task com CI (AD-016)
+**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp`; T1–T11 concluídos, T12 (serviço de importação) é a próxima. Fluxo épico + 1 PR por task com CI (AD-016)
 
 ---
 
@@ -233,6 +233,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 015 | Code review dos 3 PRs + correções (segredo/prod, tenancy determinística, onboarding atômico) | 2026-09-13 | — | ✅ Done |
 | 016 | CI (GitHub Actions) + fluxo épico/task (AD-016; PRs #4 e #5) | 2026-09-13 | — | ✅ Done |
 | 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
+| 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
 
 ---
 
