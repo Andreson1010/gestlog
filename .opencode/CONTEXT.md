@@ -1,7 +1,7 @@
 # Contexto da Sessão — Scaffolding opencode + PRD + execução da F1
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-12.
-> Branch: feat/f1-mvp · HEAD: 943f0cb · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-13.
+> Branch: feat/f1-mvp · HEAD: c46ad06 · PRs stacked: #1 (Fase 1), #2 (Fase 2), #3 draft (Fase 3)
 
 ## Estado atual
 
@@ -125,16 +125,21 @@
 
 ## WIP local (não commitado)
 
-- Apenas este `.opencode/CONTEXT.md` (handoff da sessão), a commitar.
-- Código limpo: **T1–T9 commitados e publicados** em `origin/feat/f1-mvp`
-  (`68bc21e` T6, `4dfdbdc` T7, `c42f710` T8, `943f0cb` T9).
-- `main` publicado (`dabd69a`); **11 commits** de F1 à frente de `origin/main`.
+- **Árvore limpa** (fora este `CONTEXT.md`). Commits locais: `c46ad06`
+  (AGENTS.md "Fluxo de Code Review" + MCP `playwright`/`graphify` no `opencode.json`)
+  e `3df948a` (handoff). Nenhum código de F1 pendente.
+- **T1–T9 commitados e publicados** em `origin/feat/f1-mvp` (`68bc21e` T6,
+  `4dfdbdc` T7, `c42f710` T8, `943f0cb` T9, `3df948a` handoff).
+- `main` publicado (`dabd69a`); `c46ad06` ainda não empurrado para `origin/feat/f1-mvp`.
 - Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify
 
-- graphify indisponível neste projeto (não há servidor MCP no `opencode.json` —
-  que contém apenas `instructions: ["AGENTS.md"]`).
+- `opencode.json` configura MCP `playwright` + `graphify` (commit `c46ad06`). O tool
+  `graphify` está disponível nesta sessão.
+- Porém o MCP `graphify` aponta para `medasist\graphify-out\graph.json` (projeto
+  alheio); **não existe** `graphify-out/` no gestlog. O grafo do gestlog ainda não
+  foi gerado — queries estruturais aqui não refletem este repositório.
 
 ## Documentos de projeto relevantes
 
