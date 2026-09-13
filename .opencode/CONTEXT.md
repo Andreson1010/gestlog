@@ -11,8 +11,8 @@
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch `feat/f1-mvp`: Fase 1 (T1–T5) concluída +
   rename `Tenant`→`Empresa`; **catálogo de ferramentas fechado** (AD-010);
-  **T6–T8 (auth/tenancy/onboarding), T9 (app factory + layout) e T10 (home
-  autenticada + redirect ao login) concluídos**; 25 tasks restantes (T11–T34).
+  **T6–T10 concluídos** (auth/tenancy/onboarding, app factory, home autenticada) e
+  **T11 (parsers de importação)**; **24 tasks restantes** (T12–T34).
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
   integração do épico; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
   code review; release único `feat/f1-mvp → main` + tag no fim. Os PRs stacked
@@ -125,11 +125,13 @@
 
 ## Próximos passos / bloqueios
 
-1. Executar **T11** (parsers e validadores de importação) em branch curta
-   `feat/f1-t11-parsers` → PR contra `feat/f1-mvp` (CI + code review). T11 é `[P]`
-   e depende só de T2. Depois T12 → T13. Ver `docs/specs/features/f1-mvp/tasks.md`.
-   - T10 entregue no PR #6 (`5c10370`); home `/` exige sessão (303 → `/login`) e
-     `GET /login` renderiza o formulário.
+1. Executar **T12** (serviço de importação e status: persistir `ImportJob`/
+   `ImportError`, upsert e histórico por empresa) em branch curta
+   `feat/f1-t12-import-service` → PR contra `feat/f1-mvp` (CI + code review).
+   Depende de T5 e T11. Depois T13 (UI de upload). Política de upsert é open
+   question no `design.md`.
+   - T10 entregue no PR #6 (`5c10370`); T11 no PR #8 (`debdddd`, pacote
+     `src/gestlog/ingestion/`).
 2. ~~Capturar as tools~~ — **resolvido em 2026-09-12** (AD-010); catálogo no
    `design.md`.
 3. ~~Corrigir a descoberta de skills do projeto~~ — **resolvido**: as skills de
@@ -141,13 +143,13 @@
 ## WIP local (não commitado)
 
 - **Árvore limpa** (fora este `CONTEXT.md`/`AGENTS.md`/`STATE.md` desta sessão).
-- **`main`** = `f639f36` (CI). **`feat/f1-mvp`** (integração) = merges do CI
-  (`1ccf172`); branches de fase propagadas e publicadas.
-- **Stacked #1/#2/#3 fechados**; PR #4 (CI) mergeado em `main`.
+- **`main`** = `f639f36` (CI). **`feat/f1-mvp`** (integração) = `debdddd`.
+- **Fechados**: stacked #1/#2/#3; PRs #4/#5 (CI/processo), #6 (T10), #7 (handoff),
+  #8 (T11). Nenhum PR aberto.
+- **T10 e T11 concluídos** na integração (`5c10370`, `debdddd`); nenhuma task em
+  andamento; **T12** é a próxima.
 - **Backups locais** `backup/f1-fase1|f1-fase2|f1-mvp` ainda existem (pré-rewrite);
   remover quando o stacked reescrito fizer sentido.
-- **T10 concluído** (PR #6, `5c10370`) na integração; nenhuma task em andamento;
-  T11 é a próxima.
 - Worktrees: nenhum (`git worktree list` = só o principal).
 
 ## Artefatos do graphify
