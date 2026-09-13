@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gestlog.auth import accounts, exigir_papel
 from gestlog.auth.db import get_async_session
-from gestlog.auth.manager import UserManager, get_user_manager
 from gestlog.db.models import Membership
 from gestlog.web.schemas import ContaCreate, ConviteCreate
 
@@ -24,11 +23,10 @@ def create_onboarding_router() -> APIRouter:
     async def onboarding(
         corpo: ContaCreate,
         session: Annotated[AsyncSession, Depends(get_async_session)],
-        user_manager: Annotated[UserManager, Depends(get_user_manager)],
     ) -> dict[str, str]:
         try:
             empresa, usuario = await accounts.criar_conta(
-                session, user_manager, corpo.nome_empresa, corpo.email, corpo.senha
+                session, corpo.nome_empresa, corpo.email, corpo.senha
             )
         except exceptions.UserAlreadyExists as exc:
             raise HTTPException(
@@ -42,12 +40,10 @@ def create_onboarding_router() -> APIRouter:
         corpo: ConviteCreate,
         admin: Annotated[Membership, Depends(exigir_papel("admin"))],
         session: Annotated[AsyncSession, Depends(get_async_session)],
-        user_manager: Annotated[UserManager, Depends(get_user_manager)],
     ) -> dict[str, str]:
         try:
             vinculo = await accounts.convidar_usuario(
                 session,
-                user_manager,
                 admin.empresa_id,
                 corpo.email,
                 corpo.papel,

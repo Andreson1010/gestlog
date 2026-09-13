@@ -9,6 +9,7 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi_users.password import PasswordHelper
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from gestlog.auth import (
@@ -157,3 +158,26 @@ async def test_guard_de_papel_nego_operador(
     await client.post("/auth/logout")
     await _login(client, "op@empresa.com")
     assert (await client.get("/admin")).status_code == 403
+
+
+async def test_multiplos_vinculos_resolve_o_mais_antigo(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    primeira = await _criar_empresa_com_usuario(engine, "A", "multi@empresa.com")
+    factory = build_async_session_factory(engine)
+    async with factory() as session:
+        segunda = Empresa(nome="B")
+        session.add(segunda)
+        await session.flush()
+        stmt = select(User).where(User.email == "multi@empresa.com")
+        usuario = (await session.execute(stmt)).scalars().first()
+        session.add(
+            Membership(user_id=usuario.id, empresa_id=segunda.id, papel="operador")
+        )
+        await session.commit()
+
+    await _login(client, "multi@empresa.com")
+    resposta = await client.get("/empresa")
+
+    assert resposta.status_code == 200
+    assert resposta.json()["id"] == str(primeira.id)

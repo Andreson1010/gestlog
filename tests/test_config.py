@@ -44,6 +44,28 @@ def test_valores_positivos_obrigatorios(campo: str, valor: int) -> None:
         Settings(_env_file=None, **{campo: valor})
 
 
+def test_dev_aceita_segredo_padrao() -> None:
+    settings = Settings(_env_file=None)
+    assert settings.ambiente == "dev"
+    assert settings.auth_secret == "dev-secret-change-me"
+
+
+def test_prod_rejeita_segredo_de_dev() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, ambiente="prod")
+
+
+def test_prod_rejeita_segredo_curto() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, ambiente="prod", auth_secret="curto")
+
+
+def test_prod_aceita_segredo_forte() -> None:
+    segredo = "s" * 40
+    settings = Settings(_env_file=None, ambiente="prod", auth_secret=segredo)
+    assert settings.auth_secret == segredo
+
+
 def test_supervisor_model_override() -> None:
     settings = Settings(_env_file=None, supervisor_model="llama3.1")
     assert settings.supervisor_llm_model == "llama3.1"

@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+SEGREDO_DEV = "dev-secret-change-me"
+TAMANHO_MINIMO_SEGREDO = 32
 
 
 class Settings(BaseSettings):
@@ -28,12 +32,26 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     database_url: str = "postgresql+psycopg://gestlog:gestlog@localhost:5432/gestlog"
-    auth_secret: str = "dev-secret-change-me"
+    ambiente: Literal["dev", "prod"] = "dev"
+    auth_secret: str = SEGREDO_DEV
     auth_cookie_name: str = "gestlog_auth"
     auth_cookie_secure: bool = True
     session_expire_minutes: int = Field(default=1440, gt=0)
     default_retention_days: int = Field(default=365, gt=0)
     llm_monthly_token_quota: int = Field(default=1_000_000, gt=0)
+
+    @model_validator(mode="after")
+    def _validar_segredo(self) -> Settings:
+        """Impede segredo de desenvolvimento/curto quando ``ambiente`` é prod."""
+        if self.ambiente != "prod":
+            return self
+        if self.auth_secret == SEGREDO_DEV:
+            raise ValueError("AUTH_SECRET deve ser definido quando AMBIENTE=prod.")
+        if len(self.auth_secret) < TAMANHO_MINIMO_SEGREDO:
+            raise ValueError(
+                f"AUTH_SECRET deve ter ao menos {TAMANHO_MINIMO_SEGREDO} caracteres."
+            )
+        return self
 
     @property
     def supervisor_llm_model(self) -> str:

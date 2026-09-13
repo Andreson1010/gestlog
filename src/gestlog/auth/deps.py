@@ -37,8 +37,16 @@ async def get_current_membership(
     user: Annotated[User, Depends(current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> Membership:
-    """Resolve o vínculo do usuário com a empresa (403 se não houver)."""
-    stmt = select(Membership).where(Membership.user_id == user.id)
+    """Resolve o vínculo do usuário com a empresa (403 se não houver).
+
+    O MVP assume um vínculo por usuário; se houver mais de um, usa o mais
+    antigo de forma determinística. Seleção de empresa ativa fica para depois.
+    """
+    stmt = (
+        select(Membership)
+        .where(Membership.user_id == user.id)
+        .order_by(Membership.created_at, Membership.id)
+    )
     membership = (await session.execute(stmt)).scalars().first()
     if membership is None:
         raise HTTPException(
