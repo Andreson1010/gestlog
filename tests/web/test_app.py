@@ -19,6 +19,7 @@ def test_pagina_base_renderiza() -> None:
     assert resposta.status_code == 200
     assert "gestlog" in resposta.text
     assert "/static/app.css" in resposta.text
+    assert 'integrity="sha384-' in resposta.text
 
 
 def test_assets_estaticos_servidos() -> None:
