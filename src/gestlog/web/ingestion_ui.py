@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from gestlog.auth import current_active_user_optional, get_current_empresa
 from gestlog.config import get_settings
@@ -29,10 +29,15 @@ def _get_sync_engine() -> Engine:
     return build_engine(get_settings())
 
 
+@lru_cache(maxsize=1)
+def _get_sync_factory() -> sessionmaker[Session]:
+    """Retorna (e memoiza) a fábrica de sessões síncronas de importação."""
+    return build_session_factory(_get_sync_engine())
+
+
 def get_sync_session() -> Iterator[Session]:
     """Fornece uma sessão síncrona por requisição para a importação."""
-    factory = build_session_factory(_get_sync_engine())
-    with factory() as session:
+    with _get_sync_factory()() as session:
         yield session
 
 
