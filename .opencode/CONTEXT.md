@@ -40,6 +40,10 @@
   FastAPI + `get_sync_session`), templates `importar.html`,
   `importar_resultado.html` e `historico.html`, CSS; 8 testes de integração.
   Gate local verde (**96 testes, 96,77%**). Code review sem CRITICAL/HIGH.
+- **Self-review do T13 executado** (fase 5.5 do `feature-factory`, agora aplicada
+  também a tasks atômicas): subagente `developer-self-reviewer` corrigiu a
+  memoização do `sessionmaker` sync em `ingestion_ui.py` e gerou a ADR
+  `docs/adr/t13-upload-ui-self-review.md`. Incluído no PR #13 (commit `297b77f`).
 
 
 ## Decisões e regras (não esquecer)
@@ -65,15 +69,21 @@
   3. testes junto do código (happy/edge/falha), gate local
      (`uv run pytest` + `black` + `ruff`);
   4. commit em PT `feat(f1): ...` e **PR contra `feat/f1-mvp`**;
-  5. **code review obrigatório** (`code-reviewer`); Critical/Important bloqueiam;
-  6. squash-merge na integração e apagar a branch.
+  5. **self-review obrigatório** — subagente `developer-self-reviewer` (fase 5.5
+     do `feature-factory`) gera `docs/adr/<slug>-self-review.md` e corrige
+     achados menores; **roda também em tasks atômicas** (todo PR é revisado por
+     pares);
+  6. **code review obrigatório** (`code-reviewer`); Critical/Important bloqueiam;
+  7. squash-merge na integração e apagar a branch.
 
 ## Próximos passos / bloqueios
 
 1. **T13 — CONCLUÍDO** (PR **#13** aberto contra `feat/f1-mvp`, aguardando CI +
    merge). UI HTMX de upload e histórico em `src/gestlog/web/ingestion_ui.py`
    (+ `get_sync_session`, templates `importar.html`/`importar_resultado.html`/
-   `historico.html`); 8 testes de integração. Gate local verde (96/96,77%).
+   `historico.html`); 8 testes de integração. **Self-review executado**:
+   ADR em `docs/adr/t13-upload-ui-self-review.md` + memoização do
+   `sessionmaker` sync. Gate local verde (96/96,77%).
 2. **T14 — PENDENTE** (próxima ação após o merge do #13): tools de estoque por
    empresa — `consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes` lendo
    do repositório do tenant + novas `prever_demanda`/`otimizar_armazem`/
@@ -137,7 +147,8 @@
 
 - **2026-09-14 (continuado):** commit do WIP do pipeline (feature-factory +
   `developer-self-reviewer`, `2443b92`, enviado a `origin/feat/f1-mvp`); **T13
-  concluído** (PR #13) — UI HTMX de upload/histórico + 8 testes (96/96,77%).
+  concluído** (PR #13) — UI HTMX de upload/histórico + 8 testes (96/96,77%);
+  **self-review do T13** com ADR `docs/adr/t13-upload-ui-self-review.md`.
 - **2026-09-14:** validação do handoff; correções de HEAD/suíte/WIP; confirmação
   de 34 tasks; `code-reviewer/SKILL.md` generalizado; **T12 concluído** (PR #12,
   `224f918`) — serviço de importação/status + 6 testes (88/97,00%).
