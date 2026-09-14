@@ -1,0 +1,15 @@
+{% if erro %}
+<p class="erro-importar" role="alert">{{ erro }}</p>
+{% elif job %}
+<p class="sucesso-importar">
+  Importação <strong>{{ job.tipo }}</strong> concluída: {{ job.aceitas }} aceitas
+  · {{ job.rejeitadas }} rejeitadas.
+</p>
+{% if job.errors %}
+<ul class="erros-linha">
+  {% for e in job.errors %}
+  <li>Linha {{ e.linha }}: {{ e.motivo }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endif %}
