@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy import select
+
 from gestlog.db.models import ImportJob, ImportJobError
 from gestlog.repositories.base import EmpresaScopedRepository
 
@@ -35,3 +37,12 @@ class ImportJobRepository(EmpresaScopedRepository[ImportJob]):
         job.status = status
         self.session.flush()
         return job
+
+    def history(self, empresa_id: UUID) -> list[ImportJob]:
+        """Lista as importações do empresa, mais recentes primeiro."""
+        stmt = (
+            select(ImportJob)
+            .where(ImportJob.empresa_id == empresa_id)
+            .order_by(ImportJob.created_at.desc())
+        )
+        return list(self.session.execute(stmt).scalars().all())
