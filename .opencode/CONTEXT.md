@@ -1,15 +1,16 @@
-# Contexto da Sessão — F1 do gestlog: T12 concluído, T13 pendente
+# Contexto da Sessão — F1 do gestlog: T13 concluído, T14 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-14.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `224f918` · Entrega: épico + 1 PR por task (AD-016)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `2443b92` · Entrega: épico + 1 PR por task (AD-016)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool` de dados mockados.
   Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T12
-  CONCLUÍDOS**; **22 tasks PENDENTES (T13–T34)** — confirmado em
+- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T13
+  CONCLUÍDOS** (T13 com **PR #13 aberto** aguardando merge); **21 tasks
+  PENDENTES (T14–T34)** — confirmado em
   `docs/specs/features/f1-mvp/tasks.md` (34 tasks no total).
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
@@ -19,7 +20,7 @@
   #1/#2/#3 fechados (não usados).
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-- **Suíte**: **88 testes, 97,00% de cobertura** (`uv run pytest`, após o T12);
+- **Suíte**: **96 testes, 96,77% de cobertura** (`uv run pytest`, após o T13);
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
   `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`),
@@ -27,24 +28,19 @@
 
 ## O que foi feito nesta sessão (2026-09-14)
 
-- **Validação do handoff anterior** contra o repo (`git log`/branches/PRs/suíte).
-- **Correção do `CONTEXT.md`** (3 divergências): HEAD `c5ee5e7`→`aad4e30`; suíte
-  `81/96,76%`→`82/96,77%`; WIP (o `CONTEXT.md` já estava commitado em `aad4e30`,
-  PR #11 — não há mais nada a commitar além desta edição).
-- Confirmação de que `tasks.md` tem **34 tasks** e T12 é a próxima.
-- **Explicação do fluxo de implementação** (AD-016 + skills `ship-feature` /
-  `build-with-tests`), com o ajuste de que a base é `feat/f1-mvp` (não `main`).
-- **`code-reviewer/SKILL.md` generalizado** (incorporado ao squash `224f918`):
-  as categorias novas (prompt injection, data leakage, multi-agent/LLM graphs,
-  token inefficiency, retry/backoff) foram reescritas em inglês, no estilo `— `
-  das demais, e **sem menções específicas de projeto**, preservando a regra de
-  skills agnósticas.
-- **T12 CONCLUÍDO** (PR #12, squash `224f918`): `ingestion/servico.py` com
-  `importar()` (valida → upsert por tipo nas repos do tenant → grava
-  `ImportJob`/`ImportError` → finaliza com contagens) e `historico()`;
-  `ImportJobRepository.history()` ordenado; 6 testes de integração. Gate local
-  verde (**88 testes, 97,00%**). Code review sem CRITICAL/HIGH.
-- **Sem outras alterações de código** nesta sessão.
+- **Validação do handoff anterior** contra o repo; correção das divergências de
+  WIP (commit do pipeline feature-factory + novo agente `developer-self-reviewer`,
+  hoje em `2443b92`).
+- **Commit do WIP do pipeline** (`2443b92`): `feature-factory/SKILL.md` com a
+  **fase 5.5 — Developer Self-Review & ADR** + novo subagente
+  `developer-self-reviewer`; `CONTEXT.md` atualizado. Enviado a `origin/feat/f1-mvp`.
+- **T13 CONCLUÍDO** (PR **#13** aberto contra `feat/f1-mvp`): UI HTMX de upload e
+  histórico de importação em `src/gestlog/web/ingestion_ui.py` (rotas `GET/POST
+  /importar` e `GET /importar/historico`, handlers `def` no threadpool do
+  FastAPI + `get_sync_session`), templates `importar.html`,
+  `importar_resultado.html` e `historico.html`, CSS; 8 testes de integração.
+  Gate local verde (**96 testes, 96,77%**). Code review sem CRITICAL/HIGH.
+
 
 ## Decisões e regras (não esquecer)
 
@@ -74,34 +70,31 @@
 
 ## Próximos passos / bloqueios
 
-1. **T13 — PENDENTE** (próxima ação): UI HTMX de upload e de status/histórico de
-   importação em `src/gestlog/web/`. Branch `feat/f1-t13-upload-ui` → PR contra
-   `feat/f1-mvp`. Depende de T10 + T12 (ambos concluídos). Consome
-   `ingestion.importar()` e `ingestion.historico()`.
-   - Política de upsert (open question no `design.md`): **resolvida como
-     substituir** (T12 usa o `upsert` das repos do T5).
-2. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
-3. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
+1. **T13 — CONCLUÍDO** (PR **#13** aberto contra `feat/f1-mvp`, aguardando CI +
+   merge). UI HTMX de upload e histórico em `src/gestlog/web/ingestion_ui.py`
+   (+ `get_sync_session`, templates `importar.html`/`importar_resultado.html`/
+   `historico.html`); 8 testes de integração. Gate local verde (96/96,77%).
+2. **T14 — PENDENTE** (próxima ação após o merge do #13): tools de estoque por
+   empresa — `consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes` lendo
+   do repositório do tenant + novas `prever_demanda`/`otimizar_armazem`/
+   `otimizar_custos`. Branch `feat/f1-t14-*` → PR contra `feat/f1-mvp`. Depende de
+   T5 (repos). Policy de upsert (T12) = **substituir**.
+3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+4. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
    seleção de "empresa ativa" para usuários com múltiplos vínculos.
-4. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
+5. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
    `.opencode/`; o `node_modules/` não foi copiado).
-5. Opcional: remover os backups locais `backup/f1-fase1|f1-fase2|f1-mvp`
+6. Opcional: remover os backups locais `backup/f1-fase1|f1-fase2|f1-mvp`
    (pré-rewrite do stacked, sem uso) com `git branch -D`.
 
 ## WIP local (não commitado)
 
-- **Alterações pendentes (3)**:
-  - `.opencode/CONTEXT.md` (`M`, esta edição de handoff).
-  - `.opencode/skills/feature-factory/SKILL.md` (`M`): pipeline estendido com a
-    **fase 5.5 — Developer Self-Review & ADR** (roda após frontend-builder, antes
-    do test-verifier; `developer-self-reviewer` aplica correções locais, detecta
-    falha fatal → BLOCKED, e grava `docs/adr/<slug>-self-review.md`); lista de
-    agentes e tabela de falhas atualizadas.
-  - `.opencode/agent/developer-self-reviewer.md` (`??`, novo subagente) —
-    necessária para a fase 5.5.
-  - Nenhum arquivo de código do produto tocado.
-- `main` = `f639f36`; `feat/f1-mvp` (integração) = `224f918`; **nenhum PR aberto**.
-  Branch da task `feat/f1-t12-import-service` foi apagada (local e remoto).
+- **Única alteração pendente**: `.opencode/CONTEXT.md` (`M`, esta edição de
+  handoff pós-T13). Nenhum arquivo de código do produto tocado.
+- `main` = `f639f36`; `feat/f1-mvp` (integração) = `2443b92` (inclui o commit do
+  pipeline feature-factory + CONTEXT T12, já enviado ao origin); **PR #13
+  aberto** (T13, contra `feat/f1-mvp`). Branches `feat/f1-t12-import-service` e
+  `feat/f1-t13-upload-ui` (local) ainda existem.
 - T12 concluído; **T13** é a próxima.
 - Worktrees: nenhum (só o principal).
 
@@ -142,6 +135,9 @@
 
 # Histórico (sessões anteriores, resumido)
 
+- **2026-09-14 (continuado):** commit do WIP do pipeline (feature-factory +
+  `developer-self-reviewer`, `2443b92`, enviado a `origin/feat/f1-mvp`); **T13
+  concluído** (PR #13) — UI HTMX de upload/histórico + 8 testes (96/96,77%).
 - **2026-09-14:** validação do handoff; correções de HEAD/suíte/WIP; confirmação
   de 34 tasks; `code-reviewer/SKILL.md` generalizado; **T12 concluído** (PR #12,
   `224f918`) — serviço de importação/status + 6 testes (88/97,00%).
