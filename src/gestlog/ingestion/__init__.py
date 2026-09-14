@@ -17,6 +17,7 @@ from gestlog.ingestion.modelos import (
     ResultadoImportacao,
 )
 from gestlog.ingestion.parser import COLUNAS_OBRIGATORIAS, analisar
+from gestlog.ingestion.servico import historico, importar
 
 __all__ = [
     "COLUNAS_OBRIGATORIAS",
@@ -31,4 +32,6 @@ __all__ = [
     "ResultadoImportacao",
     "TipoImportacaoInvalido",
     "analisar",
+    "historico",
+    "importar",
 ]
