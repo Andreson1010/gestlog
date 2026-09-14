@@ -1,7 +1,7 @@
-# Contexto da Sessão — F1 do gestlog: T13 concluído, T14 pendente
+# Contexto da Sessão — F1 do gestlog: T13 mergeado, T14 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-14.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `2443b92` · Entrega: épico + 1 PR por task (AD-016)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `fcd93fc` · Entrega: épico + 1 PR por task (AD-016)
 
 ## Estado atual
 
@@ -9,8 +9,8 @@
   transporte / fornecedores / estoque) com tools `@tool` de dados mockados.
   Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T13
-  CONCLUÍDOS** (T13 com **PR #13 aberto** aguardando merge); **21 tasks
-  PENDENTES (T14–T34)** — confirmado em
+  CONCLUÍDOS** (T13 mergeado, squash `fcd93fc`); **21 tasks PENDENTES
+  (T14–T34)** — confirmado em
   `docs/specs/features/f1-mvp/tasks.md` (34 tasks no total).
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
@@ -78,33 +78,33 @@
 
 ## Próximos passos / bloqueios
 
-1. **T13 — CONCLUÍDO** (PR **#13** aberto contra `feat/f1-mvp`, aguardando CI +
-   merge). UI HTMX de upload e histórico em `src/gestlog/web/ingestion_ui.py`
-   (+ `get_sync_session`, templates `importar.html`/`importar_resultado.html`/
-   `historico.html`); 8 testes de integração. **Self-review executado**:
-   ADR em `docs/adr/t13-upload-ui-self-review.md` + memoização do
-   `sessionmaker` sync. Gate local verde (96/96,77%).
-2. **T14 — PENDENTE** (próxima ação após o merge do #13): tools de estoque por
-   empresa — `consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes` lendo
-   do repositório do tenant + novas `prever_demanda`/`otimizar_armazem`/
-   `otimizar_custos`. Branch `feat/f1-t14-*` → PR contra `feat/f1-mvp`. Depende de
-   T5 (repos). Policy de upsert (T12) = **substituir**.
+1. **T13 — CONCLUÍDO e MERGEADO** (squash `fcd93fc` no `feat/f1-mvp`). UI HTMX
+   de upload e histórico em `src/gestlog/web/ingestion_ui.py` (+
+   `get_sync_session`, templates `importar.html`/`importar_resultado.html`/
+   `historico.html`); 8 testes de integração. **Self-review executado**: ADR em
+   `docs/adr/t13-upload-ui-self-review.md` + memoização do `sessionmaker` sync.
+2. **T14 — PENDENTE** (próxima ação, próxima sessão): tools de estoque por
+   empresa — `consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes`
+   lendo do repositório do tenant + novas `prever_demanda`/`otimizar_armazem`/
+   `otimizar_custos`. Branch `feat/f1-t14-*` → PR contra `feat/f1-mvp`. Depende
+   de T5 (repos). Fluxo da task já inclui **self-review + ADR** antes do
+   code-review. Policy de upsert (T12) = **substituir**.
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 4. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
    seleção de "empresa ativa" para usuários com múltiplos vínculos.
 5. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
    `.opencode/`; o `node_modules/` não foi copiado).
 6. Opcional: remover os backups locais `backup/f1-fase1|f1-fase2|f1-mvp`
-   (pré-rewrite do stacked, sem uso) com `git branch -D`.
+   (pré-rewrite do stacked, sem uso) com `git branch -D`. (f1-fase1 já removido.)
 
 ## WIP local (não commitado)
 
 - **Única alteração pendente**: `.opencode/CONTEXT.md` (`M`, esta edição de
-  handoff pós-T13). Nenhum arquivo de código do produto tocado.
-- `main` = `f639f36`; `feat/f1-mvp` (integração) = `2443b92` (inclui o commit do
-  pipeline feature-factory + CONTEXT T12, já enviado ao origin); **PR #13
-  aberto** (T13, contra `feat/f1-mvp`). Branches `feat/f1-t12-import-service` e
-  `feat/f1-t13-upload-ui` (local) ainda existem.
+  handoff final). Nenhum arquivo de código do produto tocado.
+- `main` = `f639f36`; `feat/f1-mvp` (integração) = `fcd93fc` (T13 mergeado);
+  **nenhum PR aberto**. Branches de task `feat/f1-t12-import-service` e
+  `feat/f1-t13-upload-ui` apagadas (local e remoto). Backup `backup/f1-fase1`
+  removido localmente nesta sessão.
 - T12 concluído; **T13** é a próxima.
 - Worktrees: nenhum (só o principal).
 
@@ -147,8 +147,10 @@
 
 - **2026-09-14 (continuado):** commit do WIP do pipeline (feature-factory +
   `developer-self-reviewer`, `2443b92`, enviado a `origin/feat/f1-mvp`); **T13
-  concluído** (PR #13) — UI HTMX de upload/histórico + 8 testes (96/96,77%);
-  **self-review do T13** com ADR `docs/adr/t13-upload-ui-self-review.md`.
+  concluído e mergeado** (PR #13, squash `fcd93fc`) — UI HTMX de upload/histórico
+  + 8 testes (96/96,77%); **self-review do T13** com ADR
+  `docs/adr/t13-upload-ui-self-review.md`; fluxo da task passou a exigir
+  self-review + ADR.
 - **2026-09-14:** validação do handoff; correções de HEAD/suíte/WIP; confirmação
   de 34 tasks; `code-reviewer/SKILL.md` generalizado; **T12 concluído** (PR #12,
   `224f918`) — serviço de importação/status + 6 testes (88/97,00%).
