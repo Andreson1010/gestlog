@@ -1,48 +1,50 @@
-# Contexto da Sessão — F1 do gestlog: processo maduro + T10/T11
+# Contexto da Sessão — F1 do gestlog: T12 concluído, T13 pendente
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-13.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `c5ee5e7` · Entrega: épico + 1 PR por task (AD-016)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-14.
+> Branch: `feat/f1-mvp` (integração) · HEAD: `224f918` · Entrega: épico + 1 PR por task (AD-016)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool` de dados mockados.
   Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T11
-  concluídos**; **23 tasks restantes (T12–T34)**. Stack travado (AD-007):
-  FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
+- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T12
+  CONCLUÍDOS**; **22 tasks PENDENTES (T13–T34)** — confirmado em
+  `docs/specs/features/f1-mvp/tasks.md` (34 tasks no total).
+- Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
+  FastAPI Users.
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
   integração; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
-  `code-reviewer`; release único `feat/f1-mvp → main` + tag `v0.1.0`. Os PRs
-  stacked #1/#2/#3 foram fechados. Ver `AGENTS.md` §"Fluxo da feature (épico + task)".
-- **CI**: `.github/workflows/ci.yml` na `main` (`f639f36`) — `black --check`,
+  `code-reviewer`; release único `feat/f1-mvp → main` + tag `v0.1.0`. Stacked
+  #1/#2/#3 fechados (não usados).
+- **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-- **Suíte**: **81 testes, 96,76% de cobertura** (`uv run pytest`); Python 3.14.3
-  no `.venv` (projeto exige `>=3.11`).
+- **Suíte**: **88 testes, 97,00% de cobertura** (`uv run pytest`, após o T12);
+  Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
   `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`),
-  `alembic/`, `tests/` espelhando `src/`. Produto em `docs/business/PRD.md` +
-  `docs/specs/`.
+  `alembic/`, `tests/` espelhando `src/`.
 
-## O que foi feito nesta sessão (2026-09-13)
+## O que foi feito nesta sessão (2026-09-14)
 
-- **Validação do handoff anterior** contra o repo (suíte/branches/commits) e
-  correção do `CONTEXT.md` (WIP, contagem de commits, seção graphify).
-- **Code review dos 3 PRs stacked** (skill `code-reviewer`) e correções:
-  CRITICAL (segredo de JWT público → AD-014), MEDIUM (tenancy determinística;
-  onboarding/convite atômicos) e LOW (Literals mortos, `ImportError`→`ImportJobError`,
-  SRI do htmx). Hardening adiado (AD-015).
-- **Stacked reescrito** para propagar os fixes às branches de fase (commits scoped
-  por fase, `--force-with-lease`; conteúdo final idêntico ao anterior).
-- **Adoção do fluxo maduro** (pedido do usuário): **CI** (PR #4) + **épico + 1 PR
-  por task** (PR #5, **AD-016**). Stacked #1/#2/#3 fechados.
-- **T10 concluído** (PR #6, `5c10370`): `GET /` exige sessão (303 → `/login`);
-  `GET /login` renderiza formulário (HTMX → `POST /auth/login`); nova dep
-  `current_active_user_optional`.
-- **T11 concluído** (PR #8, `debdddd`): pacote `src/gestlog/ingestion/` — leitura
-  CSV (`,`/`;`) e XLSX, validação/normalização por tipo (estoque/fornecedores/
-  transporte) com erros por linha.
-- Handoffs intermediários: PRs #7, #9 e #10 (só `CONTEXT.md`).
+- **Validação do handoff anterior** contra o repo (`git log`/branches/PRs/suíte).
+- **Correção do `CONTEXT.md`** (3 divergências): HEAD `c5ee5e7`→`aad4e30`; suíte
+  `81/96,76%`→`82/96,77%`; WIP (o `CONTEXT.md` já estava commitado em `aad4e30`,
+  PR #11 — não há mais nada a commitar além desta edição).
+- Confirmação de que `tasks.md` tem **34 tasks** e T12 é a próxima.
+- **Explicação do fluxo de implementação** (AD-016 + skills `ship-feature` /
+  `build-with-tests`), com o ajuste de que a base é `feat/f1-mvp` (não `main`).
+- **`code-reviewer/SKILL.md` generalizado** (incorporado ao squash `224f918`):
+  as categorias novas (prompt injection, data leakage, multi-agent/LLM graphs,
+  token inefficiency, retry/backoff) foram reescritas em inglês, no estilo `— `
+  das demais, e **sem menções específicas de projeto**, preservando a regra de
+  skills agnósticas.
+- **T12 CONCLUÍDO** (PR #12, squash `224f918`): `ingestion/servico.py` com
+  `importar()` (valida → upsert por tipo nas repos do tenant → grava
+  `ImportJob`/`ImportError` → finaliza com contagens) e `historico()`;
+  `ImportJobRepository.history()` ordenado; 6 testes de integração. Gate local
+  verde (**88 testes, 97,00%**). Code review sem CRITICAL/HIGH.
+- **Sem outras alterações de código** nesta sessão.
 
 ## Decisões e regras (não esquecer)
 
@@ -60,56 +62,89 @@
 - **AD-015**: rate limiting e convite por token adiados (hardening pós-MVP).
 - **AD-016**: fluxo épico + 1 PR por task, gate CI + code review, **proibido
   force-push** em `main`/`feat/f1-mvp`; release único no fim da F1.
+- **Fluxo de implementação da task** (confirmado nesta sessão):
+  1. cortar `feat/f1-tXX-slug` de `feat/f1-mvp` (atualizada);
+  2. implementar seguindo `build-with-tests` (sem hardcode, sem mutação,
+     funções <50 linhas, docstrings em PT, sem comentários fora de docstring);
+  3. testes junto do código (happy/edge/falha), gate local
+     (`uv run pytest` + `black` + `ruff`);
+  4. commit em PT `feat(f1): ...` e **PR contra `feat/f1-mvp`**;
+  5. **code review obrigatório** (`code-reviewer`); Critical/Important bloqueiam;
+  6. squash-merge na integração e apagar a branch.
 
 ## Próximos passos / bloqueios
 
-1. **T12** — serviço de importação e status (persistir `ImportJob`/`ImportError`,
-   upsert e histórico por empresa). Branch curta `feat/f1-t12-import-service` →
-   PR contra `feat/f1-mvp`. Depende de T5 + T11. Depois **T13** (UI de upload).
-   - Política de upsert (open question no `design.md`): os repositórios do T5 já
-     implementam **substituir** (`upsert`); seguir com esse comportamento salvo
-     indicação contrária.
+1. **T13 — PENDENTE** (próxima ação): UI HTMX de upload e de status/histórico de
+   importação em `src/gestlog/web/`. Branch `feat/f1-t13-upload-ui` → PR contra
+   `feat/f1-mvp`. Depende de T10 + T12 (ambos concluídos). Consome
+   `ingestion.importar()` e `ingestion.historico()`.
+   - Política de upsert (open question no `design.md`): **resolvida como
+     substituir** (T12 usa o `upsert` das repos do T5).
 2. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 3. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
    seleção de "empresa ativa" para usuários com múltiplos vínculos.
 4. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
    `.opencode/`; o `node_modules/` não foi copiado).
+5. Opcional: remover os backups locais `backup/f1-fase1|f1-fase2|f1-mvp`
+   (pré-rewrite do stacked, sem uso) com `git branch -D`.
 
 ## WIP local (não commitado)
 
-- **Árvore limpa** (fora este `CONTEXT.md`, a commitar via chore PR).
-- `main` = `f639f36`; `feat/f1-mvp` (integração) = `c5ee5e7`; **nenhum PR aberto**.
-- Nenhuma task em andamento; **T12** é a próxima.
-- **Backups locais** `backup/f1-fase1|f1-fase2|f1-mvp` existem (pré-rewrite do
-  stacked); sem uso — podem ser removidos com `git branch -D`.
+- **Alterações pendentes (3)**:
+  - `.opencode/CONTEXT.md` (`M`, esta edição de handoff).
+  - `.opencode/skills/feature-factory/SKILL.md` (`M`): pipeline estendido com a
+    **fase 5.5 — Developer Self-Review & ADR** (roda após frontend-builder, antes
+    do test-verifier; `developer-self-reviewer` aplica correções locais, detecta
+    falha fatal → BLOCKED, e grava `docs/adr/<slug>-self-review.md`); lista de
+    agentes e tabela de falhas atualizadas.
+  - `.opencode/agent/developer-self-reviewer.md` (`??`, novo subagente) —
+    necessária para a fase 5.5.
+  - Nenhum arquivo de código do produto tocado.
+- `main` = `f639f36`; `feat/f1-mvp` (integração) = `224f918`; **nenhum PR aberto**.
+  Branch da task `feat/f1-t12-import-service` foi apagada (local e remoto).
+- T12 concluído; **T13** é a próxima.
 - Worktrees: nenhum (só o principal).
 
 ## Artefatos do graphify
 
-- **graphify indisponível para este projeto**: não existe `graphify-out/graph.json`
-  no gestlog (verificado; `Test-Path` = falso).
-- O MCP `graphify` do `opencode.json` aponta para o grafo do **medasist**
-  (`C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`); os números que ele
-  retorna são de outro repositório e **não** representam o gestlog.
+- **MCP `graphify` acessível, mas aponta para o medasist** — `opencode.json:14`
+  configura `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`. Os
+  números abaixo são **do medasist** e **NÃO representam o gestlog**.
+- **gestlog não tem grafo**: `Test-Path graphify-out/graph.json` = `False`
+  (verificado). Nenhum módulo do gestlog aparece no grafo consultado.
+- Nós: 2743 · Arestas: 6871 · Comunidades: 134
+  (EXTRACTED 88% · INFERRED 12% · AMBIGUOUS 0%).
+- God nodes (top 10): `Settings` (275), `DocType` (261), `retrieve()` (99),
+  `UserProfile` (98), `get_vectorstore()` (64), `CitationItem` (59),
+  `run_query()` (59), `main()` (42), `GoldenQuestion` (41), `GenerationResult` (32).
+- Comunidades afetadas: **não verificadas** (nenhum código foi tocado nesta
+  sessão; o grafo é de outro repositório).
 
 ## Documentos de projeto relevantes
 
 - `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task (fonte de verdade).
 - `docs/business/PRD.md` — PRD do produto.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
-- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1.
+- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
+  (`tasks.md`: 34 tasks; T1–T11 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
-- `README.md`, `pyproject.toml`, `.github/workflows/ci.yml`.
+- `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `src/gestlog/config.py` — `Settings`/`get_settings()`; `tests/conftest.py` —
   `FakeChatModel`/`fake_model_cls`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature.
 - `.opencode/agent/` — codebase-researcher, story-writer, spec-writer,
-  backend-builder, frontend-builder, test-verifier, validator, persistence-checker.
+  backend-builder, frontend-builder, developer-self-reviewer, test-verifier,
+  validator, persistence-checker.
+- `.opencode/command/` — start, end, explain, run-tests.
 
 ---
+
 # Histórico (sessões anteriores, resumido)
 
+- **2026-09-14:** validação do handoff; correções de HEAD/suíte/WIP; confirmação
+  de 34 tasks; `code-reviewer/SKILL.md` generalizado; **T12 concluído** (PR #12,
+  `224f918`) — serviço de importação/status + 6 testes (88/97,00%).
 - **2026-09-13:** validação do handoff; code review dos 3 PRs stacked + correções
   (AD-014/015); stacked reescrito para propagar fixes; adoção do fluxo épico +
   1 PR por task com CI (AD-016); T10 (PR #6) e T11 (PR #8) concluídos.
