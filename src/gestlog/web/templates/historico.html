@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Histórico de importações</h1>
+{% if jobs %}
+<table class="tabela-historico">
+  <thead>
+    <tr>
+      <th>Tipo</th>
+      <th>Status</th>
+      <th>Aceitas</th>
+      <th>Rejeitadas</th>
+      <th>Data</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for job in jobs %}
+    <tr>
+      <td>{{ job.tipo }}</td>
+      <td>{{ job.status }}</td>
+      <td>{{ job.aceitas }}</td>
+      <td>{{ job.rejeitadas }}</td>
+      <td>{{ job.created_at }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Nenhuma importação ainda. <a href="/importar">Importar dados</a>.</p>
+{% endif %}
+{% endblock %}

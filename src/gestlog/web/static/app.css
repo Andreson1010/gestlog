@@ -63,3 +63,52 @@ body {
   margin-top: 0.75rem;
   color: #b91c1c;
 }
+
+.form-importar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 20rem;
+}
+
+.form-importar select,
+.form-importar input {
+  padding: 0.5rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 0.25rem;
+}
+
+.form-importar button {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 0.25rem;
+  color: #fff;
+  background: var(--cor-destaque);
+  cursor: pointer;
+}
+
+.sucesso-importar {
+  color: #047857;
+}
+
+.erro-importar {
+  color: #b91c1c;
+}
+
+.erros-linha {
+  color: #b45309;
+}
+
+.tabela-historico {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.tabela-historico th,
+.tabela-historico td {
+  padding: 0.5rem;
+  border: 1px solid #e4e7eb;
+  text-align: left;
+}
