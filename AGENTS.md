@@ -140,10 +140,15 @@ task — nunca uma branch longa com force-push.
   fim, via um PR de release (`feat/f1-mvp → main`) + tag (`v0.1.0`).
 - **Task**: uma branch curta por task, cortada da integração, nomeada
   `feat/f1-tXX-<slug>` (ex.: `feat/f1-t10-home-auth`).
+- **Self-review antes do review**: toda task, mesmo atômica, passa pelo subagente
+  `developer-self-reviewer` (fase 5.5 do `feature-factory`), que corrige achados
+  menores e gera a ADR `docs/adr/<slug>-self-review.md` — todo PR é revisado por
+  pares, então a crítica própria vem antes.
 - **PR**: um PR por task contra a branch de integração (não contra `main`), sempre
   com `tasks.md` e testes no mesmo PR. `main` nunca recebe push direto.
 - **Gate antes do merge**: CI verde (`black --check`, `ruff check`, `pytest`) +
-  code review com o skill **code-reviewer**. Squash-merge e apaga a branch.
+  self-review (com ADR) + code review com o skill **code-reviewer**. Squash-merge
+  e apaga a branch.
 - **Sem reescrever branch compartilhada**: nada de `force-push` em `main` ou na
   integração; corrigir com commits novos.
 
