@@ -275,3 +275,21 @@ def test_supplier_factory_tratar_conformidade() -> None:
     assert "Nenhum fornecedor cadastrado" in tools_vazio["tratar_conformidade"].invoke(
         {}
     )
+
+
+def test_supplier_factory_conformidade_limites() -> None:
+    empresa = uuid4()
+    limites = _FakeSupplierRepo(
+        {
+            empresa: [
+                _fornecedor("F-4.0", avaliacao=4.0, prazo_dias=15),
+                _fornecedor("F-3.9", avaliacao=3.9, prazo_dias=15),
+                _fornecedor("F-16", avaliacao=4.0, prazo_dias=16),
+            ]
+        }
+    )
+    tools = {t.name: t for t in build_supplier_tools(limites, empresa)}
+    saida = tools["tratar_conformidade"].invoke({})
+
+    assert "F-4.0" not in saida
+    assert "F-3.9" in saida and "F-16" in saida
