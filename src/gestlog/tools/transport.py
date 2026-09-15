@@ -45,10 +45,12 @@ _STATUS_ATENCAO = ("atras", "trânsito")
 
 
 def _normalizar(cidade: str) -> str:
+    """Normaliza o nome da cidade para busca na tabela de distâncias."""
     return cidade.strip().lower()
 
 
 def _distancia_km(origem: str, destino: str) -> float:
+    """Retorna a distância conhecida entre duas cidades (ou a padrão)."""
     o, d = _normalizar(origem), _normalizar(destino)
     if o == d:
         return 0.0

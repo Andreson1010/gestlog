@@ -358,9 +358,10 @@ def test_transport_factory_rastrear_por_tenant() -> None:
 def test_transport_factory_isolamento_entre_empresas() -> None:
     empresa, outra, repo = _transport_repo()
     tools = {tool.name: tool for tool in build_transport_tools(repo, empresa)}
+    tools_outra = {tool.name: tool for tool in build_transport_tools(repo, outra)}
 
     assert "em trânsito" in tools["rastrear_entrega"].invoke({"codigo": "GL-1"})
-    assert repo.get_by_codigo(outra, "GL-1").status == "entregue"
+    assert "entregue" in tools_outra["rastrear_entrega"].invoke({"codigo": "GL-1"})
 
 
 def test_transport_factory_otimizar_entrega() -> None:
