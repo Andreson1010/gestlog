@@ -13,6 +13,7 @@ from gestlog.tools.inventory import (
 )
 from gestlog.tools.suppliers import (
     avaliar_desempenho,
+    build_supplier_tools,
     consultar_fornecedor,
     listar_fornecedores,
 )
@@ -35,9 +36,44 @@ class _FakeRepo:
         return list(self._itens.get(empresa_id, []))
 
 
+class _FakeSupplierRepo:
+    """Repositório fake de fornecedores por empresa."""
+
+    def __init__(self, itens_por_empresa: dict[UUID, list[SimpleNamespace]]) -> None:
+        self._itens = itens_por_empresa
+
+    def get_by_fornecedor_id(
+        self, empresa_id: UUID, fornecedor_id: str
+    ) -> SimpleNamespace | None:
+        for item in self._itens.get(empresa_id, []):
+            if item.fornecedor_id == fornecedor_id:
+                return item
+        return None
+
+    def list(self, empresa_id: UUID) -> list[SimpleNamespace]:
+        return list(self._itens.get(empresa_id, []))
+
+
 def _item(sku: str, quantidade: int, minimo: int, local: str = "") -> SimpleNamespace:
     return SimpleNamespace(
         sku=sku, nome=f"Item {sku}", quantidade=quantidade, minimo=minimo, local=local
+    )
+
+
+def _fornecedor(
+    fid: str,
+    categoria: str = "insumos",
+    prazo_dias: int = 5,
+    avaliacao: float = 4.5,
+    ativo: bool = True,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        fornecedor_id=fid,
+        nome=f"Fornecedor {fid}",
+        categoria=categoria,
+        prazo_dias=prazo_dias,
+        avaliacao=avaliacao,
+        ativo=ativo,
     )
 
 
@@ -48,6 +84,22 @@ def _repo_a() -> tuple[UUID, UUID, _FakeRepo]:
         {
             empresa: [_item("SKU-1", 120, 50, "A1"), _item("SKU-2", 20, 40, "B3")],
             outra: [_item("SKU-1", 500, 10, "X9")],
+        }
+    )
+    return empresa, outra, repo
+
+
+def _supplier_repo() -> tuple[UUID, UUID, _FakeSupplierRepo]:
+    empresa = uuid4()
+    outra = uuid4()
+    repo = _FakeSupplierRepo(
+        {
+            empresa: [
+                _fornecedor("F-1"),
+                _fornecedor("F-2", prazo_dias=20, avaliacao=3.0),
+                _fornecedor("F-3", categoria="transporte", ativo=False),
+            ],
+            outra: [_fornecedor("F-1", avaliacao=1.0, prazo_dias=40)],
         }
     )
     return empresa, outra, repo
@@ -164,3 +216,62 @@ def test_inventory_factory_otimizar_custos() -> None:
     vazio = _FakeRepo({empresa: []})
     tools_vazio = {t.name: t for t in build_inventory_tools(vazio, empresa)}
     assert "Nenhum SKU" in tools_vazio["otimizar_custos"].invoke({})
+
+
+def test_supplier_factory_consulta_por_tenant() -> None:
+    empresa, _, repo = _supplier_repo()
+    tools = {tool.name: tool for tool in build_supplier_tools(repo, empresa)}
+
+    assert "F-1" in tools["consultar_fornecedor"].invoke({"fornecedor_id": "f-1"})
+    assert "não encontrado" in tools["consultar_fornecedor"].invoke(
+        {"fornecedor_id": "F-999"}
+    )
+
+
+def test_supplier_factory_isolamento_entre_empresas() -> None:
+    empresa, outra, repo = _supplier_repo()
+    tools = {tool.name: tool for tool in build_supplier_tools(repo, empresa)}
+
+    assert "nota 4.5" in tools["consultar_fornecedor"].invoke({"fornecedor_id": "F-1"})
+    assert repo.get_by_fornecedor_id(outra, "F-1").avaliacao == 1.0
+
+
+def test_supplier_factory_listar_fornecedores() -> None:
+    empresa, _, repo = _supplier_repo()
+    tools = {tool.name: tool for tool in build_supplier_tools(repo, empresa)}
+
+    insumos = tools["listar_fornecedores"].invoke({"categoria": "insumos"})
+    assert "F-1" in insumos and "F-2" in insumos and "F-3" not in insumos
+    assert "Nenhum" in tools["listar_fornecedores"].invoke({"categoria": "inexistente"})
+
+
+def test_supplier_factory_avaliar_desempenho() -> None:
+    empresa, _, repo = _supplier_repo()
+    tools = {tool.name: tool for tool in build_supplier_tools(repo, empresa)}
+
+    saida = tools["avaliar_desempenho"].invoke({"fornecedor_id": "F-1"})
+    assert "nota 4.5" in saida and "prazo médio 5 dia(s)" in saida
+    assert "não encontrado" in tools["avaliar_desempenho"].invoke(
+        {"fornecedor_id": "F-999"}
+    )
+
+
+def test_supplier_factory_tratar_conformidade() -> None:
+    empresa, _, repo = _supplier_repo()
+    tools = {tool.name: tool for tool in build_supplier_tools(repo, empresa)}
+
+    saida = tools["tratar_conformidade"].invoke({})
+    assert "F-2" in saida and "F-3" in saida and "F-1" not in saida
+    assert "inativo" in saida and "abaixo de" in saida and "acima de" in saida
+
+    conformes = _FakeSupplierRepo({empresa: [_fornecedor("F-9")]})
+    tools_ok = {t.name: t for t in build_supplier_tools(conformes, empresa)}
+    assert "Todos os fornecedores em conformidade" in tools_ok[
+        "tratar_conformidade"
+    ].invoke({})
+
+    vazio = _FakeSupplierRepo({empresa: []})
+    tools_vazio = {t.name: t for t in build_supplier_tools(vazio, empresa)}
+    assert "Nenhum fornecedor cadastrado" in tools_vazio["tratar_conformidade"].invoke(
+        {}
+    )
