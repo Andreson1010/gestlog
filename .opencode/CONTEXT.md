@@ -1,78 +1,59 @@
-# Contexto da Sessão — F1 do gestlog: T18 mergeado, T19 pendente
+# Contexto da Sessão — F1 do gestlog: T15–T18 + T34 mergeadas, T19 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-15.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `61172a5` · Entrega: épico + 1 PR por task (AD-016)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `5892610`
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
-  transporte / fornecedores / estoque) com tools `@tool` de dados mockados.
-  Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
+  transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
+  https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T18 + T34
-  CONCLUÍDOS** (T18 mergeado no PR #19); **15 tasks PENDENTES (T19–T33)** —
-  `docs/specs/features/f1-mvp/tasks.md` (34 tasks no total).
+  CONCLUÍDOS**; **15 tasks PENDENTES (T19–T33)** — `docs/specs/features/f1-mvp/tasks.md`
+  (34 tasks no total).
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
   integração; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
-  self-review + `code-reviewer`; release único `feat/f1-mvp → main` + tag
-  `v0.1.0`. Stacked #1/#2/#3 fechados (não usados).
+  self-review + `code-reviewer`; release único `feat/f1-mvp → main` + tag `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-- **Suíte**: **125 testes, 97,43% de cobertura** (`uv run pytest`, após o T18);
-  Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
+- **Suíte**: **125 testes, 97,43% de cobertura** (`uv run pytest`); Python 3.14.3
+  no `.venv` (projeto exige `>=3.11`).
 - **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
-  `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`),
-  `alembic/`, `docs/adr/`, `tests/` espelhando `src/`.
+  `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`,
+  **`copilot/`**), `alembic/`, `docs/adr/`, `tests/` espelhando `src/`.
+- Árvore de trabalho **limpa**; nenhum PR aberto.
 
 ## O que foi feito nesta sessão
 
-- **Validação do handoff anterior contra o repo**: o arquivo dizia `T14 pendente`
-  / HEAD `08001ec`, mas o `git log` mostra o **PR #14 mergeado** (`12c046f`,
-  2026-09-15) e a suíte em **103 testes / 96,93%**. Handoff corrigido
-  (`e63ae36`) e T13/T14 marcados em `tasks.md`.
-- **T15 CONCLUÍDO e MERGEADO** (PR #15, squash `a5fbcfe`): tools de fornecedores
-  por empresa em `src/gestlog/tools/suppliers.py` —
-  `listar_fornecedores`/`consultar_fornecedor`/`avaliar_desempenho` lendo do
-  repositório do tenant (assinaturas mantidas) + nova tool read-only
-  `tratar_conformidade` (inativo, nota < 4.0, prazo > 15 dias). Fábrica
-  `build_supplier_tools(repo, empresa_id)` por closure. +6 testes em
-  `tests/test_tools.py` (`suppliers.py` 100% de cobertura). Self-review com ADR
-  `docs/adr/t15-supplier-tools-self-review.md` (fixou o contrato dos limites
-  4.0/15). CI verde. Branch remota apagada (prune removeu T13/T14/T15 órfãs).
-- **T16 CONCLUÍDO e MERGEADO** (PR #16, squash `2387a0e`): tools de transporte
-  por empresa em `src/gestlog/tools/transport.py` — `rastrear_entrega` lê do
-  repositório do tenant; nova `otimizar_entrega` read-only (atrasadas/em
-  trânsito). `calcular_frete`/`consultar_prazo` mantêm o cálculo via helpers
-  compartilhados; números mágicos extraídos para constantes. Fábrica
-  `build_transport_tools(repo, empresa_id)`. +4 testes (`transport.py` 100%).
-  Self-review com ADR `docs/adr/t16-transport-tools-self-review.md` (isolamento
-  reforçado; docstrings em helpers). CI verde; branch remota apagada.
-- **T18 CONCLUÍDO e MERGEADO** (PR #19, squash `61172a5`): **endpoint SSE de chat**
-  em `src/gestlog/web/chat.py` — `GET /chat/stream?pergunta=` autenticado
-  (`get_current_empresa` → 401 sem sessão; `Query(min_length=1)` → 422 vazio),
-  injeta `CopilotService` e emite eventos SSE `resposta` + `fim`; `get_chat_model`
-  injetável. +5 testes de integração (`web/chat.py` 100%). Self-review com ADR
-  `docs/adr/t18-chat-sse-self-review.md`. CI verde; branch remota apagada.
-- **T17 CONCLUÍDO e MERGEADO** (PR #18, squash `6599c5c`): **Copilot Service** em
-  `src/gestlog/copilot/service.py` — `CopilotService(session, empresa_id, model,
-  settings)` com `tools_por_dominio()` (fábricas escopadas) e `answer(pergunta)`;
-  `build_graph(..., specialist_tools=...)` e 3º parâmetro `tools` nos builders
-  dos especialistas (seam de injeção, mock preservado como fallback do REPL);
-  fora de escopo → `MENSAGEM_FORA_DE_ESCOPO`. +5 testes (`copilot/service.py` e
-  `graph.py` 100%). Self-review com ADR `docs/adr/t17-copilot-service-self-review.md`
-  (resolve `settings` uma vez; corrige ponteiro T19→T17 nas ADRs T14/T15/T16/T34
-  e docstrings). CI verde; branch remota apagada.
-- **T34 CONCLUÍDO e MERGEADO** (PR #17, squash `ebf185e`): tool comum read-only
-  `enviar_resposta_logistica(resposta, fontes="")` em
-  `src/gestlog/tools/common.py` + `COMMON_TOOLS`; os três especialistas passam
-  `[*TOOLS, *COMMON_TOOLS]` para `create_specialist_node`; `tools/__init__.py`
-  reexporta. +2 testes (`tools/common.py` 100%). Self-review com ADR
-  `docs/adr/t34-common-response-self-review.md`. CI verde; branch remota apagada.
-  Code review sem CRITICAL/HIGH (nota MEDIUM: prompts ainda não citam a tool).
-- **T14 registrado** (já mergeado antes desta sessão): tools de estoque por
-  empresa em `tools/inventory.py` + read-only `prever_demanda`/`otimizar_armazem`/
-  `otimizar_custos`; ADR `docs/adr/t14-inventory-tools-self-review.md`.
+Entrega da **T15 → T16 → T34 → T17 → T18** (uma branch + PR por task, squash na
+`feat/f1-mvp`), cada uma com self-review (`developer-self-reviewer` + ADR) e code
+review antes do merge:
+
+- **T15** (PR #15, squash `a5fbcfe`): tools de fornecedores por tenant em
+  `tools/suppliers.py` + `tratar_conformidade` read-only (inativo, nota < 4.0,
+  prazo > 15d); fábrica `build_supplier_tools`. ADR `t15-supplier-tools`.
+- **T16** (PR #16, squash `2387a0e`): tools de transporte por tenant em
+  `tools/transport.py` + `otimizar_entrega` read-only; `calcular_frete`/`prazo`
+  mantêm o cálculo (helpers compartilhados); fábrica `build_transport_tools`.
+  ADR `t16-transport-tools`.
+- **T34** (PR #17, squash `ebf185e`): tool comum `enviar_resposta_logistica` em
+  `tools/common.py` (`COMMON_TOOLS`), anexada aos 3 especialistas. ADR
+  `t34-common-response`.
+- **T17** (PR #18, squash `6599c5c`): **Copilot Service** em `copilot/service.py`
+  (`CopilotService.tools_por_dominio()` + `answer()`); seam de injeção
+  `build_graph(..., specialist_tools=...)` e 3º parâmetro `tools` nos builders.
+  ADR `t17-copilot-service` (resolve `settings` uma vez; corrige ponteiro
+  T19→T17 nas ADRs T14/T15/T16/T34 e docstrings).
+- **T18** (PR #19, squash `61172a5`): **endpoint SSE de chat** em `web/chat.py`
+  (`GET /chat/stream?pergunta=`, 401 sem sessão, 422 vazio; eventos `resposta` +
+  `fim`); registrado em `web/app.py`. ADR `t18-chat-sse`.
+- **Handoff/limpeza**: correção do handoff de entrada (dizia T14 pendente, mas
+  `12c046f` já era o merge) + marcação de T13/T14 em `tasks.md` (`e63ae36`);
+  handoffs `a0ea460`, `72dbb4d`, `d02539e`, `627b77c`, `5892610`. Branches remotas
+  de task apagadas (prune removeu T13–T18/T34).
+- `AGENTS.md`: documentado o parâmetro `specialist_tools` do `build_graph`.
 
 ## Decisões e regras (não esquecer)
 
@@ -80,127 +61,102 @@
   ficam no `AGENTS.md`.
 - `uv run pytest` já ativa o gate de 80% (`addopts`); use `--no-cov` em execuções
   focadas. Nenhum teste toca rede/Ollama (`fake_model_cls` em `tests/conftest.py`).
-- **Nomes de código em português** (AD-008): `Empresa`/`empresa_id` (o termo
-  "tenant" fica nos docs).
-- **Docs-as-code** (AD-011): conceitual em `docs/`, executável em `src/`; docs
-  versionados. **Pacote único** com fronteiras `apps → agents → libs` (AD-012).
+- **Nomes de código em português** (AD-008): `Empresa`/`empresa_id` ("tenant" só
+  nos docs).
+- **Docs-as-code** (AD-011); **pacote único** com fronteiras `apps → agents →
+  libs` (AD-012). Endpoint/web → `apps`; nó/tool/grafo → `agents`; modelo/repo/
+  config → `libs`.
 - **Produto**: SaaS multi-cliente, read-only no MVP, HITL na F2, importação→API,
   LLM hospedado, LGPD/PII (AD-001..006).
-- **AD-014**: `AMBIENTE=prod` exige `AUTH_SECRET` próprio (>= 32 chars).
-- **AD-015**: rate limiting e convite por token adiados (hardening pós-MVP).
-- **AD-016**: fluxo épico + 1 PR por task, gate CI + self-review + code review,
-  **proibido force-push** em `main`/`feat/f1-mvp`; release único no fim da F1.
-- **Fluxo de implementação da task**:
-  1. cortar `feat/f1-tXX-slug` de `feat/f1-mvp` (atualizada);
-  2. implementar seguindo `build-with-tests` (sem hardcode, sem mutação,
-     funções <50 linhas, docstrings em PT, sem comentários fora de docstring);
-  3. testes junto do código (happy/edge/falha), gate local
-     (`uv run pytest` + `black` + `ruff`);
-  4. commit em PT `feat(f1): ...` e **PR contra `feat/f1-mvp`**;
-  5. **self-review obrigatório** — subagente `developer-self-reviewer` (fase 5.5
-     do `feature-factory`) gera `docs/adr/<slug>-self-review.md` e corrige
-     achados menores; **roda também em tasks atômicas** (todo PR é revisado por
-     pares);
-  6. **code review obrigatório** (`code-reviewer`); Critical/Important bloqueiam;
-  7. squash-merge na integração e apagar a branch.
+- **AD-014**: `AMBIENTE=prod` exige `AUTH_SECRET` (>= 32 chars). **AD-015**: rate
+  limiting/convite por token adiados. **AD-016**: épico + 1 PR/task, proibido
+  force-push em `main`/`feat/f1-mvp`.
+- **Injeção de tools do tenant (T17)**: builders aceitam `tools` opcional
+  (default = mock `TOOLS`); `COMMON_TOOLS` é **sempre** anexada no builder;
+  `build_graph(..., specialist_tools=)` indexa por nome do especialista. O mock
+  `TOOLS` permanece como fallback do REPL (`cli.py`).
+- **Chat SSE (T18)**: resposta final em eventos (`resposta` + `fim`), não token a
+  token (pergunta aberta 4 do design); rota `GET` (compatível com HTMX
+  `sse-connect`/EventSource); **401** (endpoint de API), não redirect.
+- **Fluxo da task**: cortar `feat/f1-tXX-*` de `feat/f1-mvp` → implementar
+  (`build-with-tests`) → gate (`pytest` + `black` + `ruff`) → commit PT
+  `feat(f1): ...` → PR contra `feat/f1-mvp` → **self-review obrigatório** (ADR em
+  `docs/adr/<slug>-self-review.md`) → **code review** (`code-reviewer`) → squash +
+  apagar branch.
 
 ## Próximos passos / bloqueios
 
-1. **T18 — CONCLUÍDO e MERGEADO** (squash `61172a5`); branch remota apagada.
-2. **T19 — PENDENTE** (próxima ação): **UI do chat (HTMX/SSE)** — tela que consome
-   `GET /chat/stream` (HTMX SSE `sse-connect`) e exibe pergunta/resposta. Where
-   `src/gestlog/web/` (templates/rota `/chat`); depends T10, T18; reuses T10,
-   T18. Done when: pergunta e resposta aparecem via streaming na tela. Branch
-   `feat/f1-t19-*` → PR contra `feat/f1-mvp`. Fluxo inclui **self-review + ADR**.
-   Página `/chat` já é referenciada na home (`href="/chat"`).
-3. T20–T33 seguem a T19 (persistência/histórico, recomendação/fontes, feedback…).
-4. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
-5. Pendência pós-T17: os `TOOLS` mock ainda são fallback do REPL (`cli.py`); a
-   remoção/DB no CLI fica para quando não houver mais uso (web usa as fábricas).
-5. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
-   seleção de "empresa ativa" para usuários com múltiplos vínculos.
-6. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
-   `.opencode/`; o `node_modules/` não foi copiado).
-7. Opcional: remover os backups locais `backup/f1-fase2|f1-mvp`
-   (pré-rewrite do stacked, sem uso) com `git branch -D` (f1-fase1 já removido).
+1. **T19 — PENDENTE** (próxima ação): **UI do chat (HTMX/SSE)** — tela que consome
+   `GET /chat/stream` (`sse-connect`) e exibe pergunta/resposta. Where
+   `src/gestlog/web/` (rota `/chat` + templates); depends T10, T18. Done when:
+   pergunta e resposta aparecem via streaming na tela. Branch `feat/f1-t19-*` →
+   PR contra `feat/f1-mvp`. (A home já referencia `href="/chat"`.)
+2. T20–T33 seguem a T19 (persistência/histórico da conversa, recomendação/fontes,
+   feedback aceitar/descartar, PII/auditoria/uso…).
+3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+4. Pendência técnica (pós-T17): os `TOOLS` mock ainda são fallback do REPL; DB no
+   CLI/remoção do mock quando não houver mais uso.
+5. Opcional: remover backups locais `backup/f1-fase2` e `backup/f1-mvp` (sem uso).
+6. Opcional: avaliar o plugin `@opencode-ai/plugin` em `.opencode/` (`node_modules`
+   não foi copiado).
 
 ## WIP local (não commitado)
 
-- **`M .opencode/CONTEXT.md` + `M docs/specs/features/f1-mvp/tasks.md`** — este
-  handoff (ainda não commitado; será o próximo commit na `feat/f1-mvp`).
-- `main` = `f639f36`; `feat/f1-mvp` (integração) = `61172a5`; **nenhum PR aberto**.
-  Branches de task T12–T18/T34 apagadas (local e remoto). Backup `backup/f1-fase1`
-  removido localmente.
+- **Nenhum.** Árvore limpa (`git status` sem alterações); este handoff será o
+  próximo commit na `feat/f1-mvp`.
+- `main` = `f639f36`; `feat/f1-mvp` = `5892610`; **nenhum PR aberto**. Branches de
+  task T12–T18/T34 apagadas (local e remoto). Backups locais `backup/f1-fase2` e
+  `backup/f1-mvp` ainda existem.
 
 ## Artefatos do graphify
 
-- **MCP `graphify` acessível, mas o gestlog NÃO tem grafo** — `graphify_graph_stats`
-  retorna erro `graph.json not found: C:\Users\ander\8_projetos\gestlog\graphify-out\graph.json`;
-  `Test-Path graphify-out/graph.json` = `False`. O `opencode.json:14` aponta o MCP
-  para `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`, que é de OUTRO
-  repositório e **NÃO representa o gestlog**. Nenhum número registrado (não inventar).
-- Comunidades afetadas: **não verificado** (sem grafo do gestlog).
+- **graphify indisponível para o gestlog**: `graphify_graph_stats` retornou
+  `graph.json not found: C:\Users\ander\8_projetos\gestlog\graphify-out\graph.json`
+  (`Test-Path graphify-out/graph.json` = `False`). O MCP existe, mas o
+  `opencode.json:14` aponta para `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`
+  (OUTRO repositório) — **não representa o gestlog**. Nenhum número registrado.
+- God nodes / comunidades afetadas: **não verificado** (sem grafo do gestlog).
 
 ## Documentos de projeto relevantes
 
-- `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task; com
-  self-review obrigatório no campo Task (fonte de verdade).
-- `docs/business/PRD.md` — PRD do produto.
+- `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task (atualizado:
+  `build_graph(..., specialist_tools=)`).
+- `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
   (`tasks.md`: 34 tasks; T1–T18 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews: `t13-upload-ui`, `t14-inventory-tools`,
   `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`,
-  `t17-copilot-service`, `t18-chat-sse`.
+  `t17-copilot-service`, `t18-chat-sse` (**t17/t18 novos nesta sessão**).
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
-- `src/gestlog/config.py` — `Settings`/`get_settings()`; `tests/conftest.py` —
-  `FakeChatModel`/`fake_model_cls`.
-- `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory (fase 5.5),
+- `src/gestlog/config.py` (`Settings`/`get_settings`), `src/gestlog/llm.py`
+  (`build_chat_model`), `src/gestlog/graph.py` (`build_graph`/`run_query`),
+  `src/gestlog/copilot/` (**novo**), `src/gestlog/web/chat.py` (**novo**),
+  `tests/conftest.py` (`FakeChatModel`/`fake_model_cls`).
+- `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature.
-- `.opencode/agent/` — codebase-researcher, story-writer, spec-writer,
-  backend-builder, frontend-builder, developer-self-reviewer, test-verifier,
-  validator, persistence-checker.
+- `.opencode/agent/` — backend-builder, codebase-researcher,
+  developer-self-reviewer, frontend-builder, persistence-checker, spec-writer,
+  story-writer, test-verifier, validator.
 - `.opencode/command/` — start, end, explain, run-tests.
 
 ---
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-15:** **T18 concluído e mergeado** (PR #19, squash `61172a5`) —
-  endpoint SSE de chat autenticado em `web/chat.py`; self-review com ADR
-  `docs/adr/t18-chat-sse-self-review.md`; suíte 125/97,43%.
-- **2026-09-15 (anterior):** **T17 concluído e mergeado** (PR #18, squash
-  `6599c5c`) — Copilot Service + injeção das tools do tenant no `build_graph`;
-  self-review com ADR `docs/adr/t17-copilot-service-self-review.md`; suíte
-  120/97,36%.
-- **2026-09-15 (anterior):** **T34 concluído e mergeado** (PR #17, squash
-  `ebf185e`) — tool comum `enviar_resposta_logistica` nos três especialistas;
-  self-review com ADR `docs/adr/t34-common-response-self-review.md`; suíte
-  115/97,27%.
-- **2026-09-15 (anterior):** **T16 concluído e mergeado** (PR #16, squash
-  `2387a0e`) — tools de transporte por tenant + `otimizar_entrega` read-only;
-  self-review com ADR `docs/adr/t16-transport-tools-self-review.md`; suíte
-  113/97,23%.
-- **2026-09-15 (anterior):** **T15 concluído e mergeado** (PR #15, squash
-  `a5fbcfe`) — tools de fornecedores por tenant + `tratar_conformidade`
-  read-only; self-review com ADR `docs/adr/t15-supplier-tools-self-review.md`;
-  suíte 109/97,06%; handoff validado/corrigido (`e63ae36`).
-- **2026-09-15 (anterior):** **T14 concluído e mergeado** (PR #14, squash
-  `12c046f`) — tools de estoque por tenant + análises read-only; self-review com
-  ADR `docs/adr/t14-inventory-tools-self-review.md`; suíte 103/96,93%; `tasks.md`
-  corrigido (T13/T14 marcados).
-- **2026-09-14:** commit do WIP do pipeline (feature-factory +
-  `developer-self-reviewer`, `2443b92`); **T13 concluído e mergeado** (PR #13,
-  squash `fcd93fc`) — UI HTMX de upload/histórico + 8 testes (96/96,77%);
-  self-review do T13 com ADR `docs/adr/t13-upload-ui-self-review.md`; fluxo da
-  task passou a exigir self-review + ADR (`AGENTS.md`, `6d657d5`/`a276d83`).
-- **2026-09-14 (anterior):** validação do handoff; correções de HEAD/suíte/WIP;
-  confirmação de 34 tasks; `code-reviewer/SKILL.md` generalizado; **T12 concluído**
-  (PR #12, `224f918`) — serviço de importação/status + 6 testes (88/97,00%).
-- **2026-09-13:** code review dos 3 PRs stacked + correções (AD-014/015); adoção do
-  fluxo épico + 1 PR por task com CI (AD-016); T10 (PR #6) e T11 (PR #8) concluídos.
-- **2026-09-12:** catálogo de tools formalizado (AD-010); docs-as-code (AD-011);
-  fronteiras do pacote (AD-012); camada async do auth (AD-013); T6-T9 concluídos.
-- **2026-09-11:** scaffold `.opencode/`; PRD + artefatos TLC; git inicializado;
-  remote publicado; F1 planejada e Fase 1 concluída; rename `Tenant`→`Empresa`.
+- **2026-09-15 (sessão atual):** T15 (`a5fbcfe`), T16 (`2387a0e`), T34
+  (`ebf185e`), T17 (`6599c5c`), T18 (`61172a5`) concluídas e mergeadas; 109→125
+  testes (97,06%→97,43%); ADRs t15/t16/t34/t17/t18; handoff validado/corrigido.
+- **2026-09-15 (anterior):** T14 concluído e mergeado (PR #14, `12c046f`) — tools
+  de estoque por tenant + análises read-only; ADR `t14-inventory-tools`; suíte
+  103/96,93%; `tasks.md` corrigido (T13/T14).
+- **2026-09-14:** T13 (PR #13, `fcd93fc`, UI HTMX de upload/histórico) e T12
+  (PR #12, `224f918`, serviço de importação/status); fase 5.5 de self-review/ADR
+  adicionada ao pipeline (`2443b92`).
+- **2026-09-13:** code review dos PRs stacked + correções (AD-014/015); fluxo
+  épico + 1 PR/task com CI (AD-016); T10 (PR #6) e T11 (PR #8).
+- **2026-09-12:** catálogo de tools (AD-010); docs-as-code (AD-011); fronteiras do
+  pacote (AD-012); auth async (AD-013); T6–T9.
+- **2026-09-11:** scaffold `.opencode/`; PRD + TLC; F1 planejada; rename
+  `Tenant`→`Empresa`.
