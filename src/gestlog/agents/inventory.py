@@ -5,6 +5,7 @@ from __future__ import annotations
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from gestlog.agents.base import SpecialistNode, create_specialist_node
+from gestlog.tools.common import COMMON_TOOLS
 from gestlog.tools.inventory import TOOLS
 
 PROMPT = (
@@ -17,4 +18,6 @@ PROMPT = (
 
 def build_inventory_node(model: BaseChatModel, max_steps: int) -> SpecialistNode:
     """Constrói o nó do especialista em estoque."""
-    return create_specialist_node("estoque", PROMPT, TOOLS, model, max_steps)
+    return create_specialist_node(
+        "estoque", PROMPT, [*TOOLS, *COMMON_TOOLS], model, max_steps
+    )
