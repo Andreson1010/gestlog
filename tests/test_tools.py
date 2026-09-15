@@ -17,7 +17,12 @@ from gestlog.tools.suppliers import (
     consultar_fornecedor,
     listar_fornecedores,
 )
-from gestlog.tools.transport import calcular_frete, consultar_prazo, rastrear_entrega
+from gestlog.tools.transport import (
+    build_transport_tools,
+    calcular_frete,
+    consultar_prazo,
+    rastrear_entrega,
+)
 
 
 class _FakeRepo:
@@ -54,6 +59,22 @@ class _FakeSupplierRepo:
         return list(self._itens.get(empresa_id, []))
 
 
+class _FakeTransportRepo:
+    """Repositório fake de registros de transporte por empresa."""
+
+    def __init__(self, itens_por_empresa: dict[UUID, list[SimpleNamespace]]) -> None:
+        self._itens = itens_por_empresa
+
+    def get_by_codigo(self, empresa_id: UUID, codigo: str) -> SimpleNamespace | None:
+        for item in self._itens.get(empresa_id, []):
+            if item.codigo_rastreio == codigo:
+                return item
+        return None
+
+    def list(self, empresa_id: UUID) -> list[SimpleNamespace]:
+        return list(self._itens.get(empresa_id, []))
+
+
 def _item(sku: str, quantidade: int, minimo: int, local: str = "") -> SimpleNamespace:
     return SimpleNamespace(
         sku=sku, nome=f"Item {sku}", quantidade=quantidade, minimo=minimo, local=local
@@ -75,6 +96,33 @@ def _fornecedor(
         avaliacao=avaliacao,
         ativo=ativo,
     )
+
+
+def _registro(
+    codigo: str,
+    origem: str = "Sao Paulo",
+    destino: str = "Curitiba",
+    status: str = "em trânsito",
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        codigo_rastreio=codigo, origem=origem, destino=destino, status=status
+    )
+
+
+def _transport_repo() -> tuple[UUID, UUID, _FakeTransportRepo]:
+    empresa = uuid4()
+    outra = uuid4()
+    repo = _FakeTransportRepo(
+        {
+            empresa: [
+                _registro("GL-1", status="em trânsito"),
+                _registro("GL-2", status="entregue"),
+                _registro("GL-3", status="atrasado"),
+            ],
+            outra: [_registro("GL-1", status="entregue")],
+        }
+    )
+    return empresa, outra, repo
 
 
 def _repo_a() -> tuple[UUID, UUID, _FakeRepo]:
@@ -115,6 +163,10 @@ def test_transport_tools() -> None:
     )
     assert "GL-1001" in rastrear_entrega.invoke({"codigo": "GL-1001"})
     assert "não encontrado" in rastrear_entrega.invoke({"codigo": "XXX"})
+    mesma_cidade = calcular_frete.invoke(
+        {"origem": "Salvador", "destino": "salvador", "peso_kg": 0.0}
+    )
+    assert "0 km" in mesma_cidade
 
 
 def test_supplier_tools() -> None:
@@ -293,3 +345,51 @@ def test_supplier_factory_conformidade_limites() -> None:
 
     assert "F-4.0" not in saida
     assert "F-3.9" in saida and "F-16" in saida
+
+
+def test_transport_factory_rastrear_por_tenant() -> None:
+    empresa, _, repo = _transport_repo()
+    tools = {tool.name: tool for tool in build_transport_tools(repo, empresa)}
+
+    assert "em trânsito" in tools["rastrear_entrega"].invoke({"codigo": "gl-1"})
+    assert "não encontrado" in tools["rastrear_entrega"].invoke({"codigo": "GL-999"})
+
+
+def test_transport_factory_isolamento_entre_empresas() -> None:
+    empresa, outra, repo = _transport_repo()
+    tools = {tool.name: tool for tool in build_transport_tools(repo, empresa)}
+    tools_outra = {tool.name: tool for tool in build_transport_tools(repo, outra)}
+
+    assert "em trânsito" in tools["rastrear_entrega"].invoke({"codigo": "GL-1"})
+    assert "entregue" in tools_outra["rastrear_entrega"].invoke({"codigo": "GL-1"})
+
+
+def test_transport_factory_otimizar_entrega() -> None:
+    empresa, _, repo = _transport_repo()
+    tools = {tool.name: tool for tool in build_transport_tools(repo, empresa)}
+
+    saida = tools["otimizar_entrega"].invoke({})
+    assert "GL-1" in saida and "GL-3" in saida and "GL-2" not in saida
+
+    sem_pendencia = _FakeTransportRepo(
+        {empresa: [_registro("GL-9", status="entregue")]}
+    )
+    tools_ok = {t.name: t for t in build_transport_tools(sem_pendencia, empresa)}
+    assert "Nenhuma entrega pendente" in tools_ok["otimizar_entrega"].invoke({})
+
+    vazio = _FakeTransportRepo({empresa: []})
+    tools_vazio = {t.name: t for t in build_transport_tools(vazio, empresa)}
+    assert "Nenhuma entrega registrada" in tools_vazio["otimizar_entrega"].invoke({})
+
+
+def test_transport_factory_mantem_calculo() -> None:
+    empresa, _, repo = _transport_repo()
+    tools = {tool.name: tool for tool in build_transport_tools(repo, empresa)}
+
+    frete = tools["calcular_frete"].invoke(
+        {"origem": "Sao Paulo", "destino": "Curitiba", "peso_kg": 10.0}
+    )
+    assert "R$" in frete and "408 km" in frete
+    assert "Prazo" in tools["consultar_prazo"].invoke(
+        {"origem": "Sao Paulo", "destino": "Salvador"}
+    )
