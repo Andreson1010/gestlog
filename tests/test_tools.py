@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
+from gestlog.tools.common import enviar_resposta_logistica
 from gestlog.tools.inventory import (
     build_inventory_tools,
     calcular_reposicao,
@@ -380,6 +381,18 @@ def test_transport_factory_otimizar_entrega() -> None:
     vazio = _FakeTransportRepo({empresa: []})
     tools_vazio = {t.name: t for t in build_transport_tools(vazio, empresa)}
     assert "Nenhuma entrega registrada" in tools_vazio["otimizar_entrega"].invoke({})
+
+
+def test_common_tool_compõe_resposta() -> None:
+    saida = enviar_resposta_logistica.invoke(
+        {"resposta": "Repor SKU-1", "fontes": "estoque"}
+    )
+    assert "Repor SKU-1" in saida and "estoque" in saida
+
+    sem_fontes = enviar_resposta_logistica.invoke({"resposta": "Ok"})
+    assert "não informadas" in sem_fontes
+
+    assert "Nenhum conteúdo" in enviar_resposta_logistica.invoke({"resposta": "  "})
 
 
 def test_transport_factory_mantem_calculo() -> None:

@@ -7,6 +7,7 @@ from typing import Any
 from langchain_core.messages import HumanMessage
 
 from gestlog.agents.inventory import build_inventory_node
+from gestlog.agents.suppliers import build_suppliers_node
 from gestlog.agents.transport import build_transport_node
 
 
@@ -31,7 +32,17 @@ def test_transport_node_executes_tool(fake_model_cls: type) -> None:
         "calcular_frete",
         "consultar_prazo",
         "rastrear_entrega",
+        "enviar_resposta_logistica",
     }
+
+
+def test_specialists_expoem_tool_comum(fake_model_cls: type) -> None:
+    builders = (build_inventory_node, build_suppliers_node, build_transport_node)
+    for builder in builders:
+        model = fake_model_cls(final="ok")
+        node = builder(model, max_steps=2)
+        node({"messages": [HumanMessage(content="x")]})
+        assert "enviar_resposta_logistica" in {t.name for t in model.bound_tools}
 
 
 def test_specialist_stops_at_max_steps(fake_model_cls: type) -> None:
