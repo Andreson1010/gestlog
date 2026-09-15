@@ -51,8 +51,10 @@ START -> supervisor --(state["next"])--> transporte | fornecedores | estoque
 - **`src/gestlog/agents/{transport,suppliers,inventory}.py`** — prompt + tools de cada especialista.
 - **`src/gestlog/tools/*.py`** — ferramentas `@tool` com **dados mockados e determinísticos**
   (andaime até integração com TMS/ERP/WMS). Troque os corpos das funções, não a estrutura.
-- **`src/gestlog/graph.py`** — `build_graph(model=None, settings=None)`; injete `model`
-  em testes. `run_query` é o helper de invocação (`recursion_limit`).
+- **`src/gestlog/graph.py`** — `build_graph(model=None, settings=None,
+  specialist_tools=None)`; injete `model` em testes e `specialist_tools` para
+  trocar o mock pelas fábricas de tools do tenant (usado pelo Copilot Service).
+  `run_query` é o helper de invocação (`recursion_limit`).
 - **`src/gestlog/cli.py`** — REPL; `main` marcado `# pragma: no cover`.
 
 ### Estrutura e fronteiras

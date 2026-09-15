@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.tools import BaseTool
 
 from gestlog.agents.base import SpecialistNode, create_specialist_node
 from gestlog.tools.common import COMMON_TOOLS
@@ -16,8 +19,17 @@ PROMPT = (
 )
 
 
-def build_inventory_node(model: BaseChatModel, max_steps: int) -> SpecialistNode:
-    """Constrói o nó do especialista em estoque."""
+def build_inventory_node(
+    model: BaseChatModel,
+    max_steps: int,
+    tools: Sequence[BaseTool] | None = None,
+) -> SpecialistNode:
+    """Constrói o nó do especialista em estoque.
+
+    ``tools`` permite injetar as ferramentas do tenant; quando omitido, usa o
+    mock determinístico como andaime. A tool comum é sempre anexada.
+    """
+    base = TOOLS if tools is None else tools
     return create_specialist_node(
-        "estoque", PROMPT, [*TOOLS, *COMMON_TOOLS], model, max_steps
+        "estoque", PROMPT, [*base, *COMMON_TOOLS], model, max_steps
     )
