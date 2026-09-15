@@ -1,15 +1,15 @@
-# Contexto da Sessão — F1 do gestlog: T34 mergeado, T17 pendente
+# Contexto da Sessão — F1 do gestlog: T17 mergeado, T18 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-15.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `ebf185e` · Entrega: épico + 1 PR por task (AD-016)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `6599c5c` · Entrega: épico + 1 PR por task (AD-016)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool` de dados mockados.
   Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T16 + T34
-  CONCLUÍDOS** (T34 mergeado no PR #17); **17 tasks PENDENTES (T17–T33)** —
+- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T17 + T34
+  CONCLUÍDOS** (T17 mergeado no PR #18); **16 tasks PENDENTES (T18–T33)** —
   `docs/specs/features/f1-mvp/tasks.md` (34 tasks no total).
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
@@ -19,7 +19,7 @@
   `v0.1.0`. Stacked #1/#2/#3 fechados (não usados).
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-- **Suíte**: **115 testes, 97,27% de cobertura** (`uv run pytest`, após o T34);
+- **Suíte**: **120 testes, 97,36% de cobertura** (`uv run pytest`, após o T17);
   Python 3.14.3 no `.venv` (projeto exige `>=3.11`).
 - **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
   `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`),
@@ -48,6 +48,15 @@
   `build_transport_tools(repo, empresa_id)`. +4 testes (`transport.py` 100%).
   Self-review com ADR `docs/adr/t16-transport-tools-self-review.md` (isolamento
   reforçado; docstrings em helpers). CI verde; branch remota apagada.
+- **T17 CONCLUÍDO e MERGEADO** (PR #18, squash `6599c5c`): **Copilot Service** em
+  `src/gestlog/copilot/service.py` — `CopilotService(session, empresa_id, model,
+  settings)` com `tools_por_dominio()` (fábricas escopadas) e `answer(pergunta)`;
+  `build_graph(..., specialist_tools=...)` e 3º parâmetro `tools` nos builders
+  dos especialistas (seam de injeção, mock preservado como fallback do REPL);
+  fora de escopo → `MENSAGEM_FORA_DE_ESCOPO`. +5 testes (`copilot/service.py` e
+  `graph.py` 100%). Self-review com ADR `docs/adr/t17-copilot-service-self-review.md`
+  (resolve `settings` uma vez; corrige ponteiro T19→T17 nas ADRs T14/T15/T16/T34
+  e docstrings). CI verde; branch remota apagada.
 - **T34 CONCLUÍDO e MERGEADO** (PR #17, squash `ebf185e`): tool comum read-only
   `enviar_resposta_logistica(resposta, fontes="")` em
   `src/gestlog/tools/common.py` + `COMMON_TOOLS`; os três especialistas passam
@@ -91,17 +100,16 @@
 
 ## Próximos passos / bloqueios
 
-1. **T34 — CONCLUÍDO e MERGEADO** (squash `ebf185e`); branch remota apagada.
-2. **T17 — PENDENTE** (próxima ação): **Copilot Service** (grafo + contexto do
-   tenant) em `src/gestlog/copilot/`. Injeta o `tenant_id`/`empresa_id` no
-   contexto das tools, roda `graph.build_graph` e devolve a resposta; modelo
-   injetável para teste. Injetará as fábricas
-   `build_inventory_tools`/`build_supplier_tools`/`build_transport_tools` +
-   `COMMON_TOOLS` e removerá os `TOOLS` mock (ação registrada nas ADRs
-   T14/T15/T16/T34). Depende de T14/T15/T16 (e T34). Branch `feat/f1-t17-*` → PR
-   contra `feat/f1-mvp`. Fluxo inclui **self-review + ADR**.
-3. T18/T19 (endpoint SSE e UI do chat) e T20–T33 seguem a T17.
+1. **T17 — CONCLUÍDO e MERGEADO** (squash `6599c5c`); branch remota apagada.
+2. **T18 — PENDENTE** (próxima ação): **endpoint de chat com SSE** — rota
+   autenticada que recebe a pergunta e transmite a resposta (SSE). Where
+   `src/gestlog/web/`; depends T17, T7; reuses T17 (Copilot Service). Done when:
+   SSE emite a resposta; sem sessão → 401. Branch `feat/f1-t18-*` → PR contra
+   `feat/f1-mvp`. Fluxo inclui **self-review + ADR**.
+3. T19 (UI do chat) e T20–T33 seguem a T18.
 4. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+5. Pendência pós-T17: os `TOOLS` mock ainda são fallback do REPL (`cli.py`); a
+   remoção/DB no CLI fica para quando não houver mais uso (web usa as fábricas).
 5. Adiados (AD-015): rate limiting em auth/onboarding/convites; convite por token;
    seleção de "empresa ativa" para usuários com múltiplos vínculos.
 6. Opcional: avaliar o plugin `@opencode-ai/plugin` (rodar `npm install` em
@@ -113,8 +121,8 @@
 
 - **`M .opencode/CONTEXT.md` + `M docs/specs/features/f1-mvp/tasks.md`** — este
   handoff (ainda não commitado; será o próximo commit na `feat/f1-mvp`).
-- `main` = `f639f36`; `feat/f1-mvp` (integração) = `ebf185e`; **nenhum PR aberto**.
-  Branches de task T12–T16/T34 apagadas (local e remoto). Backup `backup/f1-fase1`
+- `main` = `f639f36`; `feat/f1-mvp` (integração) = `6599c5c`; **nenhum PR aberto**.
+  Branches de task T12–T17/T34 apagadas (local e remoto). Backup `backup/f1-fase1`
   removido localmente.
 
 ## Artefatos do graphify
@@ -133,10 +141,11 @@
 - `docs/business/PRD.md` — PRD do produto.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
-  (`tasks.md`: 34 tasks; T1–T16 e T34 concluídos).
+  (`tasks.md`: 34 tasks; T1–T17 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews: `t13-upload-ui`, `t14-inventory-tools`,
-  `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`.
+  `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`,
+  `t17-copilot-service`.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `src/gestlog/config.py` — `Settings`/`get_settings()`; `tests/conftest.py` —
   `FakeChatModel`/`fake_model_cls`.
@@ -151,9 +160,13 @@
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-15:** **T34 concluído e mergeado** (PR #17, squash `ebf185e`) — tool
-  comum `enviar_resposta_logistica` nos três especialistas; self-review com ADR
-  `docs/adr/t34-common-response-self-review.md`; suíte 115/97,27%.
+- **2026-09-15:** **T17 concluído e mergeado** (PR #18, squash `6599c5c`) —
+  Copilot Service + injeção das tools do tenant no `build_graph`; self-review com
+  ADR `docs/adr/t17-copilot-service-self-review.md`; suíte 120/97,36%.
+- **2026-09-15 (anterior):** **T34 concluído e mergeado** (PR #17, squash
+  `ebf185e`) — tool comum `enviar_resposta_logistica` nos três especialistas;
+  self-review com ADR `docs/adr/t34-common-response-self-review.md`; suíte
+  115/97,27%.
 - **2026-09-15 (anterior):** **T16 concluído e mergeado** (PR #16, squash
   `2387a0e`) — tools de transporte por tenant + `otimizar_entrega` read-only;
   self-review com ADR `docs/adr/t16-transport-tools-self-review.md`; suíte
