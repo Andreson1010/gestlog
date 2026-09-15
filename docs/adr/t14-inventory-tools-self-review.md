@@ -37,10 +37,11 @@ de argumento de tool).
   mesmo contrato textual das tools de leitura simplifica o especialista e o REPL.
 - **Decision 4:** O mock determinístico `TOOLS` foi mantido como andaime do grafo
   e do REPL.
-  - **Justification:** O grafo e o REPL ainda não têm acesso a um repositório
-  concreto; a fábrica será injetada pelo Copilot Service na T19. Manter o mock
-  preserva o funcionamento atual do sistema enquanto o novo caminho é exercitado
-  pelos testes de fábrica.
+  - **Justification:** O REPL ainda não tem acesso a um repositório concreto; a
+    fábrica é injetada pelo Copilot Service na T17 (não na T19). O mock permanece
+    como fallback do REPL (`cli.py`) até a interface web/CLI receber DB,
+    preservando o funcionamento atual enquanto o novo caminho é exercitado pelos
+    testes de fábrica.
 - **Decision 5:** `_DIAS_COBERTURA = 30` como constante única em vez do `30`
   espalhado.
   - **Justification:** `calcular_reposicao` e `prever_demanda` compartilham o
@@ -72,11 +73,13 @@ de argumento de tool).
 - **Análises são heurísticas de regra simples**, não previsão estatística de
   demanda ou otimização de layout/roteiro — capacidade estendida fica para F2.
 - **`TOOLS` mock e fábrica coexistem:** risco de as tools mockadas continuarem
-  sendo usadas por engano após a T19; a T19 deve substituir o mock pela fábrica
-  no grafo/REPL e remover a fonte antiga. **Ação concreta (T19):** no Copilot
-  Service, injetar `build_inventory_tools(repo, empresa_id)` e remover o `TOOLS`
-  mock de `inventory.py` + `agents/inventory.py`, atualizando
-  `tests/agents/test_specialists.py` e `tests/test_tools.py::test_inventory_tools`.
+  sendo usadas por engano. **Correção de ponteiro:** o ponto de injeção é a T17
+  (Copilot Service), não a T19 — a T17 injeta `build_inventory_tools` pelo
+  parâmetro `specialist_tools` de `build_graph`. O `TOOLS` mock permanece como
+  fallback do REPL (`cli.py`) até a interface web/CLI receber DB. **Ação pendente
+  (pós-T17):** remover o `TOOLS` mock de `inventory.py` + `agents/inventory.py`
+  ao migrar o REPL, atualizando `tests/agents/test_specialists.py` e
+  `tests/test_tools.py::test_inventory_tools`.
 
 ## Achados corrigidos no self-review
 

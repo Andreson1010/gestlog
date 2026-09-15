@@ -8,8 +8,8 @@ tarifas) e são reaproveitados tanto pelo mock quanto pela fábrica.
 
 ``build_transport_tools`` prende o repositório e a empresa no closure,
 preservando as assinaturas das tools. ``TOOLS`` (mock determinístico) permanece
-como andaime usado pelo grafo e pelo REPL; o Copilot Service injeta a fábrica
-quando estiver disponível (T19).
+como fallback do REPL (``cli.py``); o Copilot Service injeta esta fábrica por
+requisição (T17).
 """
 
 from __future__ import annotations

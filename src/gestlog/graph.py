@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
+from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
@@ -27,10 +30,13 @@ def route_from_supervisor(state: AgentState) -> Route:
 def build_graph(
     model: BaseChatModel | None = None,
     settings: Settings | None = None,
+    specialist_tools: Mapping[str, Sequence[BaseTool]] | None = None,
 ) -> CompiledStateGraph:
     """Compila o grafo supervisor + especialistas.
 
     ``model`` é injetável para testes; em produção é criado a partir do ``.env``.
+    ``specialist_tools`` injeta as ferramentas de cada domínio (por nome do
+    especialista); quando ausente, cada nó usa o mock determinístico.
     """
     resolved = settings or get_settings()
     specialist_model = model or build_chat_model(settings=resolved)
@@ -39,17 +45,33 @@ def build_graph(
         if not resolved.supervisor_model
         else build_chat_model(resolved.supervisor_llm_model, settings=resolved)
     )
+    ferramentas: Mapping[str, Sequence[BaseTool]] = specialist_tools or {}
 
     builder = StateGraph(AgentState)
     builder.add_node("supervisor", create_supervisor_node(supervisor_model))
     builder.add_node(
-        "transporte", build_transport_node(specialist_model, resolved.max_tool_steps)
+        "transporte",
+        build_transport_node(
+            specialist_model,
+            resolved.max_tool_steps,
+            ferramentas.get("transporte"),
+        ),
     )
     builder.add_node(
-        "fornecedores", build_suppliers_node(specialist_model, resolved.max_tool_steps)
+        "fornecedores",
+        build_suppliers_node(
+            specialist_model,
+            resolved.max_tool_steps,
+            ferramentas.get("fornecedores"),
+        ),
     )
     builder.add_node(
-        "estoque", build_inventory_node(specialist_model, resolved.max_tool_steps)
+        "estoque",
+        build_inventory_node(
+            specialist_model,
+            resolved.max_tool_steps,
+            ferramentas.get("estoque"),
+        ),
     )
 
     builder.add_edge(START, "supervisor")

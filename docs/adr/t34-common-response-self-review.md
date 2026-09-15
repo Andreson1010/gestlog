@@ -48,9 +48,10 @@ F2 com HITL.
   mockados (andaime).
   - **Justification:** Mantém o catálogo de tools do pacote descoberto em um único
     `__all__` (padrão das T14/T15/T16) e preserva o caminho mock enquanto o
-    Copilot Service (T19) injeta as fábricas por tenant. Importar
-    `gestlog.tools.common` diretamente nos nós evita acoplar o nó ao
-    reagrupamento de `__all__`.
+    Copilot Service (T17, não T19) injeta as fábricas por tenant. Na T17 a
+    composição passou para dentro dos builders (`[*base, *COMMON_TOOLS]`), mas a
+    `COMMON_TOOLS` continua sempre anexada. Importar `gestlog.tools.common`
+    diretamente nos nós evita acoplar o nó ao reagrupamento de `__all__`.
 
 ## 3. Trade-offs & Compromises
 
@@ -80,14 +81,14 @@ F2 com HITL.
   vaza entre nós; se um consumidor futuro a mutar, quebra o contrato implícito.
 - **`fontes` vazio não distingue "não havia fonte" de "o LLM omitiu":** ambos
   caem em "não informadas". Refinamento fica para a extração estruturada da T21.
-- **Ação concreta (T19):** ao trocar os `TOOLS` mock pelas fábricas
-  (`build_inventory_tools` / `build_supplier_tools` / `build_transport_tools`),
-  os três nós devem continuar combinando
-  `[*<fabrica>(repo, empresa_id), *COMMON_TOOLS]`. A tool comum **não é
-  tenant-scoped** e não deve entrar no closure/fábrica; removê-la do binding dos
-  especialistas regride a T34. A remoção dos `TOOLS` mock de
-  `inventory.py`/`suppliers.py`/`transport.py` e dos imports em
-  `agents/*.py` (ações das ADRs T14/T15/T16) não inclui `tools/common.py`.
+- **Ponteiro corrigido (T17, não T19):** a troca do `TOOLS` mock pelas fábricas
+  (`build_inventory_tools` / `build_supplier_tools` / `build_transport_tools`)
+  acontece na T17. Nela, os builders passaram a receber `tools` opcional e a
+  compor `[*base, *COMMON_TOOLS]` internamente, mantendo a `COMMON_TOOLS` sempre
+  anexada ao binding. A tool comum **não é tenant-scoped** e não entra no
+  closure/fábrica; removê-la do binding dos especialistas regride a T34. O
+  `TOOLS` mock permanece como fallback do REPL (`cli.py`) até a interface
+  web/CLI receber DB; sua remoção (pós-T17) não inclui `tools/common.py`.
 
 ## Achados corrigidos no self-review
 
