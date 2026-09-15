@@ -5,8 +5,8 @@ filtrando sempre pelo ``empresa_id`` para individualizar os dados entre clientes
 do SaaS. ``build_inventory_tools`` prende o repositório e a empresa no closure,
 preservando as assinaturas das tools (``sku``, ``consumo_medio_dia`` etc.).
 
-``TOOLS`` (mock determinístico) permanece como andaime usado pelo grafo e pelo
-REPL; o Copilot Service injeta a fábrica quando estiver disponível (T19).
+``TOOLS`` (mock determinístico) permanece como fallback do REPL (``cli.py``);
+o Copilot Service injeta esta fábrica por requisição (T17).
 """
 
 from __future__ import annotations

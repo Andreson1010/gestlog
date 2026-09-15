@@ -16,7 +16,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 from sqlalchemy.orm import Session
 
-from gestlog.config import Settings
+from gestlog.config import Settings, get_settings
 from gestlog.graph import build_graph, run_query
 from gestlog.repositories.catalog import (
     StockRepository,
@@ -31,7 +31,6 @@ MENSAGEM_FORA_DE_ESCOPO = (
     "Não encontrei dados sobre essa solicitação na sua operação. "
     "Pergunte sobre estoque, fornecedores ou transporte."
 )
-_LIMITE_RECURSAO_PADRAO = 25
 
 
 def _texto_resposta(messages: Sequence[BaseMessage]) -> str:
@@ -67,15 +66,11 @@ class CopilotService:
 
     def answer(self, pergunta: str) -> str:
         """Roda o grafo com o contexto do tenant e devolve a resposta final."""
+        resolvido = self.settings or get_settings()
         grafo = build_graph(
             model=self.model,
-            settings=self.settings,
+            settings=resolvido,
             specialist_tools=self.tools_por_dominio(),
         )
-        limite = (
-            self.settings.recursion_limit
-            if self.settings is not None
-            else _LIMITE_RECURSAO_PADRAO
-        )
-        estado = run_query(grafo, pergunta, recursion_limit=limite)
+        estado = run_query(grafo, pergunta, recursion_limit=resolvido.recursion_limit)
         return _texto_resposta(estado["messages"])

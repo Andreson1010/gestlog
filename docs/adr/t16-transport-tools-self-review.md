@@ -57,10 +57,11 @@ mesmo estabelecido em T14 (`docs/adr/t14-inventory-tools-self-review.md`) e T15
     que a F1 não tem. O helper isola a regra e é testável.
 - **Decision 5:** O mock determinístico `TOOLS` foi mantido como andaime do grafo
   e do REPL.
-  - **Justification:** O grafo e o REPL ainda não têm acesso a um repositório
-    concreto; a fábrica será injetada pelo Copilot Service na T19. Manter o mock
-    preserva o funcionamento atual do sistema enquanto o novo caminho é
-    exercitado pelos testes de fábrica. Mesma decisão das T14/T15. Assim como nas
+  - **Justification:** O REPL ainda não tem acesso a um repositório concreto; a
+    fábrica é injetada pelo Copilot Service na T17 (não na T19). O mock permanece
+    como fallback do REPL (`cli.py`) até a interface web/CLI receber DB,
+    preservando o funcionamento atual enquanto o novo caminho é exercitado pelos
+    testes de fábrica. Mesma decisão das T14/T15. Assim como nas
     predecessors, a tool nova (`otimizar_entrega`) não entra no `TOOLS` mock —
     ela só existe no caminho por tenant.
 
@@ -101,12 +102,15 @@ mesmo estabelecido em T14 (`docs/adr/t14-inventory-tools-self-review.md`) e T15
 - **Sem camada de cache:** `otimizar_entrega` varre a empresa a cada invocação.
   Aceitável no volume do MVP.
 - **`TOOLS` mock e fábrica coexistem:** risco de as tools mockadas continuarem
-  sendo usadas por engano após a T19. **Ação concreta (T19):** no Copilot Service,
-  injetar as três fábricas (`build_inventory_tools`, `build_supplier_tools` e
-  `build_transport_tools(repo, empresa_id)`) e **remover os `TOOLS` mock** de
-  `inventory.py`, `suppliers.py` e `transport.py` + os imports em
-  `agents/inventory.py`, `agents/suppliers.py` e `agents/transport.py`,
-  atualizando `tests/agents/test_specialists.py` e os testes
+  sendo usadas por engano. **Correção de ponteiro:** o ponto de injeção é a T17
+  (Copilot Service), não a T19 — a T17 injeta as três fábricas
+  (`build_inventory_tools`, `build_supplier_tools` e
+  `build_transport_tools(repo, empresa_id)`) pelo parâmetro `specialist_tools` de
+  `build_graph`. O `TOOLS` mock permanece como fallback do REPL (`cli.py`) até a
+  interface web/CLI receber DB. **Ação pendente (pós-T17):** remover os `TOOLS`
+  mock de `inventory.py`, `suppliers.py` e `transport.py` + os imports em
+  `agents/inventory.py`, `agents/suppliers.py` e `agents/transport.py` ao migrar
+  o REPL, atualizando `tests/agents/test_specialists.py` e os testes
   `test_inventory_tools`/`test_supplier_tools`/`test_transport_tools` de
   `tests/test_tools.py`.
 

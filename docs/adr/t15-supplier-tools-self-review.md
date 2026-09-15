@@ -42,10 +42,11 @@ de argumento de tool). O padrão é o mesmo estabelecido na T14
     regra de negócio, testável por limite (4.0/15 inclusivos).
 - **Decision 4:** O mock determinístico `TOOLS` foi mantido como andaime do grafo
   e do REPL.
-  - **Justification:** O grafo e o REPL ainda não têm acesso a um repositório
-    concreto; a fábrica será injetada pelo Copilot Service na T19. Manter o mock
-    preserva o funcionamento atual do sistema enquanto o novo caminho é exercitado
-    pelos testes de fábrica. Mesma decisão da T14.
+  - **Justification:** O REPL ainda não tem acesso a um repositório concreto; a
+    fábrica é injetada pelo Copilot Service na T17 (não na T19). O mock permanece
+    como fallback do REPL (`cli.py`) até a interface web/CLI receber DB,
+    preservando o funcionamento atual enquanto o novo caminho é exercitado pelos
+    testes de fábrica. Mesma decisão da T14.
 
 ## 3. Trade-offs & Compromises
 
@@ -79,11 +80,14 @@ de argumento de tool). O padrão é o mesmo estabelecido na T14
   refactor compartilhado entre `inventory.py` e `suppliers.py` — adiado para não
   divergir do baseline da T14.
 - **`TOOLS` mock e fábrica coexistem:** risco de as tools mockadas continuarem
-  sendo usadas por engano após a T19. **Ação concreta (T19):** no Copilot Service,
-  injetar `build_supplier_tools(repo, empresa_id)` e remover o `TOOLS` mock de
-  `suppliers.py` + `agents/suppliers.py`, atualizando
-  `tests/agents/test_specialists.py` e `tests/test_tools.py::test_supplier_tools`.
-  O mesmo vale para `build_inventory_tools` (T14) e `build_transport_tools` (T16).
+  sendo usadas por engano. **Correção de ponteiro:** o ponto de injeção é a T17
+  (Copilot Service), não a T19 — a T17 injeta `build_supplier_tools` pelo
+  parâmetro `specialist_tools` de `build_graph`. O `TOOLS` mock permanece como
+  fallback do REPL (`cli.py`) até a interface web/CLI receber DB. **Ação pendente
+  (pós-T17):** remover o `TOOLS` mock de `suppliers.py` + `agents/suppliers.py`
+  ao migrar o REPL, atualizando `tests/agents/test_specialists.py` e
+  `tests/test_tools.py::test_supplier_tools`. O mesmo vale para
+  `build_inventory_tools` (T14) e `build_transport_tools` (T16).
 
 ## Achados corrigidos no self-review
 
