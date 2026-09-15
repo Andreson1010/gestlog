@@ -40,6 +40,7 @@ _MOVIMENTACOES: dict[str, str] = {
 }
 
 _DIAS_COBERTURA = 30
+_FATOR_EXCEDENTE = 2
 
 
 @tool
@@ -115,7 +116,7 @@ def build_inventory_tools(repo: StockRepository, empresa_id: UUID) -> list[BaseT
         if consumo_medio_dia <= 0:
             return "Consumo médio diário deve ser maior que zero."
         dias_restantes = item.quantidade / consumo_medio_dia
-        alvo = max(item.minimo * 2, consumo_medio_dia * _DIAS_COBERTURA)
+        alvo = max(item.minimo * _FATOR_EXCEDENTE, consumo_medio_dia * _DIAS_COBERTURA)
         sugerida = max(0, alvo - item.quantidade)
         return (
             f"{chave}: {dias_restantes:.1f} dia(s) de cobertura | "
@@ -163,7 +164,9 @@ def build_inventory_tools(repo: StockRepository, empresa_id: UUID) -> list[BaseT
     def otimizar_custos() -> str:
         """Analisa custo de manutenção: SKUs com estoque acima do dobro do mínimo."""
         itens = repo.list(empresa_id)
-        excedentes = [item for item in itens if item.quantidade > item.minimo * 2]
+        excedentes = [
+            item for item in itens if item.quantidade > item.minimo * _FATOR_EXCEDENTE
+        ]
         if not excedentes:
             return "Nenhum SKU com estoque excedente identificado."
         linhas = [

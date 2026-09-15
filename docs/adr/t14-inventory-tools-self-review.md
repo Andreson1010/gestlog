@@ -73,7 +73,10 @@ de argumento de tool).
   demanda ou otimização de layout/roteiro — capacidade estendida fica para F2.
 - **`TOOLS` mock e fábrica coexistem:** risco de as tools mockadas continuarem
   sendo usadas por engano após a T19; a T19 deve substituir o mock pela fábrica
-  no grafo/REPL e remover a fonte antiga.
+  no grafo/REPL e remover a fonte antiga. **Ação concreta (T19):** no Copilot
+  Service, injetar `build_inventory_tools(repo, empresa_id)` e remover o `TOOLS`
+  mock de `inventory.py` + `agents/inventory.py`, atualizando
+  `tests/agents/test_specialists.py` e `tests/test_tools.py::test_inventory_tools`.
 
 ## Achados corrigidos no self-review
 
