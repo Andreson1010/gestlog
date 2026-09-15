@@ -383,7 +383,7 @@ def test_transport_factory_otimizar_entrega() -> None:
     assert "Nenhuma entrega registrada" in tools_vazio["otimizar_entrega"].invoke({})
 
 
-def test_common_tool_compõe_resposta() -> None:
+def test_common_tool_compoe_resposta() -> None:
     saida = enviar_resposta_logistica.invoke(
         {"resposta": "Repor SKU-1", "fontes": "estoque"}
     )
