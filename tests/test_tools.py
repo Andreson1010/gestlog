@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from uuid import UUID, uuid4
+
 from gestlog.tools.inventory import (
+    build_inventory_tools,
     calcular_reposicao,
     consultar_estoque,
     listar_movimentacoes,
@@ -13,6 +17,40 @@ from gestlog.tools.suppliers import (
     listar_fornecedores,
 )
 from gestlog.tools.transport import calcular_frete, consultar_prazo, rastrear_entrega
+
+
+class _FakeRepo:
+    """Repositório fake com itens por empresa para exercitar as tools."""
+
+    def __init__(self, itens_por_empresa: dict[UUID, list[SimpleNamespace]]) -> None:
+        self._itens = itens_por_empresa
+
+    def get_by_sku(self, empresa_id: UUID, sku: str) -> SimpleNamespace | None:
+        for item in self._itens.get(empresa_id, []):
+            if item.sku == sku:
+                return item
+        return None
+
+    def list(self, empresa_id: UUID) -> list[SimpleNamespace]:
+        return list(self._itens.get(empresa_id, []))
+
+
+def _item(sku: str, quantidade: int, minimo: int, local: str = "") -> SimpleNamespace:
+    return SimpleNamespace(
+        sku=sku, nome=f"Item {sku}", quantidade=quantidade, minimo=minimo, local=local
+    )
+
+
+def _repo_a() -> tuple[UUID, UUID, _FakeRepo]:
+    empresa = uuid4()
+    outra = uuid4()
+    repo = _FakeRepo(
+        {
+            empresa: [_item("SKU-1", 120, 50, "A1"), _item("SKU-2", 20, 40, "B3")],
+            outra: [_item("SKU-1", 500, 10, "X9")],
+        }
+    )
+    return empresa, outra, repo
 
 
 def test_transport_tools() -> None:
@@ -50,3 +88,79 @@ def test_inventory_tools() -> None:
     )
     assert "SKU-300" in listar_movimentacoes.invoke({"sku": "SKU-300"})
     assert "não encontrado" in listar_movimentacoes.invoke({"sku": "SKU-999"})
+
+
+def test_inventory_factory_consulta_por_tenant() -> None:
+    empresa, _, repo = _repo_a()
+    consultar, *_ = build_inventory_tools(repo, empresa)
+
+    assert "SKU-1" in consultar.invoke({"sku": "sku-1"})
+    assert "não encontrado" in consultar.invoke({"sku": "SKU-999"})
+
+
+def test_inventory_factory_isolamento_entre_empresas() -> None:
+    empresa, outra, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    assert "quantidade 120" in tools["consultar_estoque"].invoke({"sku": "SKU-1"})
+    assert repo.get_by_sku(outra, "SKU-1").quantidade == 500
+
+
+def test_inventory_factory_reposicao() -> None:
+    empresa, _, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    assert "reposição sugerida" in tools["calcular_reposicao"].invoke(
+        {"sku": "SKU-1", "consumo_medio_dia": 5}
+    )
+    assert "maior que zero" in tools["calcular_reposicao"].invoke(
+        {"sku": "SKU-1", "consumo_medio_dia": 0}
+    )
+    assert "não encontrado" in tools["calcular_reposicao"].invoke(
+        {"sku": "SKU-999", "consumo_medio_dia": 5}
+    )
+
+
+def test_inventory_factory_movimentacoes() -> None:
+    empresa, _, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    assert "SKU-1" in tools["listar_movimentacoes"].invoke({"sku": "SKU-1"})
+    assert "não encontrado" in tools["listar_movimentacoes"].invoke({"sku": "SKU-999"})
+
+
+def test_inventory_factory_prever_demanda() -> None:
+    empresa, _, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    assert "demanda projetada" in tools["prever_demanda"].invoke(
+        {"sku": "SKU-1", "consumo_medio_dia": 10}
+    )
+    assert "maior que zero" in tools["prever_demanda"].invoke(
+        {"sku": "SKU-1", "consumo_medio_dia": 0}
+    )
+    assert "não encontrado" in tools["prever_demanda"].invoke(
+        {"sku": "SKU-999", "consumo_medio_dia": 10}
+    )
+
+
+def test_inventory_factory_otimizar_armazem() -> None:
+    empresa, _, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    saida = tools["otimizar_armazem"].invoke({})
+    assert "SKU-2" in saida and "abaixo do mínimo" in saida
+    vazio = _FakeRepo({empresa: []})
+    tools_vazio = {t.name: t for t in build_inventory_tools(vazio, empresa)}
+    assert "Nenhum SKU abaixo" in tools_vazio["otimizar_armazem"].invoke({})
+
+
+def test_inventory_factory_otimizar_custos() -> None:
+    empresa, _, repo = _repo_a()
+    tools = {tool.name: tool for tool in build_inventory_tools(repo, empresa)}
+
+    saida = tools["otimizar_custos"].invoke({})
+    assert "SKU-1" in saida and "excedente" in saida
+    vazio = _FakeRepo({empresa: []})
+    tools_vazio = {t.name: t for t in build_inventory_tools(vazio, empresa)}
+    assert "Nenhum SKU" in tools_vazio["otimizar_custos"].invoke({})
