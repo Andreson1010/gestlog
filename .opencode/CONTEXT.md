@@ -1,102 +1,84 @@
-# Contexto da Sessão — F1 do gestlog: T15–T19 + T34 mergeadas, T20 pendente
+# Contexto da Sessão — F1 do gestlog: T19 mergeada e ADRs no formato fluid-hybrid
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-16.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `cf0924f`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `ba477ae`
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) em execução** na branch de integração `feat/f1-mvp`: **T1–T19 + T34
-  CONCLUÍDOS**; **14 tasks PENDENTES (T20–T33)** — `docs/specs/features/f1-mvp/tasks.md`
-  (34 tasks no total).
+- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T19 + T34 CONCLUÍDOS**
+  (20 de 34 tasks); **14 PENDENTES (T20–T33)** —
+  `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
-- **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a branch de
+- **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a
   integração; **1 PR por task** (`feat/f1-tXX-*` → `feat/f1-mvp`) com CI +
-  self-review + `code-reviewer`; release único `feat/f1-mvp → main` + tag `v0.1.0`.
+  self-review + `code-reviewer`; release único `feat/f1-mvp → main` + tag
+  `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
 - **Suíte**: **131 testes, 97,48% de cobertura** (`uv run pytest`); Python 3.14.3
   no `.venv` (projeto exige `>=3.11`).
-- **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
-  `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`,
-  **`copilot/`**), `alembic/`, `docs/adr/`, `tests/` espelhando `src/`.
-- Árvore de trabalho **limpa**; nenhum PR aberto. Skill `write-fluid-hybrid-adr`
-  commitada (absorvida no squash `450df94`).
+- `main` = `f639f36`; `feat/f1-mvp` = `ba477ae` (= `origin/feat/f1-mvp`, **em
+  sincronia**). **Árvore limpa; nenhum PR aberto.** Nenhuma branch de task
+  pendente (a de T19 foi apagada no remoto; prune local feito).
 
 ## O que foi feito nesta sessão
 
-Entrega da **T15 → T16 → T34 → T17 → T18 → T19** (uma branch + PR por task, squash
-na `feat/f1-mvp`), cada uma com self-review (`developer-self-reviewer` + ADR) e code
-review antes do merge:
-
-- **T15** (PR #15, squash `a5fbcfe`): tools de fornecedores por tenant em
-  `tools/suppliers.py` + `tratar_conformidade` read-only (inativo, nota < 4.0,
-  prazo > 15d); fábrica `build_supplier_tools`. ADR `t15-supplier-tools`.
-- **T16** (PR #16, squash `2387a0e`): tools de transporte por tenant em
-  `tools/transport.py` + `otimizar_entrega` read-only; `calcular_frete`/`prazo`
-  mantêm o cálculo (helpers compartilhados); fábrica `build_transport_tools`.
-  ADR `t16-transport-tools`.
-- **T34** (PR #17, squash `ebf185e`): tool comum `enviar_resposta_logistica` em
-  `tools/common.py` (`COMMON_TOOLS`), anexada aos 3 especialistas. ADR
-  `t34-common-response`.
-- **T17** (PR #18, squash `6599c5c`): **Copilot Service** em `copilot/service.py`
-  (`CopilotService.tools_por_dominio()` + `answer()`); seam de injeção
-  `build_graph(..., specialist_tools=...)` e 3º parâmetro `tools` nos builders.
-  ADR `t17-copilot-service` (resolve `settings` uma vez; corrige ponteiro
-  T19→T17 nas ADRs T14/T15/T16/T34 e docstrings).
-- **T18** (PR #19, squash `61172a5`): **endpoint SSE de chat** em `web/chat.py`
-  (`GET /chat/stream?pergunta=`, 401 sem sessão, 422 vazio; eventos `resposta` +
-  `fim`); registrado em `web/app.py`. ADR `t18-chat-sse`.
-- **T19** (PR #20, squash `450df94`): **UI do chat (HTMX/SSE)** em
-  `web/chat_ui.py` (`GET /chat` página → 303 sem sessão; `GET /chat/pergunta`
-  fragmento) + `templates/chat.html`/`chat_turno.html` (formulário HTMX
-  `hx-get`/`beforeend`; turno com `sse-connect`/`sse-swap`) + extensão
-  `htmx-ext-sse@2.2.2` com SRI em `base.html`. ADR `t19-chat-ui`. Self-review
-  corrigiu XSS (`hx-swap="textContent"`) e reconexão (`sse-close="fim"`);
-  6 testes de integração.
-- **Handoff/limpeza**: skill `write-fluid-hybrid-adr` (ADR narrativa fluid-hybrid,
-  usada na fase 5.5 do `feature-factory`), handoffs e correção de HEAD; o squash
-  do PR #20 absorveu os commits locais de skill/handoff (nada perdido). Depois,
-  **refez as 7 ADRs anteriores (t13–t18 + t34) no formato fluid-hybrid**
-  (`cf0924f`), preservando fatos e números de gate de cada task.
-- `AGENTS.md`: documentado o parâmetro `specialist_tools` do `build_graph`.
+1. **Handoff de entrada validado/corrigido**: o arquivo dizia HEAD `5892610` e
+   árvore limpa, mas o HEAD real era `8190daf` e havia WIP não commitado (skill
+   `write-fluid-hybrid-adr` + ajuste em `feature-factory/SKILL.md`).
+2. **Skill `write-fluid-hybrid-adr`** adicionada e commitada; `feature-factory`
+   passou a invocá-la na fase 5.5 (geração da ADR de self-review).
+3. **T19 — UI do chat (HTMX/SSE) — CONCLUÍDA** (PR #20, squash `450df94`):
+   - `src/gestlog/web/chat_ui.py` (NOVO): `GET /chat` (página; sem sessão → 303
+     `/login`) e `GET /chat/pergunta` (fragmento HTMX que abre a assinatura SSE).
+   - `templates/chat.html` + `chat_turno.html` (NOVOS): formulário
+     `hx-get`/`hx-swap="beforeend"`; turno com `sse-connect`/`sse-swap` +
+     `hx-swap="textContent"` + `sse-close="fim"`.
+   - `templates/base.html`: extensão `htmx-ext-sse@2.2.2` com SRI.
+   - `static/app.css`: estilos do chat. `app.py`: registra o router.
+   - `tests/web/test_chat_ui.py` (NOVO): 6 testes de integração.
+   - Self-review (`developer-self-reviewer` + ADR `docs/adr/t19-chat-ui`):
+     corrigiu **XSS** (swap padrão era `innerHTML`) e **reconexão do
+     EventSource** (re-executava o grafo).
+   - Code review `code-reviewer`: **APPROVE** (0 CRITICAL/HIGH). CI verde.
+4. **ADRs t13–t18 + t34 refeitas** no formato fluid-hybrid (`cf0924f`),
+   preservando fatos e números de gate de cada task; `t19` já nasceu no formato.
+5. **Handoffs**: `5c06619` (após T19) e `ba477ae` (após refazer ADRs).
 
 ## Decisões e regras (não esquecer)
 
 - **Skills/agentes do `.opencode/` são agnósticos**; especificidades do projeto
   ficam no `AGENTS.md`.
+- **ADRs**: usar a skill `write-fluid-hybrid-adr` (narrativa única, sem separar
+  “versão dev” de “versão negócio”; contexto antes do mecanismo; 5 seções fixas:
+  Contexto/Decisões/Concessões/Roadmap/Validação).
 - `uv run pytest` já ativa o gate de 80% (`addopts`); use `--no-cov` em execuções
   focadas. Nenhum teste toca rede/Ollama (`fake_model_cls` em `tests/conftest.py`).
-- **Nomes de código em português** (AD-008): `Empresa`/`empresa_id` ("tenant" só
+- **Nomes de código em português** (AD-008): `Empresa`/`empresa_id` (“tenant” só
   nos docs).
 - **Docs-as-code** (AD-011); **pacote único** com fronteiras `apps → agents →
   libs` (AD-012). Endpoint/web → `apps`; nó/tool/grafo → `agents`; modelo/repo/
   config → `libs`.
-- **Produto**: SaaS multi-cliente, read-only no MVP, HITL na F2, importação→API,
-  LLM hospedado, LGPD/PII (AD-001..006).
 - **AD-014**: `AMBIENTE=prod` exige `AUTH_SECRET` (>= 32 chars). **AD-015**: rate
-  limiting/convite por token adiados. **AD-016**: épico + 1 PR/task, proibido
+  limiting/convite por token adiados. **AD-016**: épico + 1 PR/task; proibido
   force-push em `main`/`feat/f1-mvp`.
-- **Injeção de tools do tenant (T17)**: builders aceitam `tools` opcional
-  (default = mock `TOOLS`); `COMMON_TOOLS` é **sempre** anexada no builder;
+- **Injeção de tools do tenant (T17)**: builders aceitam `tools` opcional (default
+  = mock `TOOLS`); `COMMON_TOOLS` é **sempre** anexada no builder;
   `build_graph(..., specialist_tools=)` indexa por nome do especialista. O mock
   `TOOLS` permanece como fallback do REPL (`cli.py`).
 - **Chat SSE (T18)**: resposta final em eventos (`resposta` + `fim`), não token a
-  token (pergunta aberta 4 do design); rota `GET` (compatível com HTMX
-  `sse-connect`/EventSource); **401** (endpoint de API), não redirect.
-- **Chat UI (T19)**: `GET /chat` (página, 303 sem sessão) separa `GET /chat/pergunta`
-  (fragmento HTMX anexado com `beforeend`); resposta via `sse-connect` +
-  `hx-swap="textContent"` (anti-XSS do payload do LLM) e `sse-close="fim"`
-  (encerra o EventSource, evita reexecutar o grafo); extensão SSE global em
-  `base.html` com SRI.
+  token; rota `GET`; **401** (API), não redirect.
+- **Chat UI (T19)**: página (`GET /chat`, 303 sem sessão) separada do fragmento
+  (`GET /chat/pergunta`); resposta como `textContent` (anti-XSS) e
+  `sse-close="fim"` (não reexecuta o grafo).
 - **Fluxo da task**: cortar `feat/f1-tXX-*` de `feat/f1-mvp` → implementar
   (`build-with-tests`) → gate (`pytest` + `black` + `ruff`) → commit PT
-  `feat(f1): ...` → PR contra `feat/f1-mvp` → **self-review obrigatório** (ADR em
-  `docs/adr/<slug>-self-review.md`) → **code review** (`code-reviewer`) → squash +
-  apagar branch.
+  `feat(f1): ...` → PR contra `feat/f1-mvp` → **self-review obrigatório** (ADR) →
+  **code review** (`code-reviewer`) → squash + apagar branch.
 
 ## Próximos passos / bloqueios
 
@@ -106,7 +88,7 @@ review antes do merge:
    Done when: recarregar mantém o histórico no tenant correto. Branch
    `feat/f1-t20-*` → PR contra `feat/f1-mvp`.
 2. T21–T33 seguem a T20 (recomendação/fontes, feedback aceitar/descartar,
-   PII/auditoria/uso…).
+   PII/auditoria/uso, custo/eval, admin…).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 4. Pendência técnica (pós-T17): os `TOOLS` mock ainda são fallback do REPL; DB no
    CLI/remoção do mock quando não houver mais uso.
@@ -116,39 +98,35 @@ review antes do merge:
 
 ## WIP local (não commitado)
 
-- **Nenhum** (exceto este handoff). A skill `write-fluid-hybrid-adr` + ajuste do
-  `feature-factory` estão no squash `450df94`.
-- `main` = `f639f36`; `feat/f1-mvp` = `450df94`; **nenhum PR aberto**. Branch
-  `feat/f1-t19-chat-ui` apagada (local e remoto). Backups locais `backup/f1-fase2`
-  e `backup/f1-mvp` ainda existem.
+- **Nenhum.** Árvore limpa (`git status` sem alterações); este handoff será o
+  próximo commit na `feat/f1-mvp`.
 
 ## Artefatos do graphify
 
-- **graphify indisponível para o gestlog**: `graphify_graph_stats` retornou
-  `graph.json not found: C:\Users\ander\8_projetos\gestlog\graphify-out\graph.json`
-  (`Test-Path graphify-out/graph.json` = `False`). O MCP existe, mas o
-  `opencode.json:14` aponta para `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`
-  (OUTRO repositório) — **não representa o gestlog**. Nenhum número registrado.
-- God nodes / comunidades afetadas: **não verificado** (sem grafo do gestlog).
+- **graphify indisponível para o gestlog.** `graphify_graph_stats` e
+  `graphify_god_nodes` retornaram `graph.json not found:
+  C:\Users\ander\8_projetos\gestlog\graphify-out\graph.json`. O MCP existe, mas o
+  `opencode.json` aponta para `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json`
+  (OUTRO repositório) — **não representa o gestlog**. **Nenhum número registrado
+  (não verificado); não inventar valores.**
+- Módulos tocados nesta sessão: `src/gestlog/web/` (chat_ui, templates, css) e
+  `docs/adr/`. Comunidades afetadas: **não verificado** (sem grafo do gestlog).
 
 ## Documentos de projeto relevantes
 
-- `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task (atualizado:
-  `build_graph(..., specialist_tools=)`).
+- `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task.
 - `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
   (`tasks.md`: 34 tasks; T1–T19 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
-- `docs/adr/` — self-reviews: `t13-upload-ui`, `t14-inventory-tools`,
-  `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`,
-  `t17-copilot-service`, `t18-chat-sse`, `t19-chat-ui`.
+- `docs/adr/` — self-reviews **no formato fluid-hybrid**: `t13-upload-ui`,
+  `t14-inventory-tools`, `t15-supplier-tools`, `t16-transport-tools`,
+  `t34-common-response`, `t17-copilot-service`, `t18-chat-sse`, `t19-chat-ui`.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
-- `src/gestlog/config.py` (`Settings`/`get_settings`), `src/gestlog/llm.py`
-  (`build_chat_model`), `src/gestlog/graph.py` (`build_graph`/`run_query`),
-  `src/gestlog/copilot/`, `src/gestlog/web/chat.py` (SSE T18),
-  `src/gestlog/web/chat_ui.py` (UI T19), `src/gestlog/web/templates/chat*.html`,
-  `tests/conftest.py` (`FakeChatModel`/`fake_model_cls`).
+- `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
+  `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/` (`chat.py` = SSE
+  T18; `chat_ui.py` = UI T19; `templates/chat*.html`), `copilot/`, `ingestion/`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, **write-fluid-hybrid-adr**.
 - `.opencode/agent/` — backend-builder, codebase-researcher,
@@ -161,15 +139,14 @@ review antes do merge:
 # Histórico (sessões anteriores, resumido)
 
 - **2026-09-16:** handoff validado/corrigido; skill `write-fluid-hybrid-adr`
-  adicionada; **T19 concluída e mergeada** (PR #20, squash `450df94` — UI do chat
-  HTMX/SSE, ADR `t19-chat-ui`); 125→131 testes (97,43%→97,48%). ADRs t13–t18/t34
+  criada; **T19 concluída e mergeada** (PR #20, squash `450df94` — UI do chat
+  HTMX/SSE, ADR `t19-chat-ui`); 125→131 testes (97,43%→97,48%); ADRs t13–t18/t34
   refeitas no formato fluid-hybrid (`cf0924f`). Árvore limpa; F1 retoma na T20.
-- **2026-09-15:** T15 (`a5fbcfe`), T16 (`2387a0e`), T34
-  (`ebf185e`), T17 (`6599c5c`), T18 (`61172a5`) concluídas e mergeadas; 109→125
-  testes (97,06%→97,43%); ADRs t15/t16/t34/t17/t18; handoff validado/corrigido.
+- **2026-09-15:** T15 (`a5fbcfe`), T16 (`2387a0e`), T34 (`ebf185e`), T17
+  (`6599c5c`), T18 (`61172a5`) concluídas e mergeadas; 109→125 testes; ADRs
+  t15/t16/t34/t17/t18.
 - **2026-09-15 (anterior):** T14 concluído e mergeado (PR #14, `12c046f`) — tools
-  de estoque por tenant + análises read-only; ADR `t14-inventory-tools`; suíte
-  103/96,93%; `tasks.md` corrigido (T13/T14).
+  de estoque por tenant + análises read-only; ADR `t14-inventory-tools`.
 - **2026-09-14:** T13 (PR #13, `fcd93fc`, UI HTMX de upload/histórico) e T12
   (PR #12, `224f918`, serviço de importação/status); fase 5.5 de self-review/ADR
   adicionada ao pipeline (`2443b92`).
