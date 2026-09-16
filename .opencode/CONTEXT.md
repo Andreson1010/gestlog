@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T15–T18 + T34 mergeadas, T19 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-16.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `8190daf`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `152590b`
 
 ## Estado atual
 
@@ -23,8 +23,8 @@
 - **Estrutura**: `src/gestlog/` (`config`, `llm`, `state`, `graph`, `cli`,
   `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/`, `ingestion/`,
   **`copilot/`**), `alembic/`, `docs/adr/`, `tests/` espelhando `src/`.
-- Árvore de trabalho com **WIP não commitado** (skill `write-fluid-hybrid-adr`);
-  nenhum PR aberto.
+- Árvore de trabalho **limpa**; nenhum PR aberto. Skill `write-fluid-hybrid-adr`
+  já commitada (`7a6834b`).
 
 ## O que foi feito nesta sessão
 
@@ -103,11 +103,9 @@ review antes do merge:
 
 ## WIP local (não commitado)
 
-- **Há WIP**: nova skill `.opencode/skills/write-fluid-hybrid-adr.md/SKILL.md`
-  (instruções para ADRs narrativas "fluid-hybrid") + `feature-factory/SKILL.md`
-  modificado na fase 5.5 para usar essa skill na geração da ADR de self-review.
-  Ainda **não commitado**; decidir se entra num commit `docs:`/`chore:` próprio.
-- `main` = `f639f36`; `feat/f1-mvp` = `8190daf`; **nenhum PR aberto**. Branches de
+- **Nenhum** (exceto este handoff). A skill `write-fluid-hybrid-adr` + ajuste do
+  `feature-factory` foram commitados em `7a6834b`.
+- `main` = `f639f36`; `feat/f1-mvp` = `152590b`; **nenhum PR aberto**. Branches de
   task T12–T18/T34 apagadas (local e remoto). Backups locais `backup/f1-fase2` e
   `backup/f1-mvp` ainda existem.
 
@@ -138,7 +136,7 @@ review antes do merge:
   `src/gestlog/copilot/` (**novo**), `src/gestlog/web/chat.py` (**novo**),
   `tests/conftest.py` (`FakeChatModel`/`fake_model_cls`).
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
-  git-workflow, ship-feature, **write-fluid-hybrid-adr** (WIP, não commitada).
+  git-workflow, ship-feature, **write-fluid-hybrid-adr** (`7a6834b`).
 - `.opencode/agent/` — backend-builder, codebase-researcher,
   developer-self-reviewer, frontend-builder, persistence-checker, spec-writer,
   story-writer, test-verifier, validator.
@@ -148,9 +146,9 @@ review antes do merge:
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-16:** início da sessão com WIP não commitado — skill
-  `write-fluid-hybrid-adr` + ajuste de referência em `feature-factory/SKILL.md`;
-  handoff validado/corrigido (HEAD `5892610`→`8190daf`). F1 retoma na T19.
+- **2026-09-16:** handoff validado/corrigido (HEAD `5892610`→`8190daf`); skill
+  `write-fluid-hybrid-adr` + ajuste em `feature-factory/SKILL.md` commitados
+  (`7a6834b`); handoff `152590b`. Árvore limpa; F1 retoma na T19.
 - **2026-09-15:** T15 (`a5fbcfe`), T16 (`2387a0e`), T34
   (`ebf185e`), T17 (`6599c5c`), T18 (`61172a5`) concluídas e mergeadas; 109→125
   testes (97,06%→97,43%); ADRs t15/t16/t34/t17/t18; handoff validado/corrigido.
