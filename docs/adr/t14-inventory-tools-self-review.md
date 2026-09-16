@@ -1,91 +1,104 @@
 # ADR: t14-inventory-tools
 
-## 1. Context & Goal
+## 1. Contexto & Objetivo
 
-A T14 aplica o requisito COP-02 ("persistência de dados das tools por tenant",
-design.md:261) ao especialista de estoque. As tools de leitura
-(`consultar_estoque`/`calcular_reposicao`/`listar_movimentacoes`) passaram a ler
-do `StockRepository` filtrado por `empresa_id`, e foram adicionadas três tools
-read-only de análise (`prever_demanda`, `otimizar_armazem`, `otimizar_custos`).
-O desafio técnico é trocar a fonte de dados (mock determinístico -> repositório
-do tenant) **sem mudar prompts nem assinaturas** chamadas pelo LLM, e garantir o
-isolamento entre clientes do SaaS (o `empresa_id` vem do contexto da sessão, não
-de argumento de tool).
+O especialista de estoque respondia com dados mockados e determinísticos: úteis
+para desenvolver o grafo, inúteis para o operador, porque não refletiam o estoque
+da empresa dele. A T14 aplica o requisito COP-02 (persistência das tools por
+tenant, design.md:261) ao domínio de estoque: as tools de leitura
+(`consultar_estoque`, `calcular_reposicao`, `listar_movimentacoes`) passam a ler
+do `StockRepository` filtrado por `empresa_id`, e três análises read-only
+(`prever_demanda`, `otimizar_armazem`, `otimizar_custos`) são acrescentadas. O
+desafio não é criar consultas, e sim **trocar a fonte de dados sem mudar o
+contrato que o LLM enxerga** — os mesmos nomes de tool e os mesmos argumentos —
+garantindo ao mesmo tempo que cada empresa só veja os próprios dados, com o
+`empresa_id` vindo do contexto da sessão e nunca de um argumento manipulável.
 
-## 2. Architectural Decisions
+## 2. Decisões de Arquitetura
 
-- **Decision 1:** `build_inventory_tools(repo: StockRepository, empresa_id: UUID)`
-  como fábrica que constrói as 6 tools por closure, capturando `repo` e
-  `empresa_id`.
-  - **Justification:** Prende a empresa no closure em vez de adicionar
-    `empresa_id` às assinaturas das tools, preservando exatamente o contrato
-    esperado pelo LLM (mesmos nomes/argumentos). Também dá um ponto único de
-    injeção: o Copilot Service constrói as tools por requisição a partir do repo
-    e da empresa da sessão autenticada.
-- **Decision 2:** Reutilizar as operações do repositório existentes
-  (`get_by_sku` e `list` do `EmpresaScopedRepository`) em vez de criar consultas
-  ou filtros novos.
-  - **Justification:** `StockRepository.get_by_sku` e `list` já escopam por
-    `empresa_id` no SQL (where `StockItem.empresa_id == empresa_id`). As tools
-    só delegam, evitando duplicação de lógica de tenancy e garantindo que o
-    isolamento seja aplicado na camada de banco e não só na apresentação.
-- **Decision 3:** As 3 tools de análise (`prever_demanda`, `otimizar_armazem`,
-  `otimizar_custos`) são read-only e devolvem texto (como as de leitura), em vez
-  de devolver modelos estruturados.
-  - **Justification:** O catálogo (design.md) as classifica como F1 análise
-  (leitura/derivação). Como não persistem nada, não há HITL nem mutação; manter o
-  mesmo contrato textual das tools de leitura simplifica o especialista e o REPL.
-- **Decision 4:** O mock determinístico `TOOLS` foi mantido como andaime do grafo
-  e do REPL.
-  - **Justification:** O REPL ainda não tem acesso a um repositório concreto; a
-    fábrica é injetada pelo Copilot Service na T17 (não na T19). O mock permanece
-    como fallback do REPL (`cli.py`) até a interface web/CLI receber DB,
-    preservando o funcionamento atual enquanto o novo caminho é exercitado pelos
-    testes de fábrica.
-- **Decision 5:** `_DIAS_COBERTURA = 30` como constante única em vez do `30`
-  espalhado.
-  - **Justification:** `calcular_reposicao` e `prever_demanda` compartilham o
-    mesmo período de cobertura; a constante evita drift entre as duas ferramentas.
+**1. Fábrica `build_inventory_tools(repo, empresa_id)` que prende o tenant em um closure**
 
-## 3. Trade-offs & Compromises
+As seis tools são construídas por chamada, capturando `repo` e `empresa_id` no
+closure em vez de receberem a empresa como argumento. Isso preserva exatamente a
+assinatura esperada pelo LLM — que continua chamando `consultar_estoque(sku)` sem
+saber de tenancy — e cria um ponto único de injeção: o Copilot Service monta as
+tools por requisição a partir do repositório e da empresa da sessão autenticada.
+A alternativa, adicionar `empresa_id` às assinaturas, exporia a fronteira de
+isolamento ao modelo e ao operador.
 
-- **`listar_movimentacoes` do repositório devolve texto fixo** ("sem
-  movimentações registradas") porque o `StockItem` não modela movimentações —
-  o mock tinha uma estrutura `_MOVIMENTACOES` que não existe no modelo de dados.
-  Isso é aceitável: a assinatura (`sku -> str`) e a semântica read-only são
-  preservadas; o registro real de movimentações fica para iteração futura (ex.:
-  tabela de movimentos) sem quebrar o contrato da tool.
-- **Análise baseada em heurísticas simples** (`quantidade < minimo`,
-  `quantidade > minimo * 2`) em vez de um motor de otimização real. Para o MVP
-  satisfaz o critério de "dado insuficiente para recomendar / orientação do que
-  importar" e os casos read-only do catálogo.
-- **Fábrica constrói ferramentas por chamada** (6 objects por requisição). Custo
-  de construção baixo e desnecessário otimizar prematuramente; a injeção por
-  requisição é o que garante a tenancy correta.
+**2. Reutilizar as operações escopadas do repositório, sem SQL novo**
 
-## 4. Known Limitations
+`StockRepository.get_by_sku` e o `list` herdado de `EmpresaScopedRepository` já
+filtram `StockItem.empresa_id == empresa_id` na camada de banco. As tools apenas
+delegam; não há duplicação da lógica de tenancy nem risco de um filtro ser
+esquecido numa consulta nova. O isolamento entre clientes do SaaS fica garantido
+onde ele é mais forte — no SQL — e não apenas na apresentação.
 
-- **Movimentações não são persistidas no repositório** (ver Trade-offs): a tool
-  do tenant não lista movimentos reais.
-- **Sem camada de cache:** `otimizar_armazem`/`otimizar_custos` chamam `list`
-  (full scan por empresa) a cada invocação. Aceitável no volume do MVP; um cache
-  por empresa seria revisitado se o catálogo crescer.
-- **Análises são heurísticas de regra simples**, não previsão estatística de
-  demanda ou otimização de layout/roteiro — capacidade estendida fica para F2.
-- **`TOOLS` mock e fábrica coexistem:** risco de as tools mockadas continuarem
-  sendo usadas por engano. **Correção de ponteiro:** o ponto de injeção é a T17
-  (Copilot Service), não a T19 — a T17 injeta `build_inventory_tools` pelo
-  parâmetro `specialist_tools` de `build_graph`. O `TOOLS` mock permanece como
-  fallback do REPL (`cli.py`) até a interface web/CLI receber DB. **Ação pendente
-  (pós-T17):** remover o `TOOLS` mock de `inventory.py` + `agents/inventory.py`
-  ao migrar o REPL, atualizando `tests/agents/test_specialists.py` e
-  `tests/test_tools.py::test_inventory_tools`.
+**3. As três análises são read-only e devolvem texto**
+
+`prever_demanda`, `otimizar_armazem` e `otimizar_custos` derivam indicações a
+partir dos dados existentes sem persistir nada. O catálogo (design.md) as
+classifica como análise F1 (leitura/derivação); como não há mutação, não há HITL
+nem risco de escrita indevida, e manter o mesmo contrato textual das tools de
+leitura simplifica tanto o especialista quanto o REPL.
+
+**4. O período de cobertura vive numa constante única**
+
+`_DIAS_COBERTURA = 30` centraliza o horizonte usado tanto por `calcular_reposicao`
+quanto por `prever_demanda`, evitando que os dois números divirjam com o tempo.
+
+**5. O mock determinístico permanece, como andaime do REPL**
+
+O `TOOLS` mockado não foi removido: o REPL ainda não tem acesso a um repositório
+concreto. A injeção das fábricas por tenant acontece na **T17** (Copilot Service),
+não na T19 — o grafo recebe as tools via `specialist_tools`. O mock segue como
+fallback do `cli.py` até a interface web/CLI ganhar banco, e o novo caminho é
+exercitado pelos testes de fábrica.
+
+## 3. Concessões e Escolhas Práticas (Trade-offs)
+
+- **`listar_movimentacoes` devolve texto fixo** (“sem movimentações
+  registradas”), porque o `StockItem` não modela movimentações — o mock tinha
+  uma estrutura `_MOVIMENTACOES` que não existe no modelo de dados. A assinatura
+  (`sku -> str`) e a semântica read-only são preservadas; movimentações reais
+  ficam para uma tabela futura, sem quebrar o contrato da tool.
+- **Análises por heurística simples** (`quantidade < minimo`,
+  `quantidade > minimo * 2`) em vez de um motor de otimização real. Satisfaz o
+  critério de “dado insuficiente para recomendar / orientação do que importar” no
+  MVP.
+- **Sem camada de cache:** as análises chamam `list` (varredura por empresa) a
+  cada invocação. Aceitável no volume atual; um cache por empresa é candidato se
+  o catálogo crescer.
+- **Fábrica constrói seis objetos por chamada.** O custo de construção é baixo e
+  a reconstrução por requisição é justamente o que garante a tenancy correta.
+- **Mock e fábrica coexistem:** há risco de as tools mockadas continuarem em uso
+  por engano. Mitigação: corrigir o ponteiro para a T17 e, na migração do REPL,
+  remover o `TOOLS` mock de `inventory.py` e `agents/inventory.py`, atualizando
+  `tests/agents/test_specialists.py` e `tests/test_tools.py::test_inventory_tools`.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T15/T16 (fornecedores e transporte):** o mesmo padrão de fábrica por tenant é
+  replicado para os outros dois especialistas.
+- **T34 (tool comum):** `enviar_resposta_logistica` é anexada aos três domínios.
+- **T17 (Copilot Service):** injeta `build_inventory_tools` no grafo via
+  `specialist_tools`, fechando o caminho do banco ao copiloto.
+- **Migração do REPL:** remoção do `TOOLS` mock quando a interface web/CLI receber
+  banco, com os testes atualizados no mesmo movimento.
+
+## 5. Validação de Qualidade e Segurança
+
+- **Garantias de negócio e privacidade:** cada tool usa operações escopadas por
+  `empresa_id`; o teste de isolamento prova que a mesma `SKU-1` de outra empresa
+  não vaza para o tenant consultado.
+- **Cobertura e testes automatizados:** cada tool tem caso feliz e borda (SKU
+  ausente, `consumo_medio_dia <= 0`, tenant vazio); gate
+  `pytest tests/test_tools.py --no-cov` → 10 passed.
+- **Padrões de qualidade:** `black --check` e `ruff check` já passavam nos
+  arquivos revisados; nenhum achado de estilo no self-review.
 
 ## Achados corrigidos no self-review
 
-- Nenhum achado de estilo/lint: `black --check` e `ruff check` já passavam nos
-  arquivos revisados.
-- Cobertura e isolamento confirmados por teste: cada tool tem caso feliz + edge
-  (SKU ausente, `consumo_medio_dia <= 0`, tenant vazio), e o teste de isolamento
-  prova que a mesma `SKU-1` em outro tenant não vaza.
-- Gate final: `pytest tests/test_tools.py --no-cov` -> 10 passed.
+- Nenhum achado de estilo ou lint.
+- Cobertura e isolamento confirmados por teste, incluindo o caso de borda de
+  consumo médio não positivo e o teste de isolamento entre empresas.
