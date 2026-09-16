@@ -69,7 +69,7 @@ code_reviewer_md:  [Contents of your code-reviewer-v2.md / quality rules]
 
 **What it produces (written to disk):**
 1. **Self-Correction:** It applies local code-review standards. If it detects minor inefficiencies or missing types, it edits the code directly.
-2. **Architecture Decision Record (ADR):** It generates a markdown file detailing the architectural choices, trade-offs, and justifications for the implemented code against the `approved_spec`. This is written to `docs/adr/<feature_slug>-self-review.md`.
+2. **Architecture Decision Record (ADR):** It generates a markdown file by using `write-fluid-hybrid-adr` skill  detailing the architectural choices, trade-offs, and justifications for the implemented code against the `approved_spec`. This is written to `docs/adr/<feature_slug>-self-review.md`.
 
 **On completion:**
 Store output as `STATE.self_review_report`. Run the **Persistence Gate** (expected_changes = the new ADR file in `docs/adr/` and any refactored source files). Only after it returns PERSISTED: proceed to Phase 6.
