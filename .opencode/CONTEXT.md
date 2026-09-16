@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T15–T19 + T34 mergeadas, T20 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-16.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `450df94`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `cf0924f`
 
 ## Estado atual
 
@@ -59,7 +59,9 @@ review antes do merge:
   6 testes de integração.
 - **Handoff/limpeza**: skill `write-fluid-hybrid-adr` (ADR narrativa fluid-hybrid,
   usada na fase 5.5 do `feature-factory`), handoffs e correção de HEAD; o squash
-  do PR #20 absorveu os commits locais de skill/handoff (nada perdido).
+  do PR #20 absorveu os commits locais de skill/handoff (nada perdido). Depois,
+  **refez as 7 ADRs anteriores (t13–t18 + t34) no formato fluid-hybrid**
+  (`cf0924f`), preservando fatos e números de gate de cada task.
 - `AGENTS.md`: documentado o parâmetro `specialist_tools` do `build_graph`.
 
 ## Decisões e regras (não esquecer)
@@ -160,8 +162,8 @@ review antes do merge:
 
 - **2026-09-16:** handoff validado/corrigido; skill `write-fluid-hybrid-adr`
   adicionada; **T19 concluída e mergeada** (PR #20, squash `450df94` — UI do chat
-  HTMX/SSE, ADR `t19-chat-ui`); 125→131 testes (97,43%→97,48%). Árvore limpa; F1
-  retoma na T20.
+  HTMX/SSE, ADR `t19-chat-ui`); 125→131 testes (97,43%→97,48%). ADRs t13–t18/t34
+  refeitas no formato fluid-hybrid (`cf0924f`). Árvore limpa; F1 retoma na T20.
 - **2026-09-15:** T15 (`a5fbcfe`), T16 (`2387a0e`), T34
   (`ebf185e`), T17 (`6599c5c`), T18 (`61172a5`) concluídas e mergeadas; 109→125
   testes (97,06%→97,43%); ADRs t15/t16/t34/t17/t18; handoff validado/corrigido.
