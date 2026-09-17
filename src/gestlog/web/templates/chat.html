@@ -20,5 +20,12 @@
   />
   <button type="submit">Perguntar</button>
 </form>
-<div id="conversa" class="conversa" aria-live="polite"></div>
+<div id="conversa" class="conversa" aria-live="polite">
+  {% for turno in turnos %}
+  <div class="turno">
+    <p class="pergunta">{{ turno.pergunta }}</p>
+    <div class="resposta">{{ turno.resposta }}</div>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}

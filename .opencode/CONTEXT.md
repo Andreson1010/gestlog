@@ -1,7 +1,8 @@
-# Contexto da Sessão — F1 do gestlog: T19 mergeada e ADRs no formato fluid-hybrid
+# Contexto da Sessão — F1 do gestlog: T20 com PR #21 aberto
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `b877eeb`
+> Branch: `feat/f1-t20-historico-conversa` (task) · PR **#21** contra `feat/f1-mvp`
+> · HEAD `ed8c94e`. `feat/f1-mvp` = `c016131` (= `origin/feat/f1-mvp`).
 
 ## Estado atual
 
@@ -9,8 +10,18 @@
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
 - **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T19 + T34 CONCLUÍDOS**
-  (20 de 34 tasks); **14 PENDENTES (T20–T33)** —
+  (20 de 34 tasks); **T20 implementada na branch `feat/f1-t20-historico-conversa`
+  (não commitada); 13 PENDENTES (T21–T33)** —
   `docs/specs/features/f1-mvp/tasks.md`.
+- **T20 — Persistência e histórico da conversa (COP-06)**: `ConversationRepository`
+  ganhou `get_by_user`/`get_or_create`; `CopilotService` exige `user_id` e persiste
+  o turno (`registrar_turno`, commit atômico); `Turno` + `carregar_historico` no
+  `copilot/service.py`; `GET /chat` renderiza o histórico via Jinja; `/chat/stream`
+  injeta `user_id`; nova dep `get_current_empresa_optional` (página → 303 sem
+  sessão, API segue 401). Gate: **139 testes, 97,58%**, black/ruff limpos.
+  Self-review APPROVE com ADR `docs/adr/t20-historico-conversa-self-review.md`;
+  code review sem CRITICAL/HIGH. Débitos registrados na ADR: `get_or_create` não
+  atômico (sem unique), limite `String(4000)`, histórico não vira contexto do LLM.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a
@@ -82,11 +93,9 @@
 
 ## Próximos passos / bloqueios
 
-1. **T20 — PENDENTE** (próxima ação): **Persistência e histórico da conversa** —
-   gravar conversa/mensagens por usuário/tenant e exibir histórico ao voltar.
-   Where `src/gestlog/copilot/`, `src/gestlog/web/`; depends T18; reuses T5.
-   Done when: recarregar mantém o histórico no tenant correto. Branch
-   `feat/f1-t20-*` → PR contra `feat/f1-mvp`.
+1. **T20 — PR #21 ABERTO** (próxima ação): aguardar CI verde + review, depois
+   squash-merge em `feat/f1-mvp` e apagar a branch
+   `feat/f1-t20-historico-conversa`.
 2. T21–T33 seguem a T20 (recomendação/fontes, feedback aceitar/descartar,
    PII/auditoria/uso, custo/eval, admin…).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
@@ -98,8 +107,19 @@
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa (`git status` sem alterações); este handoff já foi
-  commitado em `b877eeb` na `feat/f1-mvp`.
+- **T20 commitada** (`ed8c94e`) e empurrada na branch
+  `feat/f1-t20-historico-conversa`; PR #21 aberto contra `feat/f1-mvp`. Arquivos:
+  `src/gestlog/auth/{__init__,deps}.py`, `src/gestlog/copilot/{__init__,service}.py`,
+  `src/gestlog/repositories/conversations.py`, `src/gestlog/web/{chat,chat_ui}.py`,
+  `src/gestlog/web/templates/chat.html`, `tests/copilot/test_service.py`,
+  `tests/test_repositories.py`, `tests/web/test_chat_ui.py`,
+  `docs/adr/t20-historico-conversa-self-review.md`, `tasks.md`, este handoff.
+
+## Nota de ambiente (2026-09-17)
+
+- App Control do Windows bloqueia executáveis `.exe` do `.venv` e a DLL
+  `_uuid_utils` (plugin `langsmith`). Use `uv run python -m black`/`-m ruff` e
+  `uv run python -m pytest -p no:langsmith`.
 
 ## Artefatos do graphify
 

@@ -11,10 +11,10 @@ from fastapi.responses import StreamingResponse
 from langchain_core.language_models.chat_models import BaseChatModel
 from sqlalchemy.orm import Session
 
-from gestlog.auth import get_current_empresa
+from gestlog.auth import get_current_empresa, get_current_user
 from gestlog.config import Settings, get_settings
 from gestlog.copilot import CopilotService
-from gestlog.db.models import Empresa
+from gestlog.db.models import Empresa, User
 from gestlog.llm import build_chat_model
 from gestlog.web.ingestion_ui import get_sync_session
 
@@ -48,6 +48,7 @@ def create_chat_router() -> APIRouter:
     def chat_stream(
         pergunta: Annotated[str, Query(min_length=1)],
         empresa: Annotated[Empresa, Depends(get_current_empresa)],
+        usuario: Annotated[User, Depends(get_current_user)],
         session: Annotated[Session, Depends(get_sync_session)],
         model: Annotated[BaseChatModel, Depends(get_chat_model)],
         settings: Annotated[Settings, Depends(get_settings)],
@@ -56,6 +57,7 @@ def create_chat_router() -> APIRouter:
         servico = CopilotService(
             session=session,
             empresa_id=empresa.id,
+            user_id=usuario.id,
             model=model,
             settings=settings,
         )

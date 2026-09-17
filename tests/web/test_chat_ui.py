@@ -23,7 +23,7 @@ from gestlog.db.session import (
     build_session_factory,
     init_async_db,
 )
-from gestlog.web import create_app, get_sync_session
+from gestlog.web import create_app, get_chat_model, get_sync_session
 
 _SENHA = "senha-secreta-123"
 _COOKIE = "gestlog_auth"
@@ -185,3 +185,47 @@ async def test_turno_pergunta_vazia_retorna_422(
     resposta = await client.get("/chat/pergunta", params={"pergunta": ""})
 
     assert resposta.status_code == 422
+
+
+async def test_pagina_chat_exibe_historico_apos_pergunta(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
+        routes=["estoque", "FINISH"], final="Há estoque suficiente"
+    )
+
+    await client.get("/chat/stream", params={"pergunta": "como está o estoque?"})
+    resposta = await client.get("/chat")
+
+    assert resposta.status_code == 200
+    assert "como está o estoque?" in resposta.text
+    assert "Há estoque suficiente" in resposta.text
+
+
+async def test_historico_nao_vaza_entre_empresas(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
+        routes=["estoque", "FINISH"], final="segredo-da-empresa-A"
+    )
+    await client.get("/chat/stream", params={"pergunta": "pergunta-secreta-A"})
+
+    await _criar_usuario_com_empresa(motor_async, "b@empresa.com")
+    await _login(client, "b@empresa.com")
+    resposta = await client.get("/chat")
+
+    assert resposta.status_code == 200
+    assert "pergunta-secreta-A" not in resposta.text
+    assert "segredo-da-empresa-A" not in resposta.text
