@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T23 mergeada, T24 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `5bcac81`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `d30fed3`
 
 ## Estado atual
 
