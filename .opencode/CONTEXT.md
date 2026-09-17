@@ -1,8 +1,8 @@
-# Contexto da Sessão — F1 do gestlog: T20 implementada (aguardando commit/PR)
+# Contexto da Sessão — F1 do gestlog: T20 com PR #21 aberto
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-t20-historico-conversa` (task, cortada de `feat/f1-mvp`) ·
-> HEAD: `c016131` (a correção do handoff). `feat/f1-mvp` = `c016131`.
+> Branch: `feat/f1-t20-historico-conversa` (task) · PR **#21** contra `feat/f1-mvp`
+> · HEAD `ed8c94e`. `feat/f1-mvp` = `c016131` (= `origin/feat/f1-mvp`).
 
 ## Estado atual
 
@@ -93,9 +93,9 @@
 
 ## Próximos passos / bloqueios
 
-1. **T20 — IMPLEMENTADA, aguardando commit + PR** (próxima ação): revisar o diff,
-   commitar (`feat(f1): persiste historico da conversa (T20)`) e abrir PR contra
-   `feat/f1-mvp`. Branch `feat/f1-t20-historico-conversa`.
+1. **T20 — PR #21 ABERTO** (próxima ação): aguardar CI verde + review, depois
+   squash-merge em `feat/f1-mvp` e apagar a branch
+   `feat/f1-t20-historico-conversa`.
 2. T21–T33 seguem a T20 (recomendação/fontes, feedback aceitar/descartar,
    PII/auditoria/uso, custo/eval, admin…).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
@@ -107,13 +107,13 @@
 
 ## WIP local (não commitado)
 
-- **T20 não commitada** na branch `feat/f1-t20-historico-conversa` (11 arquivos +
-  ADR + este handoff). Arquivos: `src/gestlog/auth/{__init__,deps}.py`,
-  `src/gestlog/copilot/{__init__,service}.py`,
+- **T20 commitada** (`ed8c94e`) e empurrada na branch
+  `feat/f1-t20-historico-conversa`; PR #21 aberto contra `feat/f1-mvp`. Arquivos:
+  `src/gestlog/auth/{__init__,deps}.py`, `src/gestlog/copilot/{__init__,service}.py`,
   `src/gestlog/repositories/conversations.py`, `src/gestlog/web/{chat,chat_ui}.py`,
   `src/gestlog/web/templates/chat.html`, `tests/copilot/test_service.py`,
   `tests/test_repositories.py`, `tests/web/test_chat_ui.py`,
-  `docs/adr/t20-historico-conversa-self-review.md`.
+  `docs/adr/t20-historico-conversa-self-review.md`, `tasks.md`, este handoff.
 
 ## Nota de ambiente (2026-09-17)
 
