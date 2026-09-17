@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, EmailStr, Field
 
 Papel = Literal["admin", "operador", "gestor"]
+DecisaoFeedback = Literal["aceita", "descartada"]
 
 
 class ContaCreate(BaseModel):

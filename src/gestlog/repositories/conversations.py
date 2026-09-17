@@ -106,9 +106,37 @@ class RecommendationRepository:
         )
         return list(self.session.execute(stmt).scalars().all())
 
+    def get_do_usuario(
+        self, recommendation_id: UUID, empresa_id: UUID, user_id: UUID
+    ) -> Recommendation | None:
+        """Busca a recomendação do usuário no empresa, via conversa.
+
+        É a guarda de tenancy e de autoria: só devolve a recomendação se a
+        conversa pertencer ao mesmo ``empresa_id`` **e** ``user_id`` da sessão.
+        Devolve ``None`` para id inexistente e para recurso de outro tenant/
+        usuário, de modo que a rota responda 404 sem revelar existência.
+        """
+        stmt = (
+            select(Recommendation)
+            .join(Conversation, Recommendation.conversation_id == Conversation.id)
+            .where(
+                Recommendation.id == recommendation_id,
+                Conversation.empresa_id == empresa_id,
+                Conversation.user_id == user_id,
+            )
+        )
+        return self.session.execute(stmt).scalar_one_or_none()
+
 
 class FeedbackRepository:
-    """Aceite/descarte de recomendações."""
+    """Aceite/descarte de recomendações.
+
+    O isolamento por empresa não é aplicado aqui: quem grava/lê deve antes
+    autorizar a recomendação via :meth:`RecommendationRepository.get_do_usuario`,
+    exatamente como :class:`MessageRepository` faz com a conversa. O histórico é
+    *append-only* (sem upsert): uma mesma recomendação pode acumular decisões, e
+    consumidores de KPI devem usar a última por recomendação.
+    """
 
     def __init__(self, session: Session) -> None:
         self.session = session
@@ -116,7 +144,7 @@ class FeedbackRepository:
     def add_feedback(
         self, recommendation_id: UUID, decisao: str, user_id: UUID
     ) -> Feedback:
-        """Registra a decisão do operador sobre uma recomendação."""
+        """Registra mais uma decisão do operador (somente inserção)."""
         feedback = Feedback(
             recommendation_id=recommendation_id,
             decisao=decisao,
@@ -125,3 +153,16 @@ class FeedbackRepository:
         self.session.add(feedback)
         self.session.flush()
         return feedback
+
+    def list_by_recommendation(self, recommendation_id: UUID) -> list[Feedback]:
+        """Lista as decisões da recomendação, da mais antiga à mais recente.
+
+        A última posição é a decisão vigente; use-a para KPI, não a contagem
+        total, que somaria trocas de decisão.
+        """
+        stmt = (
+            select(Feedback)
+            .where(Feedback.recommendation_id == recommendation_id)
+            .order_by(Feedback.created_at, Feedback.id)
+        )
+        return list(self.session.execute(stmt).scalars().all())
