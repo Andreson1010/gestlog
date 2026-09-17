@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -15,12 +16,15 @@ from gestlog.copilot.service import (
     CopilotService,
     Recomendacao,
     Turno,
+    _montar_turnos,
     carregar_historico,
     extrair_recomendacao,
 )
+from gestlog.db.models import Message, Recommendation
 from gestlog.repositories.catalog import StockRepository
 from gestlog.repositories.conversations import (
     ConversationRepository,
+    FeedbackRepository,
     MessageRepository,
     RecommendationRepository,
 )
@@ -254,6 +258,106 @@ def test_historico_monta_turno_de_pergunta_sem_resposta(
     turnos = carregar_historico(db_session, empresa, usuario)
 
     assert turnos == [Turno("pergunta órfã", "")]
+
+
+def test_historico_anexa_recomendacao_e_ultima_decisao(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    usuario = uuid4()
+    servico = _service(
+        db_session,
+        fake_model_cls(
+            routes=["estoque", "FINISH"],
+            tool_calls=[_tool_comum("Repor SKU-1", fontes="estoque, ERP")],
+        ),
+        empresa,
+        usuario,
+    )
+    servico.answer("o que fazer?")
+
+    conversa = ConversationRepository(db_session).get_by_user(empresa, usuario)
+    assert conversa is not None
+    recomendacao = RecommendationRepository(db_session).list_by_conversation(
+        conversa.id
+    )[0]
+    feedbacks = FeedbackRepository(db_session)
+    feedbacks.add_feedback(recomendacao.id, "aceita", usuario)
+    feedbacks.add_feedback(recomendacao.id, "descartada", usuario)
+    db_session.commit()
+
+    turno = servico.historico()[0]
+    assert turno.recomendacao_id == recomendacao.id
+    assert turno.fontes == ("estoque", "ERP")
+    assert turno.decisao == "descartada"
+
+
+def test_historico_anexa_recomendacao_ao_turno_certo(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    usuario = uuid4()
+    _service(
+        db_session,
+        fake_model_cls(routes=["estoque", "FINISH"], final="sem base"),
+        empresa,
+        usuario,
+    ).answer("primeira")
+    _service(
+        db_session,
+        fake_model_cls(
+            routes=["estoque", "FINISH"],
+            tool_calls=[_tool_comum("Repor", fontes="estoque")],
+        ),
+        empresa,
+        usuario,
+    ).answer("segunda")
+
+    turnos = _service(db_session, fake_model_cls(), empresa, usuario).historico()
+
+    assert [turno.recomendacao_id is None for turno in turnos] == [True, False]
+    assert turnos[1].fontes == ("estoque",)
+    assert turnos[1].decisao is None
+
+
+def test_montar_turnos_anexa_recomendacao_em_empate_de_timestamp() -> None:
+    momento = datetime.now(UTC)
+    conversa = uuid4()
+    mensagens = [
+        Message(
+            id=UUID(int=0),
+            conversation_id=conversa,
+            papel="user",
+            conteudo_redigido="pergunta",
+            created_at=momento,
+        ),
+        Message(
+            id=UUID(int=2),
+            conversation_id=conversa,
+            papel="assistant",
+            conteudo_redigido="resposta",
+            created_at=momento,
+        ),
+    ]
+    recomendacao = Recommendation(
+        id=UUID(int=1),
+        conversation_id=conversa,
+        dominio="estoque",
+        texto="repor",
+        fontes=["estoque"],
+        created_at=momento,
+    )
+
+    turnos = _montar_turnos(mensagens, [recomendacao])
+
+    assert turnos == [
+        Turno(
+            "pergunta",
+            "resposta",
+            recomendacao_id=recomendacao.id,
+            fontes=("estoque",),
+        )
+    ]
 
 
 def test_extrair_recomendacao_estrutura_texto_justificativa_e_fontes() -> None:

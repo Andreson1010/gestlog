@@ -27,6 +27,7 @@ from gestlog.db.session import (
 from gestlog.repositories.conversations import (
     ConversationRepository,
     FeedbackRepository,
+    MessageRepository,
     RecommendationRepository,
 )
 from gestlog.web import create_app, get_sync_session
@@ -130,6 +131,26 @@ def _criar_recomendacao(motor_sync: Engine, empresa_id: UUID, user_id: UUID) -> 
         return recomendacao.id
 
 
+def _criar_turno_com_recomendacao(
+    motor_sync: Engine, empresa_id: UUID, user_id: UUID
+) -> UUID:
+    factory = build_session_factory(motor_sync)
+    with factory() as session:
+        conversa = ConversationRepository(session).get_or_create(empresa_id, user_id)
+        mensagens = MessageRepository(session)
+        mensagens.add_message(conversa.id, "user", "como está o estoque?")
+        mensagens.add_message(
+            conversa.id,
+            "assistant",
+            "Resposta logística:\nRepor SKU-1\nFontes: estoque",
+        )
+        recomendacao = RecommendationRepository(session).add_recommendation(
+            conversa.id, "estoque", "Repor SKU-1", "abaixo do mínimo", ["estoque"]
+        )
+        session.commit()
+        return recomendacao.id
+
+
 def _feedbacks(motor_sync: Engine, recommendation_id: UUID) -> list[Feedback]:
     factory = build_session_factory(motor_sync)
     with factory() as session:
@@ -159,12 +180,50 @@ async def test_registra_aceite_e_descarte(
         f"/recomendacoes/{recomendacao_id}/feedback", data={"decisao": "descartada"}
     )
 
-    assert aceite.status_code == 201
-    assert aceite.json()["decisao"] == "aceita"
-    assert descarte.status_code == 201
+    assert aceite.status_code == 200
+    assert "Decisão: aceita" in aceite.text
+    assert descarte.status_code == 200
+    assert "Decisão: descartada" in descarte.text
     registros = _feedbacks(motor_sync, recomendacao_id)
     assert [registro.decisao for registro in registros] == ["aceita", "descartada"]
     assert {registro.user_id for registro in registros} == {user_id}
+
+
+async def test_historico_exibe_fontes_e_botoes(
+    client: AsyncClient, app: FastAPI, engines: tuple[AsyncEngine, Engine]
+) -> None:
+    motor_async, motor_sync = engines
+    empresa_id, user_id = await _criar_usuario(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    recomendacao_id = _criar_turno_com_recomendacao(motor_sync, empresa_id, user_id)
+
+    pagina = await client.get("/chat")
+
+    assert "Fontes: estoque" in pagina.text
+    assert f'hx-post="/recomendacoes/{recomendacao_id}/feedback"' in pagina.text
+    assert "Aceitar" in pagina.text
+    assert "Descartar" in pagina.text
+    assert "Sem decisão" in pagina.text
+
+
+async def test_feedback_reflete_no_historico_sem_recarregar(
+    client: AsyncClient, app: FastAPI, engines: tuple[AsyncEngine, Engine]
+) -> None:
+    motor_async, motor_sync = engines
+    empresa_id, user_id = await _criar_usuario(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    recomendacao_id = _criar_turno_com_recomendacao(motor_sync, empresa_id, user_id)
+
+    fragmento = await client.post(
+        f"/recomendacoes/{recomendacao_id}/feedback", data={"decisao": "aceita"}
+    )
+    pagina = await client.get("/chat")
+
+    assert fragmento.status_code == 200
+    assert "Decisão: aceita" in fragmento.text
+    assert fragmento.text.count("disabled") == 1
+    assert "Decisão: aceita" in pagina.text
+    assert "Sem decisão" not in pagina.text
 
 
 async def test_feedback_isola_entre_empresas(

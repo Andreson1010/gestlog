@@ -10,8 +10,8 @@ medição de uso aqui — entram nas tasks seguintes.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
 from uuid import UUID
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -20,7 +20,7 @@ from langchain_core.tools import BaseTool
 from sqlalchemy.orm import Session
 
 from gestlog.config import Settings, get_settings
-from gestlog.db.models import Message
+from gestlog.db.models import Message, Recommendation
 from gestlog.graph import build_graph, run_query
 from gestlog.repositories.catalog import (
     StockRepository,
@@ -29,6 +29,7 @@ from gestlog.repositories.catalog import (
 )
 from gestlog.repositories.conversations import (
     ConversationRepository,
+    FeedbackRepository,
     MessageRepository,
     RecommendationRepository,
 )
@@ -57,10 +58,17 @@ _SEPARADORES_FONTES = (";", ",")
 
 @dataclass(frozen=True)
 class Turno:
-    """Par pergunta/resposta do histórico da conversa."""
+    """Par pergunta/resposta do histórico, com a recomendação associada.
+
+    ``recomendacao_id``, ``fontes`` e ``decisao`` ficam vazios em turnos sem
+    recomendação (insuficiência/fora de escopo), preservando a tela da T19.
+    """
 
     pergunta: str
     resposta: str
+    recomendacao_id: UUID | None = None
+    fontes: tuple[str, ...] = ()
+    decisao: str | None = None
 
 
 @dataclass(frozen=True)
@@ -123,16 +131,41 @@ def _texto_resposta(messages: Sequence[BaseMessage]) -> str:
     return MENSAGEM_FORA_DE_ESCOPO
 
 
-def _montar_turnos(mensagens: Sequence[Message]) -> list[Turno]:
-    """Agrupa mensagens em turnos de pergunta/resposta, na ordem de criação."""
+def _montar_turnos(
+    mensagens: Sequence[Message],
+    recomendacoes: Sequence[Recommendation] = (),
+    decisoes: Mapping[UUID, str] | None = None,
+) -> list[Turno]:
+    """Agrupa mensagens em turnos e anexa a recomendação de cada turno.
+
+    Mensagens e recomendações são intercaladas por ``created_at``; o ``tipo``
+    (mensagem antes de recomendação) precede o ``id`` no desempate para que uma
+    recomendação criada no mesmo instante da resposta seja anexada ao turno que
+    a precede, e não arrastada para o turno anterior por um ``id`` aleatório.
+    A recomendação é gravada logo após a resposta, sem depender de acoplamento
+    por conteúdo.
+    """
+    decididas = decisoes or {}
+    eventos = sorted(
+        [(m.created_at, 0, m.id, m) for m in mensagens]
+        + [(r.created_at, 1, r.id, r) for r in recomendacoes]
+    )
     turnos: list[Turno] = []
     pergunta: str | None = None
-    for mensagem in mensagens:
-        if mensagem.papel == "user":
-            pergunta = mensagem.conteudo_redigido
-        elif mensagem.papel == "assistant":
-            turnos.append(Turno(pergunta or "", mensagem.conteudo_redigido))
-            pergunta = None
+    for _, tipo, _, objeto in eventos:
+        if tipo == 0:
+            if objeto.papel == "user":
+                pergunta = objeto.conteudo_redigido
+            elif objeto.papel == "assistant":
+                turnos.append(Turno(pergunta or "", objeto.conteudo_redigido))
+                pergunta = None
+        elif turnos:
+            turnos[-1] = replace(
+                turnos[-1],
+                recomendacao_id=objeto.id,
+                fontes=tuple(objeto.fontes or ()),
+                decisao=decididas.get(objeto.id),
+            )
     if pergunta is not None:
         turnos.append(Turno(pergunta, ""))
     return turnos
@@ -146,7 +179,9 @@ def carregar_historico(
     if conversa is None:
         return []
     mensagens = MessageRepository(session).list_by_conversation(conversa.id)
-    return _montar_turnos(mensagens)
+    recomendacoes = RecommendationRepository(session).list_by_conversation(conversa.id)
+    decisoes = FeedbackRepository(session).latest_by_conversation(conversa.id)
+    return _montar_turnos(mensagens, recomendacoes, decisoes)
 
 
 def registrar_turno(
