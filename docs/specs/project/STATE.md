@@ -1,7 +1,10 @@
 # State
 
-**Last Updated:** 2026-09-12
-**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp`; T1–T11 concluídos, T12 (serviço de importação) é a próxima. Fluxo épico + 1 PR por task com CI (AD-016)
+**Last Updated:** 2026-09-17
+**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `88f5b38`);
+T1–T21 + T34 concluídos (22 de 34), T22 (feedback aceitar/descartar) é a próxima.
+Fluxo épico + 1 PR por task com CI (AD-016). Detalhe por task em
+`docs/specs/features/f1-mvp/tasks.md` e no handoff `.opencode/CONTEXT.md`.
 
 ---
 
@@ -188,6 +191,33 @@ release da F1.
 **Impact:** `.github/workflows/ci.yml` (novo); `AGENTS.md` §"Fluxo da feature
 (épico + task)"; PRs stacked #1/#2/#3 aposentados.
 
+### AD-017: Recomendação estruturada por passo terminal da tool comum (2026-09-17)
+
+**Decision:** a resposta do copiloto é estruturada como uma `Recomendacao`
+(`dominio`, `texto`, `justificativa`, `fontes`, `insuficiente`) extraída do
+**passo terminal** do especialista: `create_specialist_node` detecta a chamada a
+`enviar_resposta_logistica` (só quando é a única do passo), executa a tool e
+devolve o texto composto como resposta final, registrando `dominio` no
+`AgentState`. O `CopilotService` converte a string `fontes` em `list[str]`,
+persiste `Recommendation` apenas quando há base e responde com
+`MENSAGEM_INSUFICIENCIA` quando não há fonte. A tool comum ganhou
+`justificativa: str = ""` (extensão retrocompatível do contrato da T34).
+**Reason:** COP-03/COP-04 (recomendação + justificativa + fonte; aviso de dado
+insuficiente) sem uma segunda chamada ao LLM — que dobraria custo/latência e
+reintroduziria risco de alucinação no ponto que deve ancorar confiança. O schema
+de function calling já obriga `resposta` e dá `default: ""` a
+`fontes`/`justificativa`, tornando a ausência de fonte um sinal confiável.
+**Trade-off:** o parser lê o formato textual escrito pela própria tool (rótulos
+compartilhados em `tools/common.py`), acoplando leitura e escrita; "sem fonte ⇒
+insuficiência" substitui a pergunta de esclarecimento do especialista (COP-02
+AC3) por uma mensagem genérica; `answer()` devolve o texto composto cru no
+caminho feliz (apresentação limpa é a T23).
+**Impact:** `state.py` (`dominio`), `agents/base.py`, `tools/common.py`,
+`copilot/service.py` e prompts dos 3 especialistas; ADR
+`docs/adr/t21-recomendacao-fontes-insuficiencia-self-review.md`; T22/T23 reusam a
+`Recommendation` persistida. Débito: distinguir "sem base" de "preciso de um dado
+do usuário" (T25/T29).
+
 ---
 
 ## Active Blockers
@@ -234,6 +264,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 016 | CI (GitHub Actions) + fluxo épico/task (AD-016; PRs #4 e #5) | 2026-09-13 | — | ✅ Done |
 | 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
 | 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
+| 019 | Executar F1 — T12–T21 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `88f5b38` (T21) | ✅ Done |
 
 ---
 
@@ -254,5 +285,10 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 Fase 2 (T6 auth → T7 guards → T8 onboarding).
+- [ ] Executar a F1 — próximas tasks: T22 (feedback aceitar/descartar) → T23 (UI
+      de feedback) → T24–T33 (PII/auditoria/uso, custo/eval, admin, aceitação).
+- [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
+- [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
+      `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
+      para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco.
