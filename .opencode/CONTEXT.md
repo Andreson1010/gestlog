@@ -142,9 +142,9 @@
 
 ## WIP local (não commitado)
 
-- **Este handoff** (atualização de T21) ainda não commitado na `feat/f1-mvp`; o
-  restante da árvore está limpo. `HEAD` de `feat/f1-mvp` = `88f5b38` (sincronizado
-  com `origin/feat/f1-mvp`).
+- **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp`;
+  o último commit de **código** é `88f5b38` (T21) e este handoff é um commit docs
+  no topo da branch.
 
 ## Artefatos do graphify
 
