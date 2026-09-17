@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T20 mergeada, T21 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `4662bf1`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `115932d`
 
 ## Estado atual
 
@@ -85,9 +85,12 @@
   atômico (falta `UniqueConstraint(empresa_id, user_id)`), limite
   `String(4000)` por mensagem, ordenação por `created_at, id`.
 - **Fluxo da task**: cortar `feat/f1-tXX-*` de `feat/f1-mvp` → implementar
-  (`build-with-tests`) → gate (`pytest` + `black` + `ruff`) → commit PT
-  `feat(f1): ...` → PR contra `feat/f1-mvp` → **self-review obrigatório** (ADR) →
-  **code review** (`code-reviewer`) → squash + apagar branch.
+  (`build-with-tests`) → **self-review obrigatório** (`developer-self-reviewer` +
+  ADR fluid-hybrid) logo após o build, **antes do gate** → gate (`pytest` +
+  `black` + `ruff`) → commit PT `feat(f1): ...` → PR contra `feat/f1-mvp` →
+  **code review** (`code-reviewer`) → squash + apagar branch. *(Ordem conforme
+  `feature-factory` Phase 5.5: o self-review é a fase 5.5, imediatamente após o
+  builder; o code review é sobre o PR já aberto.)*
 - **Ambiente Windows**: o App Control bloqueia os `.exe` do `.venv` e a DLL
   `_uuid_utils` (plugin `langsmith`). Rodar com `uv run python -m black|ruff` e
   `uv run python -m pytest -p no:langsmith`.
@@ -114,7 +117,7 @@
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa; este handoff é o próximo commit na `feat/f1-mvp`.
+- **Nenhum.** Árvore limpa; o handoff já está commitado em `115932d` na `feat/f1-mvp` (sincronizado com `origin/feat/f1-mvp`).
 
 ## Artefatos do graphify
 
