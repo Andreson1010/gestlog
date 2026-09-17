@@ -1,15 +1,15 @@
-# Contexto da Sessão — F1 do gestlog: T20 mergeada, T21 pendente
+# Contexto da Sessão — F1 do gestlog: T21 mergeada, T22 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `115932d`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `88f5b38`
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T20 + T34 CONCLUÍDOS**
-  (21 de 34 tasks); **13 PENDENTES (T21–T33)** —
+- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T21 + T34 CONCLUÍDOS**
+  (22 de 34 tasks); **12 PENDENTES (T22–T33)** —
   `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
@@ -19,15 +19,15 @@
   `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-  CI da T20 (PR #21) verde em 38s.
-- **Suíte**: **139 testes, 97,58% de cobertura** (`uv run pytest`); Python 3.14.3
+  CI da T21 (PR #22) verde em 39s.
+- **Suíte**: **147 testes, 97,68% de cobertura** (`uv run pytest`); Python 3.14.3
   no `.venv` (projeto exige `>=3.11`).
-- `main` = `f639f36`; `feat/f1-mvp` = `4662bf1` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `88f5b38` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task pendente** (a de T20 foi apagada no remoto e localmente).
-- **T20 concluída** (ver *O que foi feito*): persistência e histórico da conversa
-  (COP-06), PR #21, squash `0ab9e03`, ADR
-  `docs/adr/t20-historico-conversa-self-review.md`.
+  task pendente** (a de T21 foi apagada no remoto e localmente).
+- **T21 concluída** (ver *O que foi feito*): recomendação + justificativa + fontes
+  e insuficiência (COP-03/COP-04), PR #22, squash `88f5b38`, ADR
+  `docs/adr/t21-recomendacao-fontes-insuficiencia-self-review.md`.
 
 ## O que foi feito nesta sessão (2026-09-17)
 
@@ -47,10 +47,30 @@
    - 8 testes novos (isolamento por empresa e por usuário, unidade + integração).
    - Self-review `developer-self-reviewer`: **APPROVE**; corrigiu ordenação sem
      desempate e cobriu turno órfão. Code review: **0 CRITICAL/HIGH**.
-3. **Handoffs**: `cc49bb4` (após T20) e `4662bf1` (ajuste de HEAD).
-4. **Investigação respondida**: a comunicação **entre agentes é sync** e via
+3. **T21 — Extração de recomendação, fontes e insuficiência — CONCLUÍDA E
+   MERGEADA** (PR #22, squash `88f5b38`), na ordem corrigida
+   build→self-review→gate→commit→PR→code review:
+   - Mecanismo (aprovado): a **tool comum vira passo terminal** do especialista.
+     `create_specialist_node` detecta `enviar_resposta_logistica` e, **só quando é
+     a única chamada do passo**, executa, devolve o texto composto como
+     `AIMessage` final e grava `dominio` no `AgentState` (novo campo).
+   - `Recomendacao(dominio, texto, justificativa, fontes, insuficiente)` +
+     `extrair_recomendacao` no `copilot/service.py`; rótulos compartilhados com
+     `tools/common.py` (`ROTULO_*`, `FONTES_VAZIAS`, `NOME_TOOL_RESPOSTA`).
+   - `enviar_resposta_logistica` ganhou `justificativa: str = ""` opcional
+     (supersede a assinatura da T34, de forma aditiva/retrocompatível);
+     `INSTRUCAO_RESPOSTA` orienta os 3 prompts.
+   - **Fontes vazias ⇒ insuficiência** (`MENSAGEM_INSUFICIENCIA`), sem alucinar;
+     `Recommendation` só é persistida quando há base; fora de escopo preservado.
+   - Self-review APPROVE + ADR; code review achou 1 MEDIUM (tool comum em lote
+     encerrando cedo) → **corrigido** (`9998b6a`) com guarda de chamada única + teste.
+   - 147 testes (139→147), 97,68%; `copilot/service.py`, `tools/common.py`,
+     `state.py` em 100%.
+4. **Handoffs/correções**: `cc49bb4`/`4662bf1` (T20); `87cc0ab` e `88f5b38`
+   (ordem do fluxo + T21).
+5. **Investigação respondida**: a comunicação **entre agentes é sync** e via
    estado compartilhado (`AgentState.messages`), não mensagens diretas —
-   `graph.invoke` (`graph.py:100`), nós síncronos (`agents/base.py:34`), tools
+   `graph.invoke` (`graph.py:100`), nós síncronos (`agents/base.py:44`), tools
    `.invoke`; supervisor roteia para 1 especialista por vez, sem paralelismo.
    Auth/DB são async (AD-013); o SSE emite a resposta final de uma vez.
 
@@ -84,6 +104,12 @@
   (evita prompt injection persistente); débitos na ADR: `get_or_create` não
   atômico (falta `UniqueConstraint(empresa_id, user_id)`), limite
   `String(4000)` por mensagem, ordenação por `created_at, id`.
+- **Recomendação (T21)**: a resposta só é uma recomendação se vier da **tool
+  comum**; sem fonte citável vira `MENSAGEM_INSUFICIENCIA` (não persiste
+  `Recommendation`). O parser lê o formato próprio escrito pela tool (rótulos
+  compartilhados); `answer()` devolve o texto composto cru (com rótulos) no
+  caminho feliz — a apresentação limpa é a T23. Débitos: distinguir "sem base" de
+  "preciso de um dado do usuário" (COP-02 AC3) e formatar a exibição.
 - **Fluxo da task**: cortar `feat/f1-tXX-*` de `feat/f1-mvp` → implementar
   (`build-with-tests`) → **self-review obrigatório** (`developer-self-reviewer` +
   ADR fluid-hybrid) logo após o build, **antes do gate** → gate (`pytest` +
@@ -97,14 +123,13 @@
 
 ## Próximos passos / bloqueios
 
-1. **T21 — PENDENTE** (próxima ação): **Extração de recomendação, fontes e
-   insuficiência** — estruturar a resposta como recomendação + justificativa +
-   fontes; detectar dado insuficiente. Where `src/gestlog/copilot/`; depends T17;
-   reuses T17. Requirement COP-03/COP-04; **testes unit (fake model)**. Done when:
-   resposta traz fontes; caso sem base retorna insuficiência sem alucinar. Branch
-   `feat/f1-t21-*` → PR contra `feat/f1-mvp`.
-2. T22–T33 seguem a T21 (feedback aceitar/descartar, PII/auditoria/uso,
-   custo/eval, admin…).
+1. **T22 — PENDENTE** (próxima ação): **Feedback aceitar/descartar** — endpoint
+   que registra `Feedback` (decisão, usuário, empresa, timestamp). Where
+   `src/gestlog/web/`, `src/gestlog/repositories/`; depends T21; reuses T5.
+   Requirement COP-06; **testes integration**. A T21 já persiste a
+   `Recommendation`, então o `Feedback` pode apontar para o id real. Branch
+   `feat/f1-t22-*` → PR contra `feat/f1-mvp`.
+2. T23–T33 seguem (UI de feedback, PII/auditoria/uso, custo/eval, admin…).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 4. Pendência técnica (pós-T17): os `TOOLS` mock ainda são fallback do REPL; DB no
    CLI/remoção do mock quando não houver mais uso.
@@ -117,7 +142,9 @@
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa; o handoff já está commitado em `115932d` na `feat/f1-mvp` (sincronizado com `origin/feat/f1-mvp`).
+- **Este handoff** (atualização de T21) ainda não commitado na `feat/f1-mvp`; o
+  restante da árvore está limpo. `HEAD` de `feat/f1-mvp` = `88f5b38` (sincronizado
+  com `origin/feat/f1-mvp`).
 
 ## Artefatos do graphify
 
@@ -139,15 +166,18 @@
 - `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
-  (`tasks.md`: 34 tasks; T1–T20 e T34 concluídos).
+  (`tasks.md`: 34 tasks; T1–T21 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid**: `t13-upload-ui`, `t14-inventory-tools`,
   `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`,
   `t17-copilot-service`, `t18-chat-sse`, `t19-chat-ui`,
-  `t20-historico-conversa-self-review` (todos sufixo `-self-review`).
+  `t20-historico-conversa-self-review`,
+  `t21-recomendacao-fontes-insuficiencia-self-review` (todos sufixo `-self-review`).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
-  `agents/`, `tools/`, `db/`, `repositories/`, `auth/`, `web/` (`chat.py` = SSE
-  T18; `chat_ui.py` = UI T19/T20; `templates/chat*.html`), `copilot/`,
+  `agents/` (`base.py` detecta a tool comum terminal; `dominio` no estado),
+  `tools/` (`common.py` = tool comum + rótulos), `db/`, `repositories/`, `auth/`,
+  `web/` (`chat.py` = SSE T18; `chat_ui.py` = UI T19/T20; `templates/chat*.html`),
+  `copilot/` (`service.py` = `Recomendacao`/`extrair_recomendacao`/persistência),
   `ingestion/`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, write-fluid-hybrid-adr.
@@ -162,8 +192,11 @@
 
 - **2026-09-17 (esta):** handoff validado/corrigido (`c016131`); **T20 concluída e
   mergeada** (PR #21, squash `0ab9e03` — persistência/histórico por usuário e
-  empresa, ADR `t20-historico-conversa-self-review`); 131→139 testes
-  (97,48%→97,58%); handoffs `cc49bb4`/`4662bf1`. F1 retoma na T21.
+  empresa, ADR `t20-historico-conversa-self-review`); correção da ordem do fluxo
+  (`87cc0ab`); **T21 concluída e mergeada** (PR #22, squash `88f5b38` —
+  recomendação + justificativa + fontes e insuficiência, tool comum como passo
+  terminal, ADR `t21-recomendacao-fontes-insuficiencia-self-review`); 139→147
+  testes (97,58%→97,68%). F1 retoma na **T22**.
 - **2026-09-16:** skill `write-fluid-hybrid-adr` criada; **T19 mergeada** (PR #20,
   `450df94` — UI do chat HTMX/SSE); ADRs t13–t18/t34 refeitas no formato
   fluid-hybrid (`cf0924f`).
