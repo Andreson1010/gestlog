@@ -29,8 +29,13 @@ o sistema lê isso como formato próprio, não como texto adivinhado.
 
 Antes, o nó ReAct executava qualquer tool e continuava o loop. Agora
 `create_specialist_node` inspeciona `response.tool_calls`: se houver uma chamada a
-`enviar_resposta_logistica`, ele **executa essa tool, devolve o texto composto
-como `AIMessage` final e encerra o turno**, sem mais passos. A justificativa
+`enviar_resposta_logistica` **e ela for a única chamada daquele passo**, ele
+**executa essa tool, devolve o texto composto como `AIMessage` final e encerra o
+turno**, sem mais passos. A guarda de "única chamada" (achado do code review,
+`tests/agents/test_specialists.py::test_specialist_nao_encerra_com_tool_comum_em_lote`)
+impede que um modelo que agrupe a tool comum com uma tool de domínio no mesmo
+passo encerre a resposta sem ter consultado o dado — nesse caso o passo vira um
+passo normal e o ciclo continua. A justificativa
 prática é direta: o operador ganha uma resposta cujo formato já traz as fontes no
 corpo (`Resposta logística: … / Justificativa: … / Fontes: …`), e o produto colhe
 uma declaração estruturada do próprio modelo, no mesmo passe que gerou o texto.

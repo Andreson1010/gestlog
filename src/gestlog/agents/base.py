@@ -50,15 +50,14 @@ def create_specialist_node(
             response = model_with_tools.invoke(messages)
             if not isinstance(response, AIMessage) or not response.tool_calls:
                 return {"messages": [response]}
-            terminal = next(
-                (
-                    call
-                    for call in response.tool_calls
-                    if call["name"] == NOME_TOOL_RESPOSTA
-                    and call["name"] in tools_by_name
-                ),
-                None,
-            )
+            terminal = None
+            if len(response.tool_calls) == 1:
+                chamada = response.tool_calls[0]
+                if (
+                    chamada["name"] == NOME_TOOL_RESPOSTA
+                    and chamada["name"] in tools_by_name
+                ):
+                    terminal = chamada
             if terminal is not None:
                 result = tools_by_name[terminal["name"]].invoke(terminal["args"])
                 return {
