@@ -20,6 +20,25 @@ class ConversationRepository(EmpresaScopedRepository[Conversation]):
         """Cria uma conversa para o usuário no empresa."""
         return self.add(Conversation(empresa_id=empresa_id, user_id=user_id))
 
+    def get_by_user(self, empresa_id: UUID, user_id: UUID) -> Conversation | None:
+        """Busca a conversa do usuário no empresa, restrita ao tenant."""
+        stmt = (
+            select(Conversation)
+            .where(
+                Conversation.empresa_id == empresa_id,
+                Conversation.user_id == user_id,
+            )
+            .order_by(Conversation.created_at, Conversation.id)
+        )
+        return self.session.execute(stmt).scalars().first()
+
+    def get_or_create(self, empresa_id: UUID, user_id: UUID) -> Conversation:
+        """Devolve a conversa do usuário no empresa, criando-a se não existir."""
+        conversa = self.get_by_user(empresa_id, user_id)
+        if conversa is None:
+            conversa = self.create(empresa_id, user_id)
+        return conversa
+
 
 class MessageRepository:
     """Mensagens de uma conversa.
@@ -49,7 +68,7 @@ class MessageRepository:
         stmt = (
             select(Message)
             .where(Message.conversation_id == conversation_id)
-            .order_by(Message.created_at)
+            .order_by(Message.created_at, Message.id)
         )
         return list(self.session.execute(stmt).scalars().all())
 

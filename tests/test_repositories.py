@@ -144,3 +144,17 @@ def test_conversas_mensagens_recomendacoes_feedback(db_session: Session) -> None
     assert len(msg_repo.list_by_conversation(conversa.id)) == 2
     assert len(rec_repo.list_by_conversation(conversa.id)) == 1
     assert rec.fontes is None
+
+
+def test_conversation_get_or_create_reutiliza_conversa(db_session: Session) -> None:
+    t1, _ = _dois_empresas(db_session)
+    user_id = uuid4()
+    repo = ConversationRepository(db_session)
+
+    primeira = repo.get_or_create(t1, user_id)
+    db_session.commit()
+    segunda = repo.get_or_create(t1, user_id)
+
+    assert segunda.id == primeira.id
+    assert repo.get_by_user(t1, user_id).id == primeira.id
+    assert repo.get_by_user(t1, uuid4()) is None

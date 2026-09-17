@@ -34,6 +34,16 @@ async def get_current_user(
     return user
 
 
+async def _buscar_membership(session: AsyncSession, user_id: UUID) -> Membership | None:
+    """Busca o vínculo mais antigo do usuário, de forma determinística."""
+    stmt = (
+        select(Membership)
+        .where(Membership.user_id == user_id)
+        .order_by(Membership.created_at, Membership.id)
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
 async def get_current_membership(
     user: Annotated[User, Depends(current_active_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -43,12 +53,7 @@ async def get_current_membership(
     O MVP assume um vínculo por usuário; se houver mais de um, usa o mais
     antigo de forma determinística. Seleção de empresa ativa fica para depois.
     """
-    stmt = (
-        select(Membership)
-        .where(Membership.user_id == user.id)
-        .order_by(Membership.created_at, Membership.id)
-    )
-    membership = (await session.execute(stmt)).scalars().first()
+    membership = await _buscar_membership(session, user.id)
     if membership is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -69,6 +74,22 @@ async def get_current_empresa(
             detail="Usuário sem empresa vinculada.",
         )
     return empresa
+
+
+async def get_current_empresa_optional(
+    user: Annotated[User | None, Depends(current_active_user_optional)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> Empresa | None:
+    """Devolve a empresa da sessão, ou ``None`` sem usuário/vínculo.
+
+    Usado por páginas que decidem o redirect de login por conta própria.
+    """
+    if user is None:
+        return None
+    membership = await _buscar_membership(session, user.id)
+    if membership is None:
+        return None
+    return await session.get(Empresa, membership.empresa_id)
 
 
 async def verificar_empresa_do_recurso(
