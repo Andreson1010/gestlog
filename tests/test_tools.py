@@ -389,6 +389,11 @@ def test_common_tool_compoe_resposta() -> None:
     )
     assert "Repor SKU-1" in saida and "estoque" in saida
 
+    com_motivo = enviar_resposta_logistica.invoke(
+        {"resposta": "Repor", "fontes": "estoque", "justificativa": "abaixo do mínimo"}
+    )
+    assert "Justificativa: abaixo do mínimo" in com_motivo
+
     sem_fontes = enviar_resposta_logistica.invoke({"resposta": "Ok"})
     assert "não informadas" in sem_fontes
 

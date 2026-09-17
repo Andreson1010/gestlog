@@ -8,13 +8,14 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.tools import BaseTool
 
 from gestlog.agents.base import SpecialistNode, create_specialist_node
-from gestlog.tools.common import COMMON_TOOLS
+from gestlog.tools.common import COMMON_TOOLS, INSTRUCAO_RESPOSTA
 from gestlog.tools.suppliers import TOOLS
 
 PROMPT = (
     "Você é o especialista em fornecedores de um sistema de gestão logística.\n"
     "Use as ferramentas para listar, consultar e avaliar fornecedores.\n"
     "Ao recomendar um fornecedor, cite nota, prazo e histórico de atrasos.\n"
+    f"{INSTRUCAO_RESPOSTA}\n"
     "Responda em português, de forma objetiva."
 )
 

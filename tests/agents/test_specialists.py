@@ -61,3 +61,46 @@ def test_specialist_handles_unknown_tool(fake_model_cls: type) -> None:
     node = build_transport_node(model, max_steps=2)
     resultado = node({"messages": [HumanMessage(content="x")]})
     assert resultado["messages"][-1].content == "ok"
+
+
+def test_specialist_nao_encerra_com_tool_comum_em_lote(fake_model_cls: type) -> None:
+    model = fake_model_cls(
+        tool_calls=[
+            [
+                *_tool_call("consultar_estoque", {"sku": "SKU-1"}),
+                {
+                    "name": "enviar_resposta_logistica",
+                    "args": {"resposta": "cedo", "fontes": ""},
+                    "id": "call-2",
+                    "type": "tool_call",
+                },
+            ],
+            [
+                {
+                    "name": "enviar_resposta_logistica",
+                    "args": {"resposta": "Repor", "fontes": "estoque"},
+                    "id": "call-3",
+                    "type": "tool_call",
+                }
+            ],
+        ]
+    )
+    node = build_inventory_node(model, max_steps=4)
+    resultado = node({"messages": [HumanMessage(content="estoque?")]})
+    assert "Repor" in resultado["messages"][-1].content
+    assert resultado["dominio"] == "estoque"
+
+
+def test_specialist_encerra_com_tool_comum(fake_model_cls: type) -> None:
+    model = fake_model_cls(
+        tool_calls=[
+            _tool_call(
+                "enviar_resposta_logistica", {"resposta": "Repor", "fontes": "estoque"}
+            )
+        ]
+    )
+    node = build_inventory_node(model, max_steps=4)
+    resultado = node({"messages": [HumanMessage(content="estoque?")]})
+    assert "Repor" in resultado["messages"][-1].content
+    assert "Fontes: estoque" in resultado["messages"][-1].content
+    assert resultado["dominio"] == "estoque"

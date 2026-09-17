@@ -4,16 +4,26 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Sequence
+from typing import TypedDict
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
 
 from gestlog.state import AgentState, SpecialistName
+from gestlog.tools.common import NOME_TOOL_RESPOSTA
 
 logger = logging.getLogger(__name__)
 
-SpecialistNode = Callable[[AgentState], dict[str, list[BaseMessage]]]
+
+class SpecialistOutput(TypedDict, total=False):
+    """Fragmento que o nó especialista devolve ao estado do grafo."""
+
+    messages: list[BaseMessage]
+    dominio: str
+
+
+SpecialistNode = Callable[[AgentState], SpecialistOutput]
 
 
 def create_specialist_node(
@@ -31,7 +41,7 @@ def create_specialist_node(
     model_with_tools = model.bind_tools(list(tools))
     tools_by_name = {tool.name: tool for tool in tools}
 
-    def node(state: AgentState) -> dict[str, list[BaseMessage]]:
+    def node(state: AgentState) -> SpecialistOutput:
         messages: list[BaseMessage] = [
             SystemMessage(content=system_prompt),
             *state["messages"],
@@ -40,6 +50,20 @@ def create_specialist_node(
             response = model_with_tools.invoke(messages)
             if not isinstance(response, AIMessage) or not response.tool_calls:
                 return {"messages": [response]}
+            terminal = None
+            if len(response.tool_calls) == 1:
+                chamada = response.tool_calls[0]
+                if (
+                    chamada["name"] == NOME_TOOL_RESPOSTA
+                    and chamada["name"] in tools_by_name
+                ):
+                    terminal = chamada
+            if terminal is not None:
+                result = tools_by_name[terminal["name"]].invoke(terminal["args"])
+                return {
+                    "messages": [AIMessage(content=str(result))],
+                    "dominio": name,
+                }
             messages.append(response)
             for call in response.tool_calls:
                 tool = tools_by_name.get(call["name"])

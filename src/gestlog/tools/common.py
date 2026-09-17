@@ -9,18 +9,33 @@ from __future__ import annotations
 
 from langchain_core.tools import BaseTool, tool
 
-_ROTULO = "Resposta logística"
-_FONTES_VAZIAS = "não informadas"
+ROTULO_RESPOSTA = "Resposta logística"
+ROTULO_JUSTIFICATIVA = "Justificativa"
+ROTULO_FONTES = "Fontes"
+FONTES_VAZIAS = "não informadas"
+
+INSTRUCAO_RESPOSTA = (
+    "Encerre sempre chamando enviar_resposta_logistica com a resposta, a "
+    "justificativa e as fontes (dados/tabelas) usadas. Sem base nos dados, não "
+    "invente: deixe as fontes vazias para o sistema sinalizar insuficiência."
+)
 
 
 @tool
-def enviar_resposta_logistica(resposta: str, fontes: str = "") -> str:
+def enviar_resposta_logistica(
+    resposta: str, fontes: str = "", justificativa: str = ""
+) -> str:
     """Compõe a resposta logística final ao usuário (sem envio externo na F1)."""
     texto = resposta.strip()
     if not texto:
         return "Nenhum conteúdo para compor a resposta logística."
-    referencia = fontes.strip() or _FONTES_VAZIAS
-    return f"{_ROTULO}:\n{texto}\nFontes: {referencia}"
+    linhas = [f"{ROTULO_RESPOSTA}:", texto]
+    motivo = justificativa.strip()
+    if motivo:
+        linhas.append(f"{ROTULO_JUSTIFICATIVA}: {motivo}")
+    linhas.append(f"{ROTULO_FONTES}: {fontes.strip() or FONTES_VAZIAS}")
+    return "\n".join(linhas)
 
 
+NOME_TOOL_RESPOSTA = enviar_resposta_logistica.name
 COMMON_TOOLS: list[BaseTool] = [enviar_resposta_logistica]
