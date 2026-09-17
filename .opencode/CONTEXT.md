@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T19 mergeada e ADRs no formato fluid-hybrid
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-16.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `ba477ae`
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
+> Branch: `feat/f1-mvp` (integração) · HEAD: `b877eeb`
 
 ## Estado atual
 
@@ -21,7 +21,7 @@
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
 - **Suíte**: **131 testes, 97,48% de cobertura** (`uv run pytest`); Python 3.14.3
   no `.venv` (projeto exige `>=3.11`).
-- `main` = `f639f36`; `feat/f1-mvp` = `ba477ae` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `b877eeb` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum PR aberto.** Nenhuma branch de task
   pendente (a de T19 foi apagada no remoto; prune local feito).
 
@@ -98,8 +98,8 @@
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa (`git status` sem alterações); este handoff será o
-  próximo commit na `feat/f1-mvp`.
+- **Nenhum.** Árvore limpa (`git status` sem alterações); este handoff já foi
+  commitado em `b877eeb` na `feat/f1-mvp`.
 
 ## Artefatos do graphify
 
