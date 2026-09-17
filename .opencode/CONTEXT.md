@@ -1,15 +1,15 @@
-# Contexto da Sessão — F1 do gestlog: T21 mergeada, T22 pendente
+# Contexto da Sessão — F1 do gestlog: T22 mergeada, T23 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `88f5b38`
+> Branch: `feat/f1-mvp` (integração) · HEAD: `0dfc1dc`
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T21 + T34 CONCLUÍDOS**
-  (22 de 34 tasks); **12 PENDENTES (T22–T33)** —
+- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T22 + T34 CONCLUÍDOS**
+  (23 de 34 tasks); **11 PENDENTES (T23–T33)** —
   `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
@@ -19,15 +19,16 @@
   `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-  CI da T21 (PR #22) verde em 39s.
-- **Suíte**: **147 testes, 97,68% de cobertura** (`uv run pytest`); Python 3.14.3
-  no `.venv` (projeto exige `>=3.11`).
-- `main` = `f639f36`; `feat/f1-mvp` = `88f5b38` (= `origin/feat/f1-mvp`, **em
+  CI da T22 (PR #23) verde em 40s.
+- **Suíte**: **152 testes, 97,73% de cobertura** (`uv run pytest`); Python 3.14.3
+  no `.venv` (projeto exige `>=3.11`). *(STATE.md e handoff foram atualizados
+  como commits docs na `feat/f1-mvp`.)*
+- `main` = `f639f36`; `feat/f1-mvp` = `0dfc1dc` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task pendente** (a de T21 foi apagada no remoto e localmente).
-- **T21 concluída** (ver *O que foi feito*): recomendação + justificativa + fontes
-  e insuficiência (COP-03/COP-04), PR #22, squash `88f5b38`, ADR
-  `docs/adr/t21-recomendacao-fontes-insuficiencia-self-review.md`.
+  task pendente** (a de T22 foi apagada no remoto e localmente).
+- **T22 concluída** (ver *O que foi feito*): endpoint de feedback
+  aceitar/descartar (COP-06), PR #23, squash `0dfc1dc`, ADR
+  `docs/adr/t22-feedback-aceitar-descartar-self-review.md`.
 
 ## O que foi feito nesta sessão (2026-09-17)
 
@@ -66,9 +67,25 @@
      encerrando cedo) → **corrigido** (`9998b6a`) com guarda de chamada única + teste.
    - 147 testes (139→147), 97,68%; `copilot/service.py`, `tools/common.py`,
      `state.py` em 100%.
-4. **Handoffs/correções**: `cc49bb4`/`4662bf1` (T20); `87cc0ab` e `88f5b38`
-   (ordem do fluxo + T21).
-5. **Investigação respondida**: a comunicação **entre agentes é sync** e via
+4. **T22 — Feedback aceitar/descartar — CONCLUÍDA E MERGEADA** (PR #23, squash
+   `0dfc1dc`), na ordem build→self-review→gate→commit→PR→code review:
+   - `POST /recomendacoes/{id}/feedback` (`web/feedback.py`), corpo `decisao` em
+     **form** (para o HTMX da T23), `DecisaoFeedback = Literal["aceita",
+     "descartada"]`.
+   - `RecommendationRepository.get_do_usuario`: autoriza por `empresa_id` **e**
+     `user_id` (via conversa); **404** sem revelar existência. `Feedback` grava
+     `usuario.id` + timestamp; `FeedbackRepository.list_by_recommendation`.
+   - **Append-only** (sem upsert): última decisão vale; T32 deve agregar a última
+     por recomendação, não `COUNT(*)`.
+   - CSRF mitigado por cookie `SameSite=lax` (AD-013/backend); consistente com os
+     demais POSTs.
+   - Self-review APPROVE + ADR (só docstrings, sem mudança de comportamento);
+     code review **0 CRITICAL/HIGH**.
+   - 152 testes (147→152), 97,73%; `repositories/conversations.py` e
+     `web/feedback.py` em 100%.
+5. **Handoffs/correções**: `cc49bb4`/`4662bf1` (T20); `87cc0ab`/`88f5b38` (T21);
+   `0dfc1dc` (T22) e commits docs de STATE/handoff.
+6. **Investigação respondida**: a comunicação **entre agentes é sync** e via
    estado compartilhado (`AgentState.messages`), não mensagens diretas —
    `graph.invoke` (`graph.py:100`), nós síncronos (`agents/base.py:44`), tools
    `.invoke`; supervisor roteia para 1 especialista por vez, sem paralelismo.
@@ -110,6 +127,10 @@
   compartilhados); `answer()` devolve o texto composto cru (com rótulos) no
   caminho feliz — a apresentação limpa é a T23. Débitos: distinguir "sem base" de
   "preciso de um dado do usuário" (COP-02 AC3) e formatar a exibição.
+- **Feedback (T22)**: `POST /recomendacoes/{id}/feedback` (form) só grava após
+  autorizar a recomendação por **empresa + usuário** (`get_do_usuario`), senão
+  **404** (não vaza existência); histórico **append-only**, KPI usa a **última**
+  decisão por recomendação (não `COUNT(*)`). A UI (botões HTMX) é a T23.
 - **Fluxo da task**: cortar `feat/f1-tXX-*` de `feat/f1-mvp` → implementar
   (`build-with-tests`) → **self-review obrigatório** (`developer-self-reviewer` +
   ADR fluid-hybrid) logo após o build, **antes do gate** → gate (`pytest` +
@@ -123,13 +144,14 @@
 
 ## Próximos passos / bloqueios
 
-1. **T22 — PENDENTE** (próxima ação): **Feedback aceitar/descartar** — endpoint
-   que registra `Feedback` (decisão, usuário, empresa, timestamp). Where
-   `src/gestlog/web/`, `src/gestlog/repositories/`; depends T21; reuses T5.
-   Requirement COP-06; **testes integration**. A T21 já persiste a
-   `Recommendation`, então o `Feedback` pode apontar para o id real. Branch
-   `feat/f1-t22-*` → PR contra `feat/f1-mvp`.
-2. T23–T33 seguem (UI de feedback, PII/auditoria/uso, custo/eval, admin…).
+1. **T23 — PENDENTE** (próxima ação): **UI de feedback** — botões aceitar/
+   descartar e exibição de fontes na tela de chat, refletindo sem recarregar
+   (HTMX). Where `src/gestlog/web/`; depends T19, T22; reuses T19, T22.
+   Requirement COP-04/COP-06; **testes integration**. O endpoint
+   `POST /recomendacoes/{id}/feedback` (T22) já aceita o form; a T23 liga os
+   botões no template `chat.html`/`chat_turno.html`. Branch `feat/f1-t23-*` →
+   PR contra `feat/f1-mvp`.
+2. T24–T33 seguem (PII/auditoria/uso, custo/eval, admin, aceitação).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 4. Pendência técnica (pós-T17): os `TOOLS` mock ainda são fallback do REPL; DB no
    CLI/remoção do mock quando não houver mais uso.
@@ -143,7 +165,7 @@
 ## WIP local (não commitado)
 
 - **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp`;
-  o último commit de **código** é `88f5b38` (T21) e este handoff é um commit docs
+  o último commit de **código** é `0dfc1dc` (T22); STATE/handoff são commits docs
   no topo da branch.
 
 ## Artefatos do graphify
@@ -164,21 +186,23 @@
 - `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `docs/business/PRD.md`.
-- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-016.
+- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-018.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — planejamento da F1
-  (`tasks.md`: 34 tasks; T1–T21 e T34 concluídos).
+  (`tasks.md`: 34 tasks; T1–T22 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid**: `t13-upload-ui`, `t14-inventory-tools`,
   `t15-supplier-tools`, `t16-transport-tools`, `t34-common-response`,
   `t17-copilot-service`, `t18-chat-sse`, `t19-chat-ui`,
   `t20-historico-conversa-self-review`,
-  `t21-recomendacao-fontes-insuficiencia-self-review` (todos sufixo `-self-review`).
+  `t21-recomendacao-fontes-insuficiencia-self-review`,
+  `t22-feedback-aceitar-descartar-self-review` (todos sufixo `-self-review`).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
   `agents/` (`base.py` detecta a tool comum terminal; `dominio` no estado),
-  `tools/` (`common.py` = tool comum + rótulos), `db/`, `repositories/`, `auth/`,
-  `web/` (`chat.py` = SSE T18; `chat_ui.py` = UI T19/T20; `templates/chat*.html`),
-  `copilot/` (`service.py` = `Recomendacao`/`extrair_recomendacao`/persistência),
-  `ingestion/`.
+  `tools/` (`common.py` = tool comum + rótulos), `db/`, `repositories/`
+  (`conversations.py` = conversas/mensagens/recomendações/feedback), `auth/`,
+  `web/` (`chat.py` = SSE T18; `chat_ui.py` = UI T19/T20; `feedback.py` = T22;
+  `templates/chat*.html`), `copilot/` (`service.py` =
+  `Recomendacao`/`extrair_recomendacao`/persistência), `ingestion/`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, write-fluid-hybrid-adr.
 - `.opencode/agent/` — backend-builder, codebase-researcher,
@@ -195,8 +219,10 @@
   empresa, ADR `t20-historico-conversa-self-review`); correção da ordem do fluxo
   (`87cc0ab`); **T21 concluída e mergeada** (PR #22, squash `88f5b38` —
   recomendação + justificativa + fontes e insuficiência, tool comum como passo
-  terminal, ADR `t21-recomendacao-fontes-insuficiencia-self-review`); 139→147
-  testes (97,58%→97,68%). F1 retoma na **T22**.
+  terminal, ADR `t21-recomendacao-fontes-insuficiencia-self-review`); **T22
+  concluída e mergeada** (PR #23, squash `0dfc1dc` — endpoint de feedback
+  aceitar/descartar, ADR `t22-feedback-aceitar-descartar-self-review`); 139→152
+  testes (97,58%→97,73%). F1 retoma na **T23**.
 - **2026-09-16:** skill `write-fluid-hybrid-adr` criada; **T19 mergeada** (PR #20,
   `450df94` — UI do chat HTMX/SSE); ADRs t13–t18/t34 refeitas no formato
   fluid-hybrid (`cf0924f`).

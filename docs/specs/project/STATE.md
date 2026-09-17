@@ -1,8 +1,8 @@
 # State
 
 **Last Updated:** 2026-09-17
-**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `88f5b38`);
-T1–T21 + T34 concluídos (22 de 34), T22 (feedback aceitar/descartar) é a próxima.
+**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `0dfc1dc`);
+T1–T22 + T34 concluídos (23 de 34), T23 (UI de feedback) é a próxima.
 Fluxo épico + 1 PR por task com CI (AD-016). Detalhe por task em
 `docs/specs/features/f1-mvp/tasks.md` e no handoff `.opencode/CONTEXT.md`.
 
@@ -218,6 +218,28 @@ caminho feliz (apresentação limpa é a T23).
 `Recommendation` persistida. Débito: distinguir "sem base" de "preciso de um dado
 do usuário" (T25/T29).
 
+### AD-018: Feedback de recomendação escopado por empresa + usuário, append-only (2026-09-17)
+
+**Decision:** o aceite/descarte é registrado por `POST /recomendacoes/{id}/feedback`
+(corpo `form` com `decisao` em `{aceita, descartada}`). A autorização precede a
+escrita: `RecommendationRepository.get_do_usuario` só devolve a recomendação se a
+conversa pertencer ao **mesmo `empresa_id` e `user_id`** da sessão; caso contrário
+a rota responde **404** (sem revelar existência). O `Feedback` grava o
+`user_id` atuante e `created_at`; o histórico é **append-only** (sem upsert), e
+consumidores de KPI usam a **última** decisão por recomendação.
+**Reason:** COP-06 pede a decisão com usuário, tenant e timestamp, e a conversa já é
+por (empresa, usuário) desde a T20 — decidir a própria recomendação é a autoria
+natural. O 404 (em vez de 403) segue `verificar_empresa_do_recurso` e evita um
+oráculo de existência entre tenants.
+**Trade-off:** decisões repetidas coexistem (um `COUNT(*)` ingênuo contaria a
+troca); um upsert/idempotência ficaria para quando a UI (T23) estabilizar o botão.
+O corpo em `form` (não JSON) casa com o HTMX da T23.
+**Impact:** `repositories/conversations.py` (`get_do_usuario`,
+`list_by_recommendation`), `web/feedback.py` (novo), `web/app.py`,
+`web/schemas.py` (`DecisaoFeedback`); ADR
+`docs/adr/t22-feedback-aceitar-descartar-self-review.md`; T23 (botões) e T32 (KPIs
+agregando a última decisão) reusam o endpoint.
+
 ---
 
 ## Active Blockers
@@ -264,7 +286,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 016 | CI (GitHub Actions) + fluxo épico/task (AD-016; PRs #4 e #5) | 2026-09-13 | — | ✅ Done |
 | 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
 | 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
-| 019 | Executar F1 — T12–T21 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `88f5b38` (T21) | ✅ Done |
+| 019 | Executar F1 — T12–T22 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `0dfc1dc` (T22) | ✅ Done |
 
 ---
 
@@ -285,8 +307,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T22 (feedback aceitar/descartar) → T23 (UI
-      de feedback) → T24–T33 (PII/auditoria/uso, custo/eval, admin, aceitação).
+- [ ] Executar a F1 — próximas tasks: T23 (UI de feedback HTMX) → T24–T33
+      (PII/auditoria/uso, custo/eval, admin, aceitação).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
