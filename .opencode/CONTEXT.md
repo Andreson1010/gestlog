@@ -1,8 +1,8 @@
 # Contexto da Sessão — F1 do gestlog: T20 mergeada (PR #21)
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD `0ab9e03` (= `origin/feat/f1-mvp`,
-> em sincronia). Árvore limpa; nenhum PR aberto.
+> Branch: `feat/f1-mvp` (integração) · última task mergeada: T20, squash `0ab9e03`
+> (PR #21). Árvore limpa; nenhum PR aberto; em sincronia com `origin/feat/f1-mvp`.
 
 ## Estado atual
 
