@@ -1,8 +1,8 @@
 # State
 
 **Last Updated:** 2026-09-17
-**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `0dfc1dc`);
-T1–T22 + T34 concluídos (23 de 34), T23 (UI de feedback) é a próxima.
+**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `5bcac81`);
+T1–T23 + T34 concluídos (24 de 34), T24 (redação de PII) é a próxima.
 Fluxo épico + 1 PR por task com CI (AD-016). Detalhe por task em
 `docs/specs/features/f1-mvp/tasks.md` e no handoff `.opencode/CONTEXT.md`.
 
@@ -240,6 +240,31 @@ O corpo em `form` (não JSON) casa com o HTMX da T23.
 `docs/adr/t22-feedback-aceitar-descartar-self-review.md`; T23 (botões) e T32 (KPIs
 agregando a última decisão) reusam o endpoint.
 
+### AD-019: Feedback na UI por pareamento na leitura (sem migration) (2026-09-17)
+
+**Decision:** a UI da T23 exibe fontes + botões aceitar/descartar por turno sem
+criar vínculo no banco. O read-model `Turno` ganhou `recomendacao_id`, `fontes` e
+`decisao`; `_montar_turnos` intercala mensagens e recomendações por
+`(created_at, tipo, id)`, com o `tipo` (mensagem=0 antes de recomendação=1) à
+frente do `id` para resolver empates de timestamp de forma determinística (o `id`
+é UUID aleatório e não representa ordem). A decisão vigente vem de
+`FeedbackRepository.latest_by_conversation` (append-only, última vence) e o
+endpoint da T22 passou a devolver um **fragmento HTML** (Jinja autoescape) para o
+swap HTMX sem recarregar.
+**Reason:** a T21 persistiu a `Recommendation` apenas ligada à conversa; para não
+introduzir migration nem mudar o schema da T20/T21, o pareamento é derivado na
+leitura a partir da ordem cronológica de escrita (a recomendação é gravada logo
+após a resposta).
+**Trade-off:** o pareamento depende dos timestamps do servidor; empates são
+tratados por `tipo`, mas *clock skew*/edição manual continuam fora de garantia
+(mesma limitação de ordenação já registrada na T20). O turno ao vivo (SSE) ainda
+não recebe botões — a decisão aparece ao recarregar o histórico; emitir um
+`event: fontes`/fragmento no SSE fica para task futura.
+**Impact:** `copilot/service.py` (`Turno`/`_montar_turnos`/`carregar_historico`),
+`repositories/conversations.py` (`latest_by_conversation`), `web/feedback.py`
+(fragmento), `web/templates/{chat,_feedback}.html`, `web/static/app.css`; ADR
+`docs/adr/t23-feedback-ui-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -286,7 +311,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 016 | CI (GitHub Actions) + fluxo épico/task (AD-016; PRs #4 e #5) | 2026-09-13 | — | ✅ Done |
 | 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
 | 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
-| 019 | Executar F1 — T12–T22 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `0dfc1dc` (T22) | ✅ Done |
+| 019 | Executar F1 — T12–T23 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `5bcac81` (T23) | ✅ Done |
 
 ---
 
@@ -302,15 +327,17 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [ ] Rate limiting em `/auth/login`, `/onboarding` e `/empresa/convites` (AD-015) — Captured during: code review F1
 - [ ] Convite por token/e-mail (sem o admin definir a senha do convidado) (AD-015) — Captured during: code review F1
 - [ ] Seleção de "empresa ativa" para usuários com múltiplos vínculos (hoje usa o mais antigo) — Captured during: code review F1
+- [ ] Botões de aceitar/descartar no turno ao vivo (SSE), hoje só após recarregar o histórico; emitir `event: fontes`/fragmento e ordenação monotônica de mensagens (substituir o pareamento por `created_at`) (AD-019) — Captured during: F1/T23
 
 ---
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T23 (UI de feedback HTMX) → T24–T33
-      (PII/auditoria/uso, custo/eval, admin, aceitação).
+- [ ] Executar a F1 — próximas tasks: T24 (redação de PII) → T25–T33
+      (integrar PII no copiloto, auditoria/uso, custo/eval, admin, aceitação).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
       `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
-      para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco.
+      para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco,
+      botões no turno ao vivo (SSE) e ordenação monotônica de mensagens (AD-019).
