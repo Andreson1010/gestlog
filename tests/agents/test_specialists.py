@@ -61,3 +61,18 @@ def test_specialist_handles_unknown_tool(fake_model_cls: type) -> None:
     node = build_transport_node(model, max_steps=2)
     resultado = node({"messages": [HumanMessage(content="x")]})
     assert resultado["messages"][-1].content == "ok"
+
+
+def test_specialist_encerra_com_tool_comum(fake_model_cls: type) -> None:
+    model = fake_model_cls(
+        tool_calls=[
+            _tool_call(
+                "enviar_resposta_logistica", {"resposta": "Repor", "fontes": "estoque"}
+            )
+        ]
+    )
+    node = build_inventory_node(model, max_steps=4)
+    resultado = node({"messages": [HumanMessage(content="estoque?")]})
+    assert "Repor" in resultado["messages"][-1].content
+    assert "Fontes: estoque" in resultado["messages"][-1].content
+    assert resultado["dominio"] == "estoque"

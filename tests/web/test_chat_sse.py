@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -29,6 +30,17 @@ from gestlog.web import create_app, get_chat_model, get_sync_session
 
 _SENHA = "senha-secreta-123"
 _COOKIE = "gestlog_auth"
+
+
+def _tool_comum(resposta: str, fontes: str = "") -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "enviar_resposta_logistica",
+            "args": {"resposta": resposta, "fontes": fontes, "justificativa": ""},
+            "id": "call-1",
+            "type": "tool_call",
+        }
+    ]
 
 
 def _settings() -> Settings:
@@ -131,7 +143,8 @@ async def test_chat_stream_emite_resposta_sse(
     await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
     await _login(client, "a@empresa.com")
     app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
-        routes=["estoque", "FINISH"], final="Há estoque suficiente"
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque suficiente", fontes="estoque")],
     )
 
     resposta = await client.get(
@@ -142,6 +155,7 @@ async def test_chat_stream_emite_resposta_sse(
     assert resposta.headers["content-type"].startswith("text/event-stream")
     assert "event: resposta" in resposta.text
     assert "Há estoque suficiente" in resposta.text
+    assert "Fontes: estoque" in resposta.text
     assert "event: fim" in resposta.text
 
 

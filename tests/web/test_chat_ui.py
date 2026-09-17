@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi import FastAPI
@@ -27,6 +28,17 @@ from gestlog.web import create_app, get_chat_model, get_sync_session
 
 _SENHA = "senha-secreta-123"
 _COOKIE = "gestlog_auth"
+
+
+def _tool_comum(resposta: str, fontes: str = "") -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "enviar_resposta_logistica",
+            "args": {"resposta": resposta, "fontes": fontes, "justificativa": ""},
+            "id": "call-1",
+            "type": "tool_call",
+        }
+    ]
 
 
 def _settings() -> Settings:
@@ -197,7 +209,8 @@ async def test_pagina_chat_exibe_historico_apos_pergunta(
     await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
     await _login(client, "a@empresa.com")
     app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
-        routes=["estoque", "FINISH"], final="Há estoque suficiente"
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque suficiente", fontes="estoque")],
     )
 
     await client.get("/chat/stream", params={"pergunta": "como está o estoque?"})
@@ -218,7 +231,8 @@ async def test_historico_nao_vaza_entre_empresas(
     await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
     await _login(client, "a@empresa.com")
     app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
-        routes=["estoque", "FINISH"], final="segredo-da-empresa-A"
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("segredo-da-empresa-A", fontes="estoque")],
     )
     await client.get("/chat/stream", params={"pergunta": "pergunta-secreta-A"})
 

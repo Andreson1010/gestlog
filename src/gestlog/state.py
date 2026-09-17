@@ -16,7 +16,10 @@ class AgentState(TypedDict):
 
     ``messages`` acumula o histórico (reducer ``add_messages``) e ``next`` é a
     decisão mais recente do supervisor, consumida pelas arestas condicionais.
+    ``dominio`` registra qual especialista encerrou a resposta com a ferramenta
+    comum, permitindo ao copiloto estruturar a recomendação (T21).
     """
 
     messages: Annotated[list[BaseMessage], add_messages]
     next: NotRequired[Route]
+    dominio: NotRequired[str]
