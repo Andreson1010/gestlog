@@ -161,3 +161,31 @@ body {
   color: #52606d;
   font-style: italic;
 }
+
+.fontes {
+  margin: 0.5rem 0 0;
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.feedback {
+  margin-top: 0.5rem;
+}
+
+.decisao {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.feedback button {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 0.25rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.feedback button:disabled {
+  color: #9aa5b1;
+  cursor: default;
+}

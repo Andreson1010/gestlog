@@ -25,6 +25,12 @@
   <div class="turno">
     <p class="pergunta">{{ turno.pergunta }}</p>
     <div class="resposta">{{ turno.resposta }}</div>
+    {% if turno.recomendacao_id %}
+    {% if turno.fontes %}
+    <p class="fontes">Fontes: {{ turno.fontes | join(", ") }}</p>
+    {% endif %}
+    {% include "_feedback.html" %}
+    {% endif %}
   </div>
   {% endfor %}
 </div>

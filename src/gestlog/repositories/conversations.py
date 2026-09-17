@@ -166,3 +166,20 @@ class FeedbackRepository:
             .order_by(Feedback.created_at, Feedback.id)
         )
         return list(self.session.execute(stmt).scalars().all())
+
+    def latest_by_conversation(self, conversation_id: UUID) -> dict[UUID, str]:
+        """Mapeia cada recomendação da conversa para a decisão vigente.
+
+        Como o histórico é append-only, percorre em ordem e a última decisão de
+        cada recomendação sobrescreve as anteriores.
+        """
+        stmt = (
+            select(Feedback)
+            .join(Recommendation, Feedback.recommendation_id == Recommendation.id)
+            .where(Recommendation.conversation_id == conversation_id)
+            .order_by(Feedback.created_at, Feedback.id)
+        )
+        vigentes: dict[UUID, str] = {}
+        for feedback in self.session.execute(stmt).scalars().all():
+            vigentes[feedback.recommendation_id] = feedback.decisao
+        return vigentes
