@@ -1,17 +1,16 @@
-# Contexto da Sessão — F1 do gestlog: T20 com PR #21 aberto
+# Contexto da Sessão — F1 do gestlog: T20 mergeada (PR #21)
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-t20-historico-conversa` (task) · PR **#21** contra `feat/f1-mvp`
-> · HEAD `ed8c94e`. `feat/f1-mvp` = `c016131` (= `origin/feat/f1-mvp`).
+> Branch: `feat/f1-mvp` (integração) · HEAD `0ab9e03` (= `origin/feat/f1-mvp`,
+> em sincronia). Árvore limpa; nenhum PR aberto.
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T19 + T34 CONCLUÍDOS**
-  (20 de 34 tasks); **T20 implementada na branch `feat/f1-t20-historico-conversa`
-  (não commitada); 13 PENDENTES (T21–T33)** —
+- **F1 (MVP) na branch de integração `feat/f1-mvp`**: **T1–T20 + T34 CONCLUÍDOS**
+  (21 de 34 tasks); **13 PENDENTES (T21–T33)** —
   `docs/specs/features/f1-mvp/tasks.md`.
 - **T20 — Persistência e histórico da conversa (COP-06)**: `ConversationRepository`
   ganhou `get_by_user`/`get_or_create`; `CopilotService` exige `user_id` e persiste
@@ -20,8 +19,9 @@
   injeta `user_id`; nova dep `get_current_empresa_optional` (página → 303 sem
   sessão, API segue 401). Gate: **139 testes, 97,58%**, black/ruff limpos.
   Self-review APPROVE com ADR `docs/adr/t20-historico-conversa-self-review.md`;
-  code review sem CRITICAL/HIGH. Débitos registrados na ADR: `get_or_create` não
-  atômico (sem unique), limite `String(4000)`, histórico não vira contexto do LLM.
+  code review sem CRITICAL/HIGH. **Mergeada** (PR #21, squash `0ab9e03`); branch da
+  task apagada no remoto. Débitos registrados na ADR: `get_or_create` não atômico
+  (sem unique), limite `String(4000)`, histórico não vira contexto do LLM.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users.
 - **Modelo de entrega (AD-016)**: `main` verde com CI; `feat/f1-mvp` é a
@@ -30,13 +30,23 @@
   `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push para `main`/`feat/f1-mvp`.
-- **Suíte**: **131 testes, 97,48% de cobertura** (`uv run pytest`); Python 3.14.3
+- **Suíte**: **139 testes, 97,58% de cobertura** (`uv run pytest`); Python 3.14.3
   no `.venv` (projeto exige `>=3.11`).
-- `main` = `f639f36`; `feat/f1-mvp` = `b877eeb` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `0ab9e03` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum PR aberto.** Nenhuma branch de task
-  pendente (a de T19 foi apagada no remoto; prune local feito).
+  pendente (a de T20 foi apagada no remoto; prune local feito).
 
-## O que foi feito nesta sessão
+## O que foi feito nesta sessão (2026-09-17)
+
+1. **Handoff validado/corrigido**: o arquivo apontava HEAD `ba477ae`, mas o
+   handoff já estava commitado em `b877eeb`; corrigido (`c016131`) e empurrado.
+2. **T20 — Persistência e histórico da conversa — CONCLUÍDA** (PR #21, squash
+   `0ab9e03`): ver o bullet "T20" em *Estado atual* e a ADR
+   `docs/adr/t20-historico-conversa-self-review.md`. Gate 139 testes/97,58%.
+3. **Ambiente**: App Control bloqueia `.exe` do `.venv` e a DLL do plugin
+   `langsmith`; rodar com `uv run python -m black|ruff|pytest -p no:langsmith`.
+
+## Sessão anterior (2026-09-16)
 
 1. **Handoff de entrada validado/corrigido**: o arquivo dizia HEAD `5892610` e
    árvore limpa, mas o HEAD real era `8190daf` e havia WIP não commitado (skill
@@ -93,11 +103,14 @@
 
 ## Próximos passos / bloqueios
 
-1. **T20 — PR #21 ABERTO** (próxima ação): aguardar CI verde + review, depois
-   squash-merge em `feat/f1-mvp` e apagar a branch
-   `feat/f1-t20-historico-conversa`.
-2. T21–T33 seguem a T20 (recomendação/fontes, feedback aceitar/descartar,
-   PII/auditoria/uso, custo/eval, admin…).
+1. **T21 — PENDENTE** (próxima ação): **Extração de recomendação, fontes e
+   insuficiência** — estruturar a resposta como recomendação + justificativa +
+   fontes; detectar dado insuficiente. Where `src/gestlog/copilot/`; depends T17;
+   reuses T17. Requirement COP-03/COP-04; testes unit (fake model). Done when:
+   resposta traz fontes; caso sem base retorna insuficiência sem alucinar. Branch
+   `feat/f1-t21-*` → PR contra `feat/f1-mvp`.
+2. T22–T33 seguem a T21 (feedback aceitar/descartar, PII/auditoria/uso,
+   custo/eval, admin…).
 3. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 4. Pendência técnica (pós-T17): os `TOOLS` mock ainda são fallback do REPL; DB no
    CLI/remoção do mock quando não houver mais uso.
@@ -107,13 +120,8 @@
 
 ## WIP local (não commitado)
 
-- **T20 commitada** (`ed8c94e`) e empurrada na branch
-  `feat/f1-t20-historico-conversa`; PR #21 aberto contra `feat/f1-mvp`. Arquivos:
-  `src/gestlog/auth/{__init__,deps}.py`, `src/gestlog/copilot/{__init__,service}.py`,
-  `src/gestlog/repositories/conversations.py`, `src/gestlog/web/{chat,chat_ui}.py`,
-  `src/gestlog/web/templates/chat.html`, `tests/copilot/test_service.py`,
-  `tests/test_repositories.py`, `tests/web/test_chat_ui.py`,
-  `docs/adr/t20-historico-conversa-self-review.md`, `tasks.md`, este handoff.
+- **Nenhum.** T20 mergeada (PR #21, squash `0ab9e03`); árvore limpa e branch da
+  task apagada (local e remoto). Este handoff será o próximo commit na `feat/f1-mvp`.
 
 ## Nota de ambiente (2026-09-17)
 
