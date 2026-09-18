@@ -9,11 +9,14 @@ from gestlog.evaluation.golden import (
     carregar_golden_set,
     run_golden_set,
 )
+from gestlog.evaluation.relatorio import acuracia_por_dominio, relatorio_para_dict
 
 __all__ = [
     "CasoGolden",
     "RelatorioAvaliacao",
     "ResultadoCaso",
+    "acuracia_por_dominio",
     "carregar_golden_set",
+    "relatorio_para_dict",
     "run_golden_set",
 ]

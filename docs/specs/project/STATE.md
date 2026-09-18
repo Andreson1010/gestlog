@@ -399,6 +399,26 @@ refactor maior. Tokens do supervisor e redação de PII não entram na avaliaç�
 `copilot/service.py` (`texto_resposta` público), `copilot/__init__.py`,
 `tests/evaluation/test_golden.py`; ADR `docs/adr/t29-golden-set-self-review.md`.
 
+### AD-026: Script de avaliação com lógica testável e launcher fino (2026-09-18)
+
+**Decision:** a T30 separa a lógica do script em `gestlog.evaluation.script`
+(`gerar_relatorio` com modelo injetável, `salvar_relatorio` e `main`), deixando
+`evals/run_golden_set.py` como launcher fino. `relatorio.py` agrega
+`acuracia_por_dominio` (casos sem domínio viram `fora_de_escopo`) e serializa o
+relatório em JSON. O default de `gerar_relatorio` constrói o modelo real via
+`build_chat_model`; nos testes injeta-se o fake. O relatório é gravado em
+`evals/relatorio.json`, artefato gerado e ignorado no git.
+**Reason:** QUA-01 pede gerar o relatório a partir do golden set real. Manter a
+lógica dentro do pacote (testável, coberta) e só o disparo em `evals/` permite
+provar o comportamento com fake sem rede, deixando a operação manual (um comando)
+fora da suíte. Caminhos derivados de `__file__` não dependem do cwd.
+**Trade-off:** o script é uma operação manual, não agendada; a acurácia por
+domínio considera a expectativa do caso (não a rota obtida) e `main` fica com
+`# pragma: no cover`. O relatório gerado não é versionado.
+**Impact:** `src/gestlog/evaluation/{relatorio,script}.py`, `evaluation/__init__.py`,
+`evals/run_golden_set.py`, `.gitignore`, `tests/evaluation/test_script.py`; ADR
+`docs/adr/t30-script-avaliacao-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -452,6 +472,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 023 | Executar F1 — T27 (medição de uso/quota mensal, bloqueio pré-chamada) | 2026-09-18 | — | ✅ Done |
 | 024 | Executar F1 — T28 (medição por chamada no grafo + bloqueio de quota no copiloto) | 2026-09-18 | — | ✅ Done |
 | 025 | Executar F1 — T29 (golden set: formato JSON + runner com métricas) | 2026-09-18 | — | ✅ Done |
+| 026 | Executar F1 — T30 (script de avaliação: relatório JSON + acurácia por domínio) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -473,8 +494,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T30–T33
-      (script de avaliação, admin, KPIs, aceitação P1).
+- [ ] Executar a F1 — próximas tasks: T31–T33
+      (admin/papéis, KPIs, aceitação P1 ponta a ponta).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
