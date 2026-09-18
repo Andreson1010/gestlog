@@ -4,8 +4,9 @@ O serviço prende a sessão e a empresa em cada tool (via as fábricas de
 ``tools/``) e delega a resposta ao grafo multiagente. Nesta task o serviço também
 estrutura a resposta como recomendação (texto, justificativa e fontes), detecta
 dado insuficiente sem alucinar e persiste o turno e a ``Recommendation`` por
-usuário e empresa. Antes de enviar a pergunta ao LLM, redige a PII (T24) e grava
-a versão redigida no histórico; a medição de uso entra nas tasks seguintes.
+usuário e empresa. Antes de enviar a pergunta ao LLM, redige a PII (T24), grava a
+versão redigida no histórico e registra os eventos de auditoria do turno; a
+medição de uso entra nas tasks seguintes.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 from sqlalchemy.orm import Session
 
+from gestlog.audit import EVENTO_PERGUNTA, EVENTO_RECOMENDACAO, registrar_evento
 from gestlog.config import Settings, get_settings
 from gestlog.db.models import Message, Recommendation
 from gestlog.graph import build_graph, run_query
@@ -172,6 +174,32 @@ def _montar_turnos(
     return turnos
 
 
+def _registrar_auditoria(
+    session: Session,
+    empresa_id: UUID,
+    user_id: UUID,
+    categorias_pii: tuple[str, ...],
+    dominio: str,
+    recomendacao: Recomendacao,
+) -> None:
+    """Registra os eventos de auditoria do turno, sem o valor sensível."""
+    registrar_evento(
+        session,
+        empresa_id,
+        EVENTO_PERGUNTA,
+        user_id,
+        detalhe={"dominio": dominio, "pii": list(categorias_pii)},
+    )
+    if not recomendacao.insuficiente:
+        registrar_evento(
+            session,
+            empresa_id,
+            EVENTO_RECOMENDACAO,
+            user_id,
+            detalhe={"dominio": dominio, "fontes": list(recomendacao.fontes)},
+        )
+
+
 def carregar_historico(
     session: Session, empresa_id: UUID, user_id: UUID
 ) -> list[Turno]:
@@ -257,6 +285,14 @@ class CopilotService:
         dominio = str(estado.get("dominio", ""))
         recomendacao = extrair_recomendacao(bruto, dominio)
         resposta = recomendacao.texto if recomendacao.insuficiente else bruto
+        _registrar_auditoria(
+            self.session,
+            self.empresa_id,
+            self.user_id,
+            redacao.categorias,
+            dominio,
+            recomendacao,
+        )
         registrar_turno(
             self.session,
             self.empresa_id,
