@@ -1,31 +1,31 @@
-# Contexto da Sessão — F1 do gestlog: T31 mergeada, T32 pendente
+# Contexto da Sessão — F1 do gestlog: T32 mergeada, T33 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `1685a76` (squash da T31/PR #32; o
-> último commit de **código** é o próprio `1685a76` — T31)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `94213b9` (squash da T32/PR #33; o
+> último commit de **código** é o próprio `94213b9` — T32)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T31 + T34 CONCLUÍDOS** (32 de 34
-  tasks); **2 PENDENTES (T32–T33)** — `docs/specs/features/f1-mvp/tasks.md`.
+- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T32 + T34 CONCLUÍDOS** (33 de 34
+  tasks); **1 PENDENTE (T33)** — `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users. Modelo de entrega (AD-016): `main` verde, `feat/f1-mvp` é a
   integração, **1 PR por task** com CI + self-review + `code-reviewer`; release
   único `feat/f1-mvp → main` + tag `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
-  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T31 (PR #32) verde em 49s.
-- **Suíte**: **220 testes, 98,18% de cobertura** (`uv run pytest`, re-verificado na
-  T31); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/`, `audit/`,
+  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T32 (PR #33) verde em 52s.
+- **Suíte**: **228 testes, 98,26% de cobertura** (`uv run pytest`, re-verificado na
+  T32); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/`, `audit/`,
   `metering.py`, `state.py`, `agents/base.py`, `evaluation/golden.py` com **100%**.
-- `main` = `f639f36`; `feat/f1-mvp` = `1685a76` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `94213b9` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task** (refs remotas de T21–T31 podadas).
-- **Última task concluída — T31** (ver *O que foi feito*): gestão de usuários/papéis
-  pelo admin (ADM-01), PR #32, squash `1685a76`, ADR
-  `docs/adr/t31-admin-papeis-self-review.md`.
+  task** (refs remotas de T21–T32 podadas).
+- **Última task concluída — T32** (ver *O que foi feito*): dashboard de KPIs por
+  empresa e período (KPI-01), PR #33, squash `94213b9`, ADR
+  `docs/adr/t32-dashboard-kpis-self-review.md`.
 
 ## O que foi feito nesta sessão (2026-09-17/18)
 
@@ -100,12 +100,17 @@
     + casos de uso em `auth/accounts.py` (último admin protegido, 404 entre
     empresas). Contornado defeito latente `Membership.user_id` (`Uuid`) ×
     `User.id` (`GUID`) no JOIN do SQLite. ADR `t31-...-self-review.md`.
-12. **Docs**: `STATE.md` com **AD-017** a **AD-027**; `tasks.md` com progresso até
-    T31; handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`,
+12. **T32 — Dashboard de KPIs** (PR #33, squash `94213b9`).
+    `repositories/kpis.py` (`KpiRepository.resumo` com adoção/aceitação/cobertura;
+    decisão vigente "última vence") + `GET /kpis` (admin/gestor) e `kpis.html`.
+    Período por data (UTC inclusivo); cobertura é snapshot. ADR
+    `t32-...-self-review.md`.
+13. **Docs**: `STATE.md` com **AD-017** a **AD-028**; `tasks.md` com progresso até
+    T32; handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`,
     correção de HEAD `e05e77b`, `8b06f41` e `60da514`.
-13. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
+14. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
     (`pytest`+`black`+`ruff`) → commit PT → PR → **code review** → squash. Code
-    review: **0 CRITICAL/HIGH** nas onze tasks.
+    review: **0 CRITICAL/HIGH** nas doze tasks.
 
 ## Decisões e regras (não esquecer)
 
@@ -162,17 +167,22 @@
   404 entre empresas; último admin protegido (409); remoção apaga o vínculo e
   revoga acesso. Débito: `Membership.user_id` (`Uuid`) × `User.id` (`GUID`) não
   fazem JOIN no SQLite (contornado com `IN`).
+- **KPIs (T32)**: `KpiRepository.resumo(empresa_id, desde, ate)` agrega adoção/
+  aceitação/cobertura; aceitação = decisão vigente (última vence, T22); cobertura
+  é snapshot (dados sem `created_at`); `GET /kpis` exige admin/gestor; período por
+  data em UTC inclusivo. Empates de timestamp desempatam por UUID (limitação T20/T23).
 - **Fluxo da task**: `feat/f1-tXX-*` de `feat/f1-mvp` → build-with-tests →
   **self-review (developer-self-reviewer + ADR)** → gate → commit `feat(f1): ...` →
   PR contra `feat/f1-mvp` → **code review** → squash + apagar branch.
 
 ## Próximos passos / bloqueios
 
-1. **T32 — PENDENTE (próxima ação)**: **Dashboard de KPIs** — tela com adoção,
-   aceitação e cobertura de dados do tenant. Where `src/gestlog/web/`; depends T5;
-   reusa T5/T22; **testes integration**. Requirement KPI-01. Done when: KPIs
-   agregados por tenant e período. Branch `feat/f1-t32-*` → PR contra `feat/f1-mvp`.
-2. **T33** segue (aceitação P1 ponta a ponta).
+1. **T33 — PENDENTE (próxima ação)**: **Testes de aceitação P1 (ponta a ponta)** —
+   arquivo único cobrindo os critérios P1 (ACC-01..04, ING-01..03, COP-01..06,
+   SEC-01..03, QUA-01..02). Where `tests/acceptance/test_f1_mvp.py`; **testes e2e**;
+   gate full. Done when: cada critério tem um teste; suíte verde com cobertura >=80%.
+   Branch `feat/f1-t33-*` → PR contra `feat/f1-mvp`.
+2. **Release da F1**: após a T33, PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016).
 3. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
    aparece ao recarregar o histórico; emitir `event: fontes`/fragmento e ordenação
    monotônica de mensagens (substituir pareamento por `created_at`) fica futuro.
@@ -187,7 +197,7 @@
 ## WIP local (não commitado)
 
 - **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
-  `1685a76` (squash da T31); sem stash e sem PR aberto.
+  `94213b9` (squash da T32); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
@@ -206,18 +216,20 @@
 - `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `docs/business/PRD.md`.
-- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-027.
+- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-028.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (`tasks.md`: 34 tasks;
-  T1–T31 e T34 concluídos).
+  T1–T32 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid** (sufixo `-self-review`): `t13` a
-  `t31` + `t34` (20 arquivos).
+  `t32` + `t34` (21 arquivos).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
   `agents/` (base detecta tool comum terminal; `dominio`; acumula `tokens_usados`), `tools/`
   (`common.py` = tool comum + rótulos), `db/`, `repositories/`
-  (`conversations.py` = conversas/mensagens/recomendações/feedback), `auth/`
+  (`conversations.py` = conversas/mensagens/recomendações/feedback; `kpis.py` =
+  agregações), `auth/`
   (`accounts.py` = conta/convite + gestão de usuários), `web/` (`chat.py` SSE;
-  `chat_ui.py` UI; `feedback.py` T22/T23; `admin.py` = usuários/papéis; `templates/`),
+  `chat_ui.py` UI; `feedback.py` T22/T23; `admin.py` = usuários/papéis; `kpis.py` =
+  dashboard; `templates/`),
   `copilot/` (`service.py` = `Recomendacao`/`extrair_recomendacao`/`Turno`; `answer`
   redige a PII antes do LLM e audita; `metering.py` = `record_usage`/`check_quota`),
   `privacy/` (`politica.py` = allowlist/marcadores; `redacao.py` = `redact`),
@@ -241,8 +253,9 @@
   `ad13821` — auditoria + retenção, AD-022), **T27** (PR #28, `1fc5419` — uso/quota,
   AD-023), **T28** (PR #29, `50289d1` — medição + bloqueio, AD-024), **T29**
   (PR #30, `bd2decd` — golden set, AD-025), **T30** (PR #31, `bb1e8c5` — script de
-  avaliação, AD-026) e **T31** (PR #32, `1685a76` — gestão de usuários/papéis,
-  AD-027) concluídas e mergeadas; 157→220 testes (97,76%→98,18%). F1 retoma na **T32**.
+  avaliação, AD-026), **T31** (PR #32, `1685a76` — gestão de usuários/papéis,
+  AD-027) e **T32** (PR #33, `94213b9` — dashboard de KPIs, AD-028) concluídas e
+  mergeadas; 157→228 testes (97,76%→98,26%). F1 retoma na **T33**.
 - **2026-09-17:** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
   **T23** (PR #24, `5bcac81`) concluídas e mergeadas; `STATE.md` ganhou AD-017/018/019;
   139→157 testes (97,58%→97,76%).
