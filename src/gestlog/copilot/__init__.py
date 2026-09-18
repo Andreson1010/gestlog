@@ -18,6 +18,7 @@ from gestlog.copilot.service import (
     carregar_historico,
     extrair_recomendacao,
     registrar_turno,
+    texto_resposta,
 )
 
 __all__ = [
@@ -33,5 +34,6 @@ __all__ = [
     "extrair_recomendacao",
     "record_usage",
     "registrar_turno",
+    "texto_resposta",
     "uso_no_mes",
 ]

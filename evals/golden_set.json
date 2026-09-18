@@ -1,0 +1,20 @@
+[
+  {
+    "id": "est-01",
+    "pergunta": "Tem estoque do SKU-100?",
+    "dominio": "estoque",
+    "fontes_esperadas": ["estoque"]
+  },
+  {
+    "id": "for-01",
+    "pergunta": "Qual fornecedor entrega mais rapido?",
+    "dominio": "fornecedores",
+    "fontes_esperadas": ["fornecedores"]
+  },
+  {
+    "id": "tra-01",
+    "pergunta": "Qual o status do rastreio TR-1?",
+    "dominio": "transporte",
+    "fontes_esperadas": ["TMS"]
+  }
+]

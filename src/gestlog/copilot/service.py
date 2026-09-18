@@ -132,12 +132,15 @@ def extrair_recomendacao(resposta: str, dominio: str) -> Recomendacao:
     )
 
 
-def _texto_resposta(messages: Sequence[BaseMessage]) -> str:
+def texto_resposta(messages: Sequence[BaseMessage]) -> str:
     """Devolve a última resposta do especialista ou o aviso de fora de escopo."""
     for mensagem in reversed(messages):
         if isinstance(mensagem, AIMessage) and mensagem.content:
             return str(mensagem.content)
     return MENSAGEM_FORA_DE_ESCOPO
+
+
+_texto_resposta = texto_resposta
 
 
 def _montar_turnos(
@@ -293,7 +296,7 @@ class CopilotService:
         estado = run_query(
             grafo, redacao.texto, recursion_limit=resolvido.recursion_limit
         )
-        bruto = _texto_resposta(estado["messages"])
+        bruto = texto_resposta(estado["messages"])
         dominio = str(estado.get("dominio", ""))
         recomendacao = extrair_recomendacao(bruto, dominio)
         resposta = recomendacao.texto if recomendacao.insuficiente else bruto
