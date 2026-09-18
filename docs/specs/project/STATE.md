@@ -332,6 +332,26 @@ para não deslocar o corte entre SQLite/Postgres.
 `copilot/service.py` (`_registrar_auditoria`), `tests/audit/test_auditoria.py`,
 `tests/copilot/test_service.py`; ADR `docs/adr/t26-auditoria-retencao-self-review.md`.
 
+### AD-023: Quota mensal medida por empresa e bloqueio pré-chamada (2026-09-18)
+
+**Decision:** a T27 cria `src/gestlog/copilot/metering.py` com `record_usage`
+(registra tokens/modelo por empresa, sem commit) e `check_quota`, que soma o uso
+do **mês corrente** (`_inicio_do_mes` + `UsageRepository.total_tokens_desde`) e
+levanta `QuotaExcedida(empresa_id, usado, quota)` quando o uso atinge
+`Settings.llm_monthly_token_quota`. `Settings` é a fonte do teto; a soma all-time
+(`total_tokens`) permanece para KPIs.
+**Reason:** QUA-02 pede atribuir uso ao tenant e bloquear ao estourar a quota. A
+janela mensal evita que o consumo histórico bloqueie para sempre o tenant. O
+registro sem commit mantém a telemetria na mesma unidade de trabalho da chamada
+(o copiloto integra isso na T28).
+**Trade-off:** o bloqueio é pré-chamada e *best-effort*: só se sabe o custo real
+**depois** da resposta; um tenant pode ultrapassar a quota na última chamada
+permitida. Bloquear em `>=` é conservador (teto de gasto). O erro é tipado para a
+T28 traduzir em mensagem clara sem derrubar a sessão.
+**Impact:** `src/gestlog/copilot/metering.py`, `repositories/telemetry.py`
+(`total_tokens_desde`), `copilot/__init__.py` (reexports),
+`tests/copilot/test_metering.py`; ADR `docs/adr/t27-uso-quota-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -382,6 +402,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 020 | Executar F1 — T24 (redação de PII por regex + allowlist, sem LLM) | 2026-09-18 | — | ✅ Done |
 | 021 | Executar F1 — T25 (integrar redação no copiloto; persistir versão redigida) | 2026-09-18 | — | ✅ Done |
 | 022 | Executar F1 — T26 (auditoria por tenant + retenção configurável) | 2026-09-18 | — | ✅ Done |
+| 023 | Executar F1 — T27 (medição de uso/quota mensal, bloqueio pré-chamada) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -403,8 +424,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T27–T33
-      (uso/quota, golden set, admin, KPIs, aceitação P1).
+- [ ] Executar a F1 — próximas tasks: T28–T33
+      (integração uso/quota, golden set, admin, KPIs, aceitação P1).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
