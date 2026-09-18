@@ -1,31 +1,31 @@
-# Contexto da Sessão — F1 do gestlog: T32 mergeada, T33 pendente
+# Contexto da Sessão — F1 completa (T1–T34); falta o release
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `94213b9` (squash da T32/PR #33; o
-> último commit de **código** é o próprio `94213b9` — T32)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `564bcbd` (squash da T33/PR #34; o
+> último commit de **código** é o próprio `564bcbd` — T33)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T32 + T34 CONCLUÍDOS** (33 de 34
-  tasks); **1 PENDENTE (T33)** — `docs/specs/features/f1-mvp/tasks.md`.
+- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T34 CONCLUÍDOS (34/34)** —
+  feature completa; **falta o release** (`feat/f1-mvp → main` + tag `v0.1.0`).
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users. Modelo de entrega (AD-016): `main` verde, `feat/f1-mvp` é a
   integração, **1 PR por task** com CI + self-review + `code-reviewer`; release
   único `feat/f1-mvp → main` + tag `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
-  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T32 (PR #33) verde em 52s.
-- **Suíte**: **228 testes, 98,26% de cobertura** (`uv run pytest`, re-verificado na
-  T32); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/`, `audit/`,
+  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T33 (PR #34) verde em 55s.
+- **Suíte**: **248 testes, 98,26% de cobertura** (`uv run pytest`, re-verificado na
+  T33); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/`, `audit/`,
   `metering.py`, `state.py`, `agents/base.py`, `evaluation/golden.py` com **100%**.
-- `main` = `f639f36`; `feat/f1-mvp` = `94213b9` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `564bcbd` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task** (refs remotas de T21–T32 podadas).
-- **Última task concluída — T32** (ver *O que foi feito*): dashboard de KPIs por
-  empresa e período (KPI-01), PR #33, squash `94213b9`, ADR
-  `docs/adr/t32-dashboard-kpis-self-review.md`.
+  task** (refs remotas de T21–T33 podadas).
+- **Última task concluída — T33** (ver *O que foi feito*): testes de aceitação P1
+  ponta a ponta (fecha a F1), PR #34, squash `564bcbd`, ADR
+  `docs/adr/t33-aceitacao-p1-self-review.md`.
 
 ## O que foi feito nesta sessão (2026-09-17/18)
 
@@ -105,12 +105,17 @@
     decisão vigente "última vence") + `GET /kpis` (admin/gestor) e `kpis.html`.
     Período por data (UTC inclusivo); cobertura é snapshot. ADR
     `t32-...-self-review.md`.
-13. **Docs**: `STATE.md` com **AD-017** a **AD-028**; `tasks.md` com progresso até
-    T32; handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`,
-    correção de HEAD `e05e77b`, `8b06f41` e `60da514`.
-14. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
+13. **T33 — Testes de aceitação P1** (PR #34, squash `564bcbd`). Arquivo único
+    `tests/acceptance/test_f1_mvp.py` cobrindo ACC-01..04, ING-01..03, COP-01..06,
+    SEC-01..03 e QUA-01..02 (HTTP real onde há endpoint; SEC-02/QUA-01 chamam o
+    serviço direto), com fake model e banco em `tmp_path`. Fecha a F1. ADR
+    `t33-...-self-review.md`.
+14. **Docs**: `STATE.md` com **AD-017** a **AD-029**; `tasks.md` com progresso até
+    T33 (F1 completa); handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/
+    `d30fed3`, correção de HEAD `e05e77b`, `8b06f41` e `60da514`.
+15. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
     (`pytest`+`black`+`ruff`) → commit PT → PR → **code review** → squash. Code
-    review: **0 CRITICAL/HIGH** nas doze tasks.
+    review: **0 CRITICAL/HIGH** nas treze tasks.
 
 ## Decisões e regras (não esquecer)
 
@@ -171,33 +176,32 @@
   aceitação/cobertura; aceitação = decisão vigente (última vence, T22); cobertura
   é snapshot (dados sem `created_at`); `GET /kpis` exige admin/gestor; período por
   data em UTC inclusivo. Empates de timestamp desempatam por UUID (limitação T20/T23).
+- **Aceitação (T33)**: arquivo único cobrindo os IDs P1 por nome de teste; fake
+  model + banco em `tmp_path`; HTTP real onde há endpoint, serviço direto em
+  SEC-02/QUA-01. Fecha a F1; só falta o release.
 - **Fluxo da task**: `feat/f1-tXX-*` de `feat/f1-mvp` → build-with-tests →
   **self-review (developer-self-reviewer + ADR)** → gate → commit `feat(f1): ...` →
   PR contra `feat/f1-mvp` → **code review** → squash + apagar branch.
 
 ## Próximos passos / bloqueios
 
-1. **T33 — PENDENTE (próxima ação)**: **Testes de aceitação P1 (ponta a ponta)** —
-   arquivo único cobrindo os critérios P1 (ACC-01..04, ING-01..03, COP-01..06,
-   SEC-01..03, QUA-01..02). Where `tests/acceptance/test_f1_mvp.py`; **testes e2e**;
-   gate full. Done when: cada critério tem um teste; suíte verde com cobertura >=80%.
-   Branch `feat/f1-t33-*` → PR contra `feat/f1-mvp`.
-2. **Release da F1**: após a T33, PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016).
-3. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
+1. **Release da F1 — PENDENTE (próxima ação)**: PR `feat/f1-mvp → main` (release
+   único, AD-016) com a F1 completa + tag `v0.1.0`. O gate já está verde
+   (248 testes, 98,26%).
+2. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
    aparece ao recarregar o histórico; emitir `event: fontes`/fragmento e ordenação
    monotônica de mensagens (substituir pareamento por `created_at`) fica futuro.
-4. **Débitos T20**: `UniqueConstraint(empresa_id, user_id)`; reavaliar
+3. **Débitos T20**: `UniqueConstraint(empresa_id, user_id)`; reavaliar
    `String(4000)`/`Text`; mover `get_sync_session` de `ingestion_ui.py` para
    `web/deps.py`.
-5. **Pendência pós-T17**: remover `TOOLS` mock do REPL quando a CLI ganhar banco.
-6. Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
-7. Opcional: remover backups locais `backup/f1-fase2`/`backup/f1-mvp`; avaliar o
+4. **Pendência pós-T17**: remover `TOOLS` mock do REPL quando a CLI ganhar banco.
+5. Opcional: remover backups locais `backup/f1-fase2`/`backup/f1-mvp`; avaliar o
    plugin `@opencode-ai/plugin` em `.opencode/`.
 
 ## WIP local (não commitado)
 
 - **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
-  `94213b9` (squash da T32); sem stash e sem PR aberto.
+  `564bcbd` (squash da T33); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
@@ -216,12 +220,11 @@
 - `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `docs/business/PRD.md`.
-- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-028.
-- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (`tasks.md`: 34 tasks;
-  T1–T32 e T34 concluídos).
+- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-029.
+- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (`tasks.md`: 34/34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid** (sufixo `-self-review`): `t13` a
-  `t32` + `t34` (21 arquivos).
+  `t33` + `t34` (22 arquivos).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
   `agents/` (base detecta tool comum terminal; `dominio`; acumula `tokens_usados`), `tools/`
   (`common.py` = tool comum + rótulos), `db/`, `repositories/`
@@ -236,7 +239,7 @@
   `audit/` (`eventos.py` = catálogo + `registrar_evento`; `retencao.py` =
   `purgar_expiradas`), `evaluation/` (`golden.py` = formato + runner;
   `script.py`/`relatorio.py` = CLI + relatório), `ingestion/`. Também `evals/`
-  (`golden_set.json`, `run_golden_set.py`).
+  (`golden_set.json`, `run_golden_set.py`) e `tests/acceptance/test_f1_mvp.py`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, write-fluid-hybrid-adr.
 - `.opencode/agent/` — backend-builder, codebase-researcher,
@@ -254,8 +257,9 @@
   AD-023), **T28** (PR #29, `50289d1` — medição + bloqueio, AD-024), **T29**
   (PR #30, `bd2decd` — golden set, AD-025), **T30** (PR #31, `bb1e8c5` — script de
   avaliação, AD-026), **T31** (PR #32, `1685a76` — gestão de usuários/papéis,
-  AD-027) e **T32** (PR #33, `94213b9` — dashboard de KPIs, AD-028) concluídas e
-  mergeadas; 157→228 testes (97,76%→98,26%). F1 retoma na **T33**.
+  AD-027), **T32** (PR #33, `94213b9` — dashboard de KPIs, AD-028) e **T33**
+  (PR #34, `564bcbd` — aceitação P1, AD-029) concluídas e mergeadas; 157→248 testes
+  (97,76%→98,26%). **F1 completa (34/34); falta só o release `feat/f1-mvp → main`.**
 - **2026-09-17:** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
   **T23** (PR #24, `5bcac81`) concluídas e mergeadas; `STATE.md` ganhou AD-017/018/019;
   139→157 testes (97,58%→97,76%).
