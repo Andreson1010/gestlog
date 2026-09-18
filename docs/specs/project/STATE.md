@@ -1,10 +1,10 @@
 # State
 
-**Last Updated:** 2026-09-17
-**Current Work:** F1 (MVP) — branch de integração `feat/f1-mvp` (@ `5bcac81`);
-T1–T23 + T34 concluídos (24 de 34), T24 (redação de PII) é a próxima.
-Fluxo épico + 1 PR por task com CI (AD-016). Detalhe por task em
-`docs/specs/features/f1-mvp/tasks.md` e no handoff `.opencode/CONTEXT.md`.
+**Last Updated:** 2026-09-18
+**Current Work:** F1 (MVP) **entregue e releasada** — `main` (@ `1c0768c`) com a
+tag `v0.1.0` (release PR #35); 34/34 tasks. Próximo épico: **F2** (tools de
+escrita/ação com HITL). Detalhe por task em `docs/specs/features/f1-mvp/tasks.md` e
+no handoff `.opencode/CONTEXT.md`.
 
 ---
 
@@ -477,7 +477,8 @@ de aceite/histórico) porque fazem parte dos critérios P1 de conta/login; a lei
 de tools read-only (COP-02) é provada no binding do fake, com profundidade nos
 testes unitários. O gate completo passa a ter 248 testes (98,26%).
 **Impact:** `tests/acceptance/test_f1_mvp.py`; ADR `docs/adr/t33-aceitacao-p1-self-review.md`.
-Com a T33, a F1 fica completa: falta só o PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+Com a T33, a F1 fica completa. O release foi feito no PR #35 (`feat/f1-mvp → main`,
+squash `1c0768c`) com a tag `v0.1.0` publicada.
 
 ---
 
@@ -536,6 +537,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 027 | Executar F1 — T31 (gestão de usuários/papéis pelo admin, último admin protegido) | 2026-09-18 | — | ✅ Done |
 | 028 | Executar F1 — T32 (dashboard de KPIs por empresa e período) | 2026-09-18 | — | ✅ Done |
 | 029 | Executar F1 — T33 (testes de aceitação P1 ponta a ponta) | 2026-09-18 | — | ✅ Done |
+| 030 | Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` | 2026-09-18 | `1c0768c` | ✅ Done |
 
 ---
 
@@ -558,7 +560,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 ## Todos
 
 - [x] Executar a F1 — T1–T33 + T34 concluídas; aceitação P1 verde.
-- [ ] Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016).
+- [x] Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016) — `1c0768c`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
       `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`

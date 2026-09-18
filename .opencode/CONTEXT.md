@@ -1,31 +1,28 @@
-# Contexto da Sessão — F1 completa (T1–T34); falta o release
+# Contexto da Sessão — F1 entregue: release v0.1.0 na main
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `564bcbd` (squash da T33/PR #34; o
-> último commit de **código** é o próprio `564bcbd` — T33)
+> Branch: `main` · HEAD: `1c0768c` (squash do release PR #35) · tag `v0.1.0`.
+> A integração `feat/f1-mvp` foi promovida e **apagada**; `main` é a verdade agora.
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T34 CONCLUÍDOS (34/34)** —
-  feature completa; **falta o release** (`feat/f1-mvp → main` + tag `v0.1.0`).
+- **F1 (MVP) ENTREGUE E RELEASADA**: **34/34 tasks**; `main` = `1c0768c`, tag
+  `v0.1.0` (release PR #35). O épico inteiro está em `main`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
-  FastAPI Users. Modelo de entrega (AD-016): `main` verde, `feat/f1-mvp` é a
-  integração, **1 PR por task** com CI + self-review + `code-reviewer`; release
-  único `feat/f1-mvp → main` + tag `v0.1.0`.
-- **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
-  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T33 (PR #34) verde em 55s.
+  FastAPI Users. Modelo de entrega (AD-016): `main` verde, `1 PR por task` com CI +
+  self-review + `code-reviewer`; release único `feat/f1-mvp → main` + tag `v0.1.0`.
+- **CI**: `.github/workflows/ci.yml` — `black --check`, `ruff check`, `pytest`
+  (gate 80%) em PRs e push. Release PR #35 e o push em `main` verdes.
 - **Suíte**: **248 testes, 98,26% de cobertura** (`uv run pytest`, re-verificado na
   T33); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/`, `audit/`,
   `metering.py`, `state.py`, `agents/base.py`, `evaluation/golden.py` com **100%**.
-- `main` = `f639f36`; `feat/f1-mvp` = `564bcbd` (= `origin/feat/f1-mvp`, **em
-  sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task** (refs remotas de T21–T33 podadas).
-- **Última task concluída — T33** (ver *O que foi feito*): testes de aceitação P1
-  ponta a ponta (fecha a F1), PR #34, squash `564bcbd`, ADR
-  `docs/adr/t33-aceitacao-p1-self-review.md`.
+- `main` = `1c0768c` (= `origin/main`, **em sincronia**). **Árvore limpa; nenhum
+  stash; nenhum PR aberto; nenhuma branch de task** (refs remotas podadas).
+- **Última entrega — release `v0.1.0`** (ver *O que foi feito*): PR #35 promoveu a
+  F1 para `main` e a tag/release `v0.1.0` foi publicada.
 
 ## O que foi feito nesta sessão (2026-09-17/18)
 
@@ -110,10 +107,13 @@
     SEC-01..03 e QUA-01..02 (HTTP real onde há endpoint; SEC-02/QUA-01 chamam o
     serviço direto), com fake model e banco em `tmp_path`. Fecha a F1. ADR
     `t33-...-self-review.md`.
-14. **Docs**: `STATE.md` com **AD-017** a **AD-029**; `tasks.md` com progresso até
+14. **Release v0.1.0** (PR #35, squash `1c0768c`). PR único `feat/f1-mvp → main`
+    promoveu a F1 completa; tag anotada `v0.1.0` publicada e GitHub Release criado
+    (`gh release create`); CI do push em `main` verde; integração apagada.
+15. **Docs**: `STATE.md` com **AD-017** a **AD-029**; `tasks.md` com progresso até
     T33 (F1 completa); handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/
     `d30fed3`, correção de HEAD `e05e77b`, `8b06f41` e `60da514`.
-15. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
+16. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
     (`pytest`+`black`+`ruff`) → commit PT → PR → **code review** → squash. Code
     review: **0 CRITICAL/HIGH** nas treze tasks.
 
@@ -178,30 +178,32 @@
   data em UTC inclusivo. Empates de timestamp desempatam por UUID (limitação T20/T23).
 - **Aceitação (T33)**: arquivo único cobrindo os IDs P1 por nome de teste; fake
   model + banco em `tmp_path`; HTTP real onde há endpoint, serviço direto em
-  SEC-02/QUA-01. Fecha a F1; só falta o release.
-- **Fluxo da task**: `feat/f1-tXX-*` de `feat/f1-mvp` → build-with-tests →
-  **self-review (developer-self-reviewer + ADR)** → gate → commit `feat(f1): ...` →
-  PR contra `feat/f1-mvp` → **code review** → squash + apagar branch.
+  SEC-02/QUA-01. Fecha a F1.
+- **Fluxo da task (F1, concluído)**: `feat/f1-tXX-*` de `feat/f1-mvp` →
+  build-with-tests → **self-review (ADR)** → gate → commit PT → PR → **code
+  review** → squash. Release final `feat/f1-mvp → main` + tag `v0.1.0` (feito).
 
 ## Próximos passos / bloqueios
 
-1. **Release da F1 — PENDENTE (próxima ação)**: PR `feat/f1-mvp → main` (release
-   único, AD-016) com a F1 completa + tag `v0.1.0`. O gate já está verde
-   (248 testes, 98,26%).
+1. **F1 entregue (v0.1.0)** — nada pendente do épico. Próximo épico: **F2**
+   (tools de escrita/ação com HITL — AD-001).
 2. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
    aparece ao recarregar o histórico; emitir `event: fontes`/fragmento e ordenação
    monotônica de mensagens (substituir pareamento por `created_at`) fica futuro.
-3. **Débitos T20**: `UniqueConstraint(empresa_id, user_id)`; reavaliar
+3. **Débitos T20/T31**: `UniqueConstraint(empresa_id, user_id)`; reavaliar
    `String(4000)`/`Text`; mover `get_sync_session` de `ingestion_ui.py` para
-   `web/deps.py`.
+   `web/deps.py`; alinhar `Membership.user_id` (`Uuid`) a `User.id` (`GUID`) para
+   permitir JOIN (migration).
 4. **Pendência pós-T17**: remover `TOOLS` mock do REPL quando a CLI ganhar banco.
-5. Opcional: remover backups locais `backup/f1-fase2`/`backup/f1-mvp`; avaliar o
+5. **Auditoria faltante**: feedback e importação ainda não registram em `AuditLog`
+   (só pergunta/recomendação no copiloto).
+6. Opcional: remover backups locais `backup/f1-fase2`/`backup/f1-mvp`; avaliar o
    plugin `@opencode-ai/plugin` em `.opencode/`.
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
-  `564bcbd` (squash da T33); sem stash e sem PR aberto.
+- **Nenhum.** Árvore limpa. `main` sincronizada com `origin/main` em `1c0768c`
+  (release `v0.1.0`); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
@@ -259,7 +261,8 @@
   avaliação, AD-026), **T31** (PR #32, `1685a76` — gestão de usuários/papéis,
   AD-027), **T32** (PR #33, `94213b9` — dashboard de KPIs, AD-028) e **T33**
   (PR #34, `564bcbd` — aceitação P1, AD-029) concluídas e mergeadas; 157→248 testes
-  (97,76%→98,26%). **F1 completa (34/34); falta só o release `feat/f1-mvp → main`.**
+  (97,76%→98,26%). **F1 completa e releasada: PR #35 (`1c0768c`) na `main` + tag
+  `v0.1.0`.**
 - **2026-09-17:** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
   **T23** (PR #24, `5bcac81`) concluídas e mergeadas; `STATE.md` ganhou AD-017/018/019;
   139→157 testes (97,58%→97,76%).
