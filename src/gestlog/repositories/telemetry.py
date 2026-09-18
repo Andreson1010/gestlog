@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -25,6 +26,14 @@ class UsageRepository(EmpresaScopedRepository[UsageRecord]):
         """Soma os tokens consumidos pelo empresa."""
         stmt = select(func.coalesce(func.sum(UsageRecord.tokens), 0)).where(
             UsageRecord.empresa_id == empresa_id
+        )
+        return int(self.session.execute(stmt).scalar_one())
+
+    def total_tokens_desde(self, empresa_id: UUID, desde: datetime) -> int:
+        """Soma os tokens consumidos pela empresa a partir de ``desde``."""
+        stmt = select(func.coalesce(func.sum(UsageRecord.tokens), 0)).where(
+            UsageRecord.empresa_id == empresa_id,
+            UsageRecord.created_at >= desde,
         )
         return int(self.session.execute(stmt).scalar_one())
 
