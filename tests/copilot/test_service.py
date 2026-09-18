@@ -29,6 +29,7 @@ from gestlog.repositories.conversations import (
     RecommendationRepository,
 )
 from gestlog.repositories.empresas import EmpresaRepository
+from gestlog.repositories.telemetry import AuditRepository
 
 _DOMINIOS = ("estoque", "fornecedores", "transporte")
 
@@ -241,6 +242,44 @@ def test_answer_sem_pii_preserva_pergunta(
     servico.answer("como está o estoque?")
 
     assert servico.historico()[0].pergunta == "como está o estoque?"
+
+
+def test_answer_registra_auditoria_sem_pii(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    usuario = uuid4()
+    model = fake_model_cls(
+        routes=["transporte", "FINISH"],
+        tool_calls=[_tool_comum("coleta agendada", fontes="TMS")],
+    )
+
+    _service(db_session, model, empresa, usuario).answer(
+        "Falar com João Silva no (11) 98765-4321"
+    )
+
+    por_evento = {
+        evento.evento: evento for evento in AuditRepository(db_session).list(empresa)
+    }
+    assert set(por_evento) == {"pergunta", "recomendacao"}
+    pergunta = por_evento["pergunta"]
+    assert pergunta.user_id == usuario
+    assert pergunta.detalhe["dominio"] == "transporte"
+    assert set(pergunta.detalhe["pii"]) == {"nome", "telefone"}
+    assert "João" not in str(pergunta.detalhe)
+    assert por_evento["recomendacao"].detalhe["fontes"] == ["TMS"]
+
+
+def test_answer_insuficiente_registra_apenas_pergunta(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(routes=["estoque", "FINISH"], final="resposta solta")
+
+    _service(db_session, model, empresa).answer("e o estoque?")
+
+    eventos = AuditRepository(db_session).list(empresa)
+    assert [evento.evento for evento in eventos] == ["pergunta"]
 
 
 def test_answer_acumula_turnos_na_mesma_conversa(

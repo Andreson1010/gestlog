@@ -305,6 +305,33 @@ do texto literal — perda de fidelidade aceita em troca de não reter PII. O te
 no fake), `tests/copilot/test_service.py`; ADR
 `docs/adr/t25-integrar-pii-self-review.md`. Medição de uso/quota fica na **T27/T28**.
 
+### AD-022: Auditoria por catálogo validado e retenção por empresa (2026-09-18)
+
+**Decision:** a T26 cria `src/gestlog/audit/` com um catálogo de eventos
+(`EVENTO_PERGUNTA`, `EVENTO_RECOMENDACAO`, `EVENTO_FEEDBACK`, `EVENTO_IMPORTACAO`)
+e `registrar_evento(...)`, que valida o nome do evento e delega ao `AuditRepository`
+**sem commit** — o commit fica com a unidade de trabalho da interação. O
+`CopilotService.answer` registra `pergunta` (detalhe `{dominio, pii: categorias
+redigidas}` — nunca o valor) e `recomendacao` (`{dominio, fontes}`) na mesma
+transação do turno. A retenção é por empresa: `retencao_dias(empresa, settings)`
+usa `Empresa.retention_days` ou cai para `Settings.default_retention_days`;
+`purgar_expiradas` itera as empresas e apaga conversas vencidas e seus dependentes
+(feedback → recommendation → message → conversation).
+**Reason:** SEC-02 pede trilha de auditoria por tenant em interações relevantes;
+SEC-03 pede respeitar o prazo de retenção. Registrar metadados (domínio, fontes,
+categorias de PII encontradas) dá visibilidade sem duplicar o dado sensível.
+O SQL de deleção fica em `repositories/` (única porta de banco), mantendo `audit/`
+como orquestração — e a ordem de FK evita órfãos.
+**Trade-off:** a purga é uma operação explícita (chamável por um job/cron), não um
+agendador embutido; `UsageRecord` (agregado de custo) e o próprio `AuditLog`
+(trilha) não são purgados por essa política. Feedback e importação ainda não
+chamam a auditoria (wiring fora do escopo acordado); `agora` naive é rejeitado
+para não deslocar o corte entre SQLite/Postgres.
+**Impact:** `src/gestlog/audit/{eventos,retencao}.py`, `repositories/empresas.py`
+(`list_all`), `repositories/conversations.py` (`purgar_expiradas`),
+`copilot/service.py` (`_registrar_auditoria`), `tests/audit/test_auditoria.py`,
+`tests/copilot/test_service.py`; ADR `docs/adr/t26-auditoria-retencao-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -354,6 +381,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 019 | Executar F1 — T12–T23 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `5bcac81` (T23) | ✅ Done |
 | 020 | Executar F1 — T24 (redação de PII por regex + allowlist, sem LLM) | 2026-09-18 | — | ✅ Done |
 | 021 | Executar F1 — T25 (integrar redação no copiloto; persistir versão redigida) | 2026-09-18 | — | ✅ Done |
+| 022 | Executar F1 — T26 (auditoria por tenant + retenção configurável) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -375,8 +403,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T26–T33
-      (auditoria/retenção, uso/quota, golden set, admin, KPIs, aceitação P1).
+- [ ] Executar a F1 — próximas tasks: T27–T33
+      (uso/quota, golden set, admin, KPIs, aceitação P1).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em

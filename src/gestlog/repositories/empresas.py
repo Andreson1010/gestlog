@@ -28,6 +28,10 @@ class EmpresaRepository:
         """Busca um empresa pelo id."""
         return self.session.get(Empresa, empresa_id)
 
+    def list_all(self) -> list[Empresa]:
+        """Lista todas as empresas-clientes."""
+        return list(self.session.execute(select(Empresa)).scalars().all())
+
 
 class MembershipRepository(EmpresaScopedRepository[Membership]):
     """Vínculos de usuários aos empresas."""

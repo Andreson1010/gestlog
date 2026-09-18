@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from gestlog.db.models import Conversation, Feedback, Message, Recommendation
@@ -38,6 +39,36 @@ class ConversationRepository(EmpresaScopedRepository[Conversation]):
         if conversa is None:
             conversa = self.create(empresa_id, user_id)
         return conversa
+
+    def purgar_expiradas(self, empresa_id: UUID, limite: datetime) -> int:
+        """Apaga as conversas do empresa anteriores a ``limite``.
+
+        Remove também mensagens, recomendações e feedback pendurados nessas
+        conversas, na ordem que respeita as chaves estrangeiras. Devolve a
+        quantidade de conversas removidas.
+        """
+        stmt = select(Conversation.id).where(
+            Conversation.empresa_id == empresa_id,
+            Conversation.created_at < limite,
+        )
+        ids = list(self.session.execute(stmt).scalars().all())
+        if not ids:
+            return 0
+        self.session.execute(
+            delete(Feedback).where(
+                Feedback.recommendation_id.in_(
+                    select(Recommendation.id).where(
+                        Recommendation.conversation_id.in_(ids)
+                    )
+                )
+            )
+        )
+        self.session.execute(
+            delete(Recommendation).where(Recommendation.conversation_id.in_(ids))
+        )
+        self.session.execute(delete(Message).where(Message.conversation_id.in_(ids)))
+        self.session.execute(delete(Conversation).where(Conversation.id.in_(ids)))
+        return len(ids)
 
 
 class MessageRepository:
