@@ -4,8 +4,8 @@ O serviço prende a sessão e a empresa em cada tool (via as fábricas de
 ``tools/``) e delega a resposta ao grafo multiagente. Nesta task o serviço também
 estrutura a resposta como recomendação (texto, justificativa e fontes), detecta
 dado insuficiente sem alucinar e persiste o turno e a ``Recommendation`` por
-usuário e empresa. A F1 é read-only (AD-001): ainda não há redação de PII nem
-medição de uso aqui — entram nas tasks seguintes.
+usuário e empresa. Antes de enviar a pergunta ao LLM, redige a PII (T24) e grava
+a versão redigida no histórico; a medição de uso entra nas tasks seguintes.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from gestlog.config import Settings, get_settings
 from gestlog.db.models import Message, Recommendation
 from gestlog.graph import build_graph, run_query
+from gestlog.privacy import redact
 from gestlog.repositories.catalog import (
     StockRepository,
     SupplierRepository,
@@ -237,14 +238,21 @@ class CopilotService:
         return carregar_historico(self.session, self.empresa_id, self.user_id)
 
     def answer(self, pergunta: str) -> str:
-        """Roda o grafo, estrutura a recomendação, persiste o turno e responde."""
+        """Roda o grafo, estrutura a recomendação, persiste o turno e responde.
+
+        A pergunta é redigida antes de ir ao LLM e a versão redigida é a que fica
+        no histórico; o texto original não é enviado ao provedor nem persistido.
+        """
         resolvido = self.settings or get_settings()
+        redacao = redact(pergunta)
         grafo = build_graph(
             model=self.model,
             settings=resolvido,
             specialist_tools=self.tools_por_dominio(),
         )
-        estado = run_query(grafo, pergunta, recursion_limit=resolvido.recursion_limit)
+        estado = run_query(
+            grafo, redacao.texto, recursion_limit=resolvido.recursion_limit
+        )
         bruto = _texto_resposta(estado["messages"])
         dominio = str(estado.get("dominio", ""))
         recomendacao = extrair_recomendacao(bruto, dominio)
@@ -253,7 +261,7 @@ class CopilotService:
             self.session,
             self.empresa_id,
             self.user_id,
-            pergunta,
+            redacao.texto,
             resposta,
             recomendacao,
         )

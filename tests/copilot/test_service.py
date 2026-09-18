@@ -71,6 +71,20 @@ def _empresa(session: Session, nome: str) -> UUID:
     return empresa.id
 
 
+def _texto_recebido(model: BaseChatModel) -> str:
+    """Concatena o conteúdo de todas as mensagens enviadas ao modelo.
+
+    Converte todo conteúdo para texto, inclusive blocos estruturados, para que
+    nenhuma PII escape silenciosamente da asserção de ausência no prompt.
+    """
+    partes = [
+        str(getattr(mensagem, "content", mensagem))
+        for lote in model.mensagens_recebidas
+        for mensagem in lote
+    ]
+    return "\n".join(partes)
+
+
 def test_answer_roteia_e_responde_em_cada_dominio(
     db_session: Session, fake_model_cls: type
 ) -> None:
@@ -171,6 +185,62 @@ def test_answer_persiste_turno_no_historico(
     assert len(turnos) == 1
     assert turnos[0].pergunta == "como está o estoque?"
     assert turnos[0].resposta == resposta
+
+
+def test_answer_redige_pii_antes_do_llm(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(
+        routes=["transporte", "FINISH"],
+        tool_calls=[_tool_comum("coleta agendada", fontes="TMS")],
+    )
+
+    _service(db_session, model, empresa).answer(
+        "Falar com João Silva no (11) 98765-4321 sobre a coleta"
+    )
+
+    prompt = _texto_recebido(model)
+    assert model.mensagens_recebidas
+    assert "João" not in prompt
+    assert "Silva" not in prompt
+    assert "98765" not in prompt
+    assert "[NOME]" in prompt
+    assert "[TELEFONE]" in prompt
+
+
+def test_answer_persiste_pergunta_redigida(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(
+        routes=["transporte", "FINISH"],
+        tool_calls=[_tool_comum("coleta agendada", fontes="TMS")],
+    )
+    servico = _service(db_session, model, empresa)
+
+    servico.answer("Falar com João Silva no (11) 98765-4321")
+
+    pergunta = servico.historico()[0].pergunta
+    assert "João" not in pergunta
+    assert "98765" not in pergunta
+    assert "[NOME]" in pergunta
+    assert "[TELEFONE]" in pergunta
+
+
+def test_answer_sem_pii_preserva_pergunta(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque", fontes="estoque")],
+    )
+    servico = _service(db_session, model, empresa)
+
+    servico.answer("como está o estoque?")
+
+    assert servico.historico()[0].pergunta == "como está o estoque?"
 
 
 def test_answer_acumula_turnos_na_mesma_conversa(

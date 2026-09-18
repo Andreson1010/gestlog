@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 from sqlalchemy.orm import Session
 
@@ -33,12 +33,15 @@ class FakeChatModel:
         self._tool_calls = list(tool_calls or [])
         self._step = 0
         self.bound_tools: list[BaseTool] = []
+        self.mensagens_recebidas: list[list[BaseMessage]] = []
 
     def with_structured_output(self, schema: type) -> Any:
         routes = self._routes
+        recebidas = self.mensagens_recebidas
 
         class _Router:
-            def invoke(self, messages: list) -> Any:
+            def invoke(self, messages: list[BaseMessage]) -> Any:
+                recebidas.append(messages)
                 route = routes.pop(0) if routes else "FINISH"
                 return schema(next=route)
 
@@ -48,7 +51,8 @@ class FakeChatModel:
         self.bound_tools = list(tools)
         return self
 
-    def invoke(self, messages: list) -> AIMessage:
+    def invoke(self, messages: list[BaseMessage]) -> AIMessage:
+        self.mensagens_recebidas.append(messages)
         if self._step < len(self._tool_calls):
             calls = self._tool_calls[self._step]
             self._step += 1
