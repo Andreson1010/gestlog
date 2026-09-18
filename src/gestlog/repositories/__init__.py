@@ -16,6 +16,7 @@ from gestlog.repositories.conversations import (
 )
 from gestlog.repositories.empresas import EmpresaRepository, MembershipRepository
 from gestlog.repositories.imports import ImportJobRepository
+from gestlog.repositories.kpis import KpiRepository, ResumoKpis
 from gestlog.repositories.telemetry import AuditRepository, UsageRepository
 
 __all__ = [
@@ -28,6 +29,8 @@ __all__ = [
     "MessageRepository",
     "RecommendationRepository",
     "ImportJobRepository",
+    "KpiRepository",
+    "ResumoKpis",
     "AuditRepository",
     "UsageRepository",
     "MembershipRepository",

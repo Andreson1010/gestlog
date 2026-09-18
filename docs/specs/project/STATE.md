@@ -439,6 +439,26 @@ eventos de gestão ainda não chamam a auditoria da T26 (fora do escopo).
 **Impact:** `auth/accounts.py`, `web/admin.py`, `web/schemas.py` (`PapelAtualizar`),
 `web/app.py`, `tests/auth/test_admin.py`; ADR `docs/adr/t31-admin-papeis-self-review.md`.
 
+### AD-028: Dashboard de KPIs por empresa e período, com decisão vigente (2026-09-18)
+
+**Decision:** a T32 cria `repositories/kpis.py` com `KpiRepository.resumo(empresa_id,
+desde, ate) -> ResumoKpis`, agregando **adoção** (conversas, perguntas,
+recomendações), **aceitação** (decisão vigente "última vence", reusando a semântica
+append-only da T22) e **cobertura de dados** (snapshot de itens de estoque,
+fornecedores e registros de transporte). A página `GET /kpis` (guard admin/gestor)
+converte `desde`/`ate` (data) em limites UTC inclusivos e renderiza `kpis.html`.
+**Reason:** KPI-01 pede que o gestor veja os indicadores do tenant no período. As
+agregações vivem no repositório (SQL confinado, isolamento por `empresa_id`), e a
+aceitação usa a decisão vigente para refletir a intenção atual, não o total de
+cliques. A cobertura é o retrato atual dos dados importados (não tem `created_at`).
+**Trade-off:** a decisão vigente ordena por `(Feedback.created_at, Feedback.id)`;
+como o `id` é UUID aleatório, empates de timestamp têm desempate não determinístico
+(mesmo padrão da T20/T23; cliques reais têm tempos distintos). Corrigir exigiria uma
+coluna monotônica. A cobertura ignora o período por não haver timestamp nos dados.
+**Impact:** `repositories/kpis.py`, `repositories/__init__.py`, `web/kpis.py`,
+`web/templates/kpis.html`, `web/templates/base.html`, `web/app.py`, `web/__init__.py`,
+`tests/web/test_kpis.py`; ADR `docs/adr/t32-dashboard-kpis-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -494,6 +514,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 025 | Executar F1 — T29 (golden set: formato JSON + runner com métricas) | 2026-09-18 | — | ✅ Done |
 | 026 | Executar F1 — T30 (script de avaliação: relatório JSON + acurácia por domínio) | 2026-09-18 | — | ✅ Done |
 | 027 | Executar F1 — T31 (gestão de usuários/papéis pelo admin, último admin protegido) | 2026-09-18 | — | ✅ Done |
+| 028 | Executar F1 — T32 (dashboard de KPIs por empresa e período) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -515,8 +536,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T32–T33
-      (dashboard de KPIs; aceitação P1 ponta a ponta).
+- [ ] Executar a F1 — próxima task: T33 (aceitação P1 ponta a ponta); depois o
+      release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
