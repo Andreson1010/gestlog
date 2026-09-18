@@ -352,6 +352,30 @@ T28 traduzir em mensagem clara sem derrubar a sessão.
 (`total_tokens_desde`), `copilot/__init__.py` (reexports),
 `tests/copilot/test_metering.py`; ADR `docs/adr/t27-uso-quota-self-review.md`.
 
+### AD-024: Uso medido no estado do grafo e quota bloqueada sem exceção (2026-09-18)
+
+**Decision:** a T28 liga a medição da T27 ao copiloto. `AgentState` ganhou
+`tokens_usados` (reducer `operator.add`), acumulado pelo nó especialista a partir
+do `usage_metadata` de cada chamada ao modelo (o nó só devolve a resposta final,
+descartando as mensagens intermediárias, então ler `state["messages"]` no serviço
+perderia tokens). `CopilotService.answer` chama `check_quota` antes de qualquer
+chamada; ao estourar, devolve `MENSAGEM_QUOTA_EXCEDIDA` sem invocar o LLM nem
+persistir turno. Depois do grafo, registra `record_usage(..., tokens_usados)`
+antes de `registrar_turno`, na mesma transação.
+**Reason:** QUA-02 pede medir cada chamada e bloquear de forma que a sessão não
+caia. Devolver a mensagem como parte do fluxo (em vez de deixar `QuotaExcedida`
+vazar para a rota) mantém a UX previsível e o SSE da T18 intacto. Ancorar o
+acumulador no estado preserva a arquitetura "só a resposta final sobe" da T21.
+**Trade-off:** os tokens do supervisor (roteamento via `with_structured_output`)
+não entram na soma — a medição cobre a geração dos especialistas. O bloqueio é
+pré-chamada e best-effort: só se sabe o custo depois da resposta. Modelos que não
+reportam `usage_metadata` contam 0.
+**Impact:** `state.py` (`tokens_usados`), `agents/base.py` (`_tokens_da_resposta`,
+acumulação e `SpecialistOutput`), `copilot/service.py` (`answer`),
+`copilot/__init__.py` (reexport), `tests/conftest.py` (fake com tokens),
+`tests/copilot/test_service.py`; ADR
+`docs/adr/t28-integracao-uso-quota-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -403,6 +427,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 021 | Executar F1 — T25 (integrar redação no copiloto; persistir versão redigida) | 2026-09-18 | — | ✅ Done |
 | 022 | Executar F1 — T26 (auditoria por tenant + retenção configurável) | 2026-09-18 | — | ✅ Done |
 | 023 | Executar F1 — T27 (medição de uso/quota mensal, bloqueio pré-chamada) | 2026-09-18 | — | ✅ Done |
+| 024 | Executar F1 — T28 (medição por chamada no grafo + bloqueio de quota no copiloto) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -424,8 +449,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T28–T33
-      (integração uso/quota, golden set, admin, KPIs, aceitação P1).
+- [ ] Executar a F1 — próximas tasks: T29–T33
+      (golden set, script de avaliação, admin, KPIs, aceitação P1).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em

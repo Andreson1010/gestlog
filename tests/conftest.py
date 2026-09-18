@@ -27,13 +27,25 @@ class FakeChatModel:
         routes: list[str] | None = None,
         final: str = "resposta final",
         tool_calls: list[list[dict[str, Any]]] | None = None,
+        tokens: int = 0,
     ) -> None:
         self._routes = list(routes or [])
         self._final = final
         self._tool_calls = list(tool_calls or [])
+        self._tokens = tokens
         self._step = 0
         self.bound_tools: list[BaseTool] = []
         self.mensagens_recebidas: list[list[BaseMessage]] = []
+
+    def _uso(self) -> dict[str, int] | None:
+        """Metadados de uso devolvidos pelo modelo, quando configurados."""
+        if not self._tokens:
+            return None
+        return {
+            "input_tokens": self._tokens,
+            "output_tokens": 0,
+            "total_tokens": self._tokens,
+        }
 
     def with_structured_output(self, schema: type) -> Any:
         routes = self._routes
@@ -53,12 +65,13 @@ class FakeChatModel:
 
     def invoke(self, messages: list[BaseMessage]) -> AIMessage:
         self.mensagens_recebidas.append(messages)
+        uso = self._uso()
         if self._step < len(self._tool_calls):
             calls = self._tool_calls[self._step]
             self._step += 1
-            return AIMessage(content="", tool_calls=calls)
+            return AIMessage(content="", tool_calls=calls, usage_metadata=uso)
         self._step += 1
-        return AIMessage(content=self._final)
+        return AIMessage(content=self._final, usage_metadata=uso)
 
 
 @pytest.fixture

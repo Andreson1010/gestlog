@@ -5,8 +5,8 @@ O serviço prende a sessão e a empresa em cada tool (via as fábricas de
 estrutura a resposta como recomendação (texto, justificativa e fontes), detecta
 dado insuficiente sem alucinar e persiste o turno e a ``Recommendation`` por
 usuário e empresa. Antes de enviar a pergunta ao LLM, redige a PII (T24), grava a
-versão redigida no histórico e registra os eventos de auditoria do turno; a
-medição de uso entra nas tasks seguintes.
+versão redigida no histórico e registra os eventos de auditoria do turno. Cada
+chamada tem o uso medido e é bloqueada quando a quota mensal da empresa estoura.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from gestlog.audit import EVENTO_PERGUNTA, EVENTO_RECOMENDACAO, registrar_evento
 from gestlog.config import Settings, get_settings
+from gestlog.copilot.metering import QuotaExcedida, check_quota, record_usage
 from gestlog.db.models import Message, Recommendation
 from gestlog.graph import build_graph, run_query
 from gestlog.privacy import redact
@@ -54,6 +55,11 @@ MENSAGEM_FORA_DE_ESCOPO = (
 MENSAGEM_INSUFICIENCIA = (
     "Não há dados suficientes na sua operação para recomendar com segurança. "
     "Importe ou complete os dados de estoque, fornecedores e transporte."
+)
+
+MENSAGEM_QUOTA_EXCEDIDA = (
+    "A quota mensal de uso do copiloto foi atingida. "
+    "Fale com o administrador para ampliar o limite."
 )
 
 _SEPARADORES_FONTES = (";", ",")
@@ -270,8 +276,14 @@ class CopilotService:
 
         A pergunta é redigida antes de ir ao LLM e a versão redigida é a que fica
         no histórico; o texto original não é enviado ao provedor nem persistido.
+        A quota mensal é checada antes da chamada: ao estourar, devolve uma
+        mensagem clara sem chamar o modelo.
         """
         resolvido = self.settings or get_settings()
+        try:
+            check_quota(self.session, self.empresa_id, resolvido)
+        except QuotaExcedida:
+            return MENSAGEM_QUOTA_EXCEDIDA
         redacao = redact(pergunta)
         grafo = build_graph(
             model=self.model,
@@ -292,6 +304,12 @@ class CopilotService:
             redacao.categorias,
             dominio,
             recomendacao,
+        )
+        record_usage(
+            self.session,
+            self.empresa_id,
+            resolvido.llm_model,
+            int(estado.get("tokens_usados", 0)),
         )
         registrar_turno(
             self.session,
