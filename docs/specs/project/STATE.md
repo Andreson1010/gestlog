@@ -459,6 +459,26 @@ coluna monotônica. A cobertura ignora o período por não haver timestamp nos d
 `web/templates/kpis.html`, `web/templates/base.html`, `web/app.py`, `web/__init__.py`,
 `tests/web/test_kpis.py`; ADR `docs/adr/t32-dashboard-kpis-self-review.md`.
 
+### AD-029: Testes de aceitação P1 fecham a F1 (2026-09-18)
+
+**Decision:** a T33 entrega `tests/acceptance/test_f1_mvp.py`, arquivo único que
+exercita cada critério P1 por nome de teste (ACC-01..04, ING-01..03, COP-01..06,
+SEC-01..03, QUA-01..02), com fixtures próprias (sqlite em arquivo compartilhado
+entre engine async e sync, `create_app`, overrides de sessão/settings/`get_chat_model`)
+e o **modelo fake** injetado — nenhum teste toca Ollama/rede. O fluxo HTTP real é
+usado onde há endpoint (onboarding, login, convite, importação, chat/SSE, feedback,
+KPIs); SEC-02 (retenção) e QUA-01 (golden set) chamam o serviço diretamente por não
+haver endpoint.
+**Reason:** é o fechamento da F1: prova, de fora para dentro, que os critérios de
+aceitação das seis histórias P1 se sustentam juntos. Cada teste cria o próprio
+tenant, evitando dependência de ordem/estado.
+**Trade-off:** cobertura levemente excedente ao pedido (ACC-05 sem sessão e o fluxo
+de aceite/histórico) porque fazem parte dos critérios P1 de conta/login; a leitura
+de tools read-only (COP-02) é provada no binding do fake, com profundidade nos
+testes unitários. O gate completo passa a ter 248 testes (98,26%).
+**Impact:** `tests/acceptance/test_f1_mvp.py`; ADR `docs/adr/t33-aceitacao-p1-self-review.md`.
+Com a T33, a F1 fica completa: falta só o PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+
 ---
 
 ## Active Blockers
@@ -515,6 +535,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 026 | Executar F1 — T30 (script de avaliação: relatório JSON + acurácia por domínio) | 2026-09-18 | — | ✅ Done |
 | 027 | Executar F1 — T31 (gestão de usuários/papéis pelo admin, último admin protegido) | 2026-09-18 | — | ✅ Done |
 | 028 | Executar F1 — T32 (dashboard de KPIs por empresa e período) | 2026-09-18 | — | ✅ Done |
+| 029 | Executar F1 — T33 (testes de aceitação P1 ponta a ponta) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -536,9 +557,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próxima task: T33 (aceitação P1 ponta a ponta); depois o
-      release `feat/f1-mvp → main` + tag `v0.1.0`.
-- [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
+- [x] Executar a F1 — T1–T33 + T34 concluídas; aceitação P1 verde.
+- [ ] Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016).
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
       `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
