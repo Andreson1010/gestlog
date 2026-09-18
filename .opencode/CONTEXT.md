@@ -1,7 +1,7 @@
 # Contexto da Sessão — F1 do gestlog: T21–T23 mergeadas, T24 pendente
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-17.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `e05e77b` (este handoff é um commit
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
+> Branch: `feat/f1-mvp` (integração) · HEAD: `e21a66d` (este handoff é um commit
 > docs no topo; o último commit de **código** é `5bcac81`, T23)
 
 ## Estado atual
@@ -20,7 +20,7 @@
 - **Suíte**: **157 testes, 97,76% de cobertura** (`uv run pytest`); Python 3.14.3
   no `.venv` (projeto exige `>=3.11`). *(não re-verificado neste `/end`; número da
   última execução da T23: 157 passed, 97,76%)*
-- `main` = `f639f36`; `feat/f1-mvp` = `e05e77b` (= `origin/feat/f1-mvp`, **em
+- `main` = `f639f36`; `feat/f1-mvp` = `e21a66d` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
   task** (refs remotas de T21–T23 podadas).
 - **Última task concluída — T23** (ver *O que foi feito*): UI de feedback (fontes +
@@ -111,8 +111,8 @@
 
 ## WIP local (não commitado)
 
-- **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` na
-  correção de HEAD `e05e77b`; sem stash e sem PR aberto.
+- **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
+  `e21a66d` (commit de handoff); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
