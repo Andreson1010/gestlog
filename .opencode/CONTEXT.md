@@ -1,30 +1,31 @@
-# Contexto da Sessão — F1 do gestlog: T25 mergeada, T26 pendente
+# Contexto da Sessão — F1 do gestlog: T26 mergeada, T27 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `555c992` (squash da T25/PR #26; o
-> último commit de **código** é o próprio `555c992` — T25)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `ad13821` (squash da T26/PR #27; o
+> último commit de **código** é o próprio `ad13821` — T26)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T25 + T34 CONCLUÍDOS** (26 de 34
-  tasks); **8 PENDENTES (T26–T33)** — `docs/specs/features/f1-mvp/tasks.md`.
+- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T26 + T34 CONCLUÍDOS** (27 de 34
+  tasks); **7 PENDENTES (T27–T33)** — `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users. Modelo de entrega (AD-016): `main` verde, `feat/f1-mvp` é a
   integração, **1 PR por task** com CI + self-review + `code-reviewer`; release
   único `feat/f1-mvp → main` + tag `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
-  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T25 (PR #26) verde em 44s.
-- **Suíte**: **177 testes, 97,84% de cobertura** (`uv run pytest`, re-verificado na
-  T25); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/` com **100%**.
-- `main` = `f639f36`; `feat/f1-mvp` = `555c992` (= `origin/feat/f1-mvp`, **em
+  `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T26 (PR #27) verde em 49s.
+- **Suíte**: **188 testes, 97,91% de cobertura** (`uv run pytest`, re-verificado na
+  T26); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/` e `audit/`
+  com **100%**.
+- `main` = `f639f36`; `feat/f1-mvp` = `ad13821` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task** (refs remotas de T21–T25 podadas).
-- **Última task concluída — T25** (ver *O que foi feito*): integração da redação de
-  PII no copiloto (SEC-01/03), PR #26, squash `555c992`, ADR
-  `docs/adr/t25-integrar-pii-self-review.md`.
+  task** (refs remotas de T21–T26 podadas).
+- **Última task concluída — T26** (ver *O que foi feito*): auditoria por tenant +
+  retenção configurável (SEC-02/03), PR #27, squash `ad13821`, ADR
+  `docs/adr/t26-auditoria-retencao-self-review.md`.
 
 ## O que foi feito nesta sessão (2026-09-17/18)
 
@@ -63,12 +64,19 @@
    é persistido (decisão do usuário, alinhada à ADR da T20). `FakeChatModel` ganhou
    `mensagens_recebidas` para o teste do *Done when* inspecionar o prompt real.
    ADR `t25-...-self-review.md`.
-6. **Docs**: `STATE.md` com **AD-017** a **AD-021**; `tasks.md` com progresso até
-   T25; handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`,
+6. **T26 — Auditoria e retenção** (PR #27, squash `ad13821`). Novo pacote
+   `src/gestlog/audit/`: catálogo de eventos validado + `registrar_evento` (sem
+   commit, entra na unidade de trabalho) e `purgar_expiradas` (prazo por empresa,
+   fallback ao default; SQL no repositório, ordem de FK). `CopilotService.answer`
+   registra `pergunta` (detalhe com domínio + categorias de PII, sem o valor) e
+   `recomendacao` (domínio + fontes). Self-review adicionou guarda de `datetime`
+   naive. ADR `t26-...-self-review.md`.
+7. **Docs**: `STATE.md` com **AD-017** a **AD-022**; `tasks.md` com progresso até
+   T26; handoffs `c016131`/`87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`,
    correção de HEAD `e05e77b`, `8b06f41` e `60da514`.
-7. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
+8. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
    (`pytest`+`black`+`ruff`) → commit PT → PR → **code review** → squash. Code
-   review: **0 CRITICAL/HIGH** nas cinco tasks.
+   review: **0 CRITICAL/HIGH** nas seis tasks.
 
 ## Decisões e regras (não esquecer)
 
@@ -104,19 +112,22 @@
 - **PII (T25)**: pergunta redigida vai ao LLM **e** é a persistida no histórico
   (`conteudo_redigido`); original não circula nem é retido; UI ao vivo mostra o
   original. Política por tenant ainda não existe (usa `POLITICA_PADRAO`).
+- **Auditoria/retenção (T26)**: catálogo de eventos validado; `registrar_evento`
+  sem commit (entra na unidade de trabalho do turno); `detalhe` só metadados, nunca
+  PII; retenção por empresa com fallback ao default; SQL de purga só em
+  `repositories/` (ordem de FK). `UsageRecord`/`AuditLog` não são purgados.
 - **Fluxo da task**: `feat/f1-tXX-*` de `feat/f1-mvp` → build-with-tests →
   **self-review (developer-self-reviewer + ADR)** → gate → commit `feat(f1): ...` →
   PR contra `feat/f1-mvp` → **code review** → squash + apagar branch.
 
 ## Próximos passos / bloqueios
 
-1. **T26 — PENDENTE (próxima ação)**: **Auditoria e retenção** — serviço de
-   `AuditLog` por tenant e política de retenção configurável (purga do que passou
-   do prazo). Where `src/gestlog/audit/`, `src/gestlog/repositories/`; depends T5,
-   T17; **testes integration**. Requirements SEC-02, SEC-03. Done when: eventos
-   registrados; retenção expira o que passou do prazo. Branch `feat/f1-t26-*` → PR
-   contra `feat/f1-mvp`.
-2. **T27–T33** seguem (uso/quota, golden set, admin, KPIs, aceitação P1).
+1. **T27 — PENDENTE (próxima ação)**: **Medição de uso e quota** — registrar
+   tokens/modelo por tenant e checar quota antes da chamada. Where
+   `src/gestlog/copilot/metering.py`; depends T5; **testes unit**. Requirement
+   QUA-02. Done when: uso somado por tenant; quota excedida bloqueia. Branch
+   `feat/f1-t27-*` → PR contra `feat/f1-mvp` (a integração no copiloto é a T28).
+2. **T28–T33** seguem (integração uso/quota, golden set, admin, KPIs, aceitação P1).
 3. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
    aparece ao recarregar o histórico; emitir `event: fontes`/fragmento e ordenação
    monotônica de mensagens (substituir pareamento por `created_at`) fica futuro.
@@ -131,7 +142,7 @@
 ## WIP local (não commitado)
 
 - **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
-  `555c992` (squash da T25); sem stash e sem PR aberto.
+  `ad13821` (squash da T26); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
@@ -141,7 +152,7 @@
   para `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json` (OUTRO repo) —
   **não representa o gestlog**. **Nenhum número registrado (não verificado); não
   inventar valores.**
-- Módulos tocados nesta sessão: `src/gestlog/{copilot,privacy,agents,tools,repositories,web}/`
+- Módulos tocados nesta sessão: `src/gestlog/{copilot,privacy,audit,agents,tools,repositories,web}/`
   e `state.py`; docs em `docs/adr/` e `docs/specs/`. Comunidades afetadas:
   **não verificado** (sem grafo do gestlog).
 
@@ -150,20 +161,22 @@
 - `AGENTS.md` — arquitetura, convenções, comandos e fluxo épico+task.
 - `README.md`, `pyproject.toml`, `Makefile`, `.github/workflows/ci.yml`.
 - `docs/business/PRD.md`.
-- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-021.
+- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-022.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (`tasks.md`: 34 tasks;
-  T1–T25 e T34 concluídos).
+  T1–T26 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid** (sufixo `-self-review`): `t13` a
-  `t25` + `t34` (14 arquivos).
+  `t26` + `t34` (15 arquivos).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
   `agents/` (base detecta tool comum terminal; `dominio` no estado), `tools/`
   (`common.py` = tool comum + rótulos), `db/`, `repositories/`
   (`conversations.py` = conversas/mensagens/recomendações/feedback), `auth/`,
   `web/` (`chat.py` SSE; `chat_ui.py` UI; `feedback.py` T22/T23; `templates/`),
   `copilot/` (`service.py` = `Recomendacao`/`extrair_recomendacao`/`Turno`; `answer`
-  redige a PII antes do LLM), `privacy/` (`politica.py` = allowlist/marcadores;
-  `redacao.py` = `redact`), `ingestion/`.
+  redige a PII antes do LLM e audita), `privacy/` (`politica.py` =
+  allowlist/marcadores; `redacao.py` = `redact`), `audit/` (`eventos.py` =
+  catálogo + `registrar_evento`; `retencao.py` = `purgar_expiradas`),
+  `ingestion/`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, write-fluid-hybrid-adr.
 - `.opencode/agent/` — backend-builder, codebase-researcher,
@@ -175,9 +188,10 @@
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-18 (esta):** **T24** (PR #25, `eff38a4` — redação de PII, AD-020) e
-  **T25** (PR #26, `555c992` — integração no copiloto, AD-021) concluídas e
-  mergeadas; 157→177 testes (97,76%→97,84%). F1 retoma na **T26**.
+- **2026-09-18 (esta):** **T24** (PR #25, `eff38a4` — redação de PII, AD-020),
+  **T25** (PR #26, `555c992` — integração no copiloto, AD-021) e **T26** (PR #27,
+  `ad13821` — auditoria + retenção, AD-022) concluídas e mergeadas; 157→188 testes
+  (97,76%→97,91%). F1 retoma na **T27**.
 - **2026-09-17:** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
   **T23** (PR #24, `5bcac81`) concluídas e mergeadas; `STATE.md` ganhou AD-017/018/019;
   139→157 testes (97,58%→97,76%).
