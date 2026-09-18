@@ -419,6 +419,26 @@ domínio considera a expectativa do caso (não a rota obtida) e `main` fica com
 `evals/run_golden_set.py`, `.gitignore`, `tests/evaluation/test_script.py`; ADR
 `docs/adr/t30-script-avaliacao-self-review.md`.
 
+### AD-027: Gestão de usuários/papéis pelo admin, com proteção do último admin (2026-09-18)
+
+**Decision:** a T31 adiciona `GET/PATCH/DELETE /empresa/usuarios[/{id}]` em
+`web/admin.py`, todas sob `exigir_papel("admin")` (T8), com os casos de uso em
+`auth/accounts.py` (`listar_usuarios`, `alterar_papel`, `remover_usuario`).
+O alvo é sempre resolvido por `(empresa_id, user_id)` da sessão: outra empresa
+resulta em **404** (sem vazar existência). Rebaixar ou remover o **último admin**
+da empresa é bloqueado com **409**. A remoção apaga o `Membership`, então
+`get_current_membership` deixa de resolver e o acesso cai (**403**) — é o que
+"remoção revoga acesso" exige.
+**Reason:** ADM-01 pede que o admin altere papel e remova usuários do tenant. Reusar
+`exigir_papel` mantém uma única porta de autorização, e a regra do último admin
+evita deixar a empresa órfã de quem gerencie usuários.
+**Trade-off:** `Membership.user_id` (`Uuid`) e `User.id` (`GUID` do FastAPI Users)
+serializam diferente no SQLite, então o `JOIN` direto retorna vazio; `listar_usuarios`
+contorna com `User.id.in_(ids)` (débito: alinhar os tipos exige migration). Os
+eventos de gestão ainda não chamam a auditoria da T26 (fora do escopo).
+**Impact:** `auth/accounts.py`, `web/admin.py`, `web/schemas.py` (`PapelAtualizar`),
+`web/app.py`, `tests/auth/test_admin.py`; ADR `docs/adr/t31-admin-papeis-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -473,6 +493,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 024 | Executar F1 — T28 (medição por chamada no grafo + bloqueio de quota no copiloto) | 2026-09-18 | — | ✅ Done |
 | 025 | Executar F1 — T29 (golden set: formato JSON + runner com métricas) | 2026-09-18 | — | ✅ Done |
 | 026 | Executar F1 — T30 (script de avaliação: relatório JSON + acurácia por domínio) | 2026-09-18 | — | ✅ Done |
+| 027 | Executar F1 — T31 (gestão de usuários/papéis pelo admin, último admin protegido) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -494,11 +515,13 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T31–T33
-      (admin/papéis, KPIs, aceitação P1 ponta a ponta).
+- [ ] Executar a F1 — próximas tasks: T32–T33
+      (dashboard de KPIs; aceitação P1 ponta a ponta).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
       `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
       para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco,
+      alinhar `Membership.user_id` (`Uuid`) a `User.id` (`GUID`) para permitir JOIN
+      (AD-027),
       botões no turno ao vivo (SSE) e ordenação monotônica de mensagens (AD-019).

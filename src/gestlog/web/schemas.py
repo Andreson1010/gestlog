@@ -24,3 +24,9 @@ class ConviteCreate(BaseModel):
     email: EmailStr
     papel: Papel = "operador"
     senha: str = Field(min_length=8, max_length=128)
+
+
+class PapelAtualizar(BaseModel):
+    """Novo papel de um usuário da empresa (gestão pelo administrador)."""
+
+    papel: Papel
