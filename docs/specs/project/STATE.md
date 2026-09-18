@@ -285,6 +285,26 @@ para privacidade. Endereço exige prefixo+numero e nomes exigem forma capitaliza
 `tests/privacy/test_redacao.py`; ADR `docs/adr/t24-redacao-pii-self-review.md`.
 A integração no copiloto (preservando o texto original para a UI) é a **T25**.
 
+### AD-021: PII redigida antes do LLM e no histórico; original não circula (2026-09-18)
+
+**Decision:** a T25 integra a redação da T24 no `CopilotService.answer`: a pergunta
+do usuário passa por `redact(...)` antes de `run_query`, e a **versão redigida** é
+tanto enviada ao LLM quanto gravada em `Message.conteudo_redigido` via
+`registrar_turno`; o texto original não é enviado ao provedor nem persistido. A UI
+ao vivo continua exibindo o original (ele chega pelo query param de `/chat/pergunta`),
+e o histórico passa a mostrar os marcadores (`[NOME]`/`[ENDERECO]`/`[TELEFONE]`).
+**Reason:** SEC-01 exige que PII não saia para o provedor; SEC-03/retenção pede
+minimizar o que é armazenado. Persistir a versão redigida alinha o nome do campo
+`conteudo_redigido` e a intenção já registrada na ADR da T20 ("a redação de PII
+passa a agir sobre o `conteudo_redigido`").
+**Trade-off:** após recarregar o histórico, a pergunta aparece com marcadores em vez
+do texto literal — perda de fidelidade aceita em troca de não reter PII. O teste do
+*Done when* inspeciona as mensagens efetivamente entregues ao modelo (fake ganhou
+`mensagens_recebidas`), não apenas o registro persistido.
+**Impact:** `copilot/service.py` (`answer`), `tests/conftest.py` (captura do prompt
+no fake), `tests/copilot/test_service.py`; ADR
+`docs/adr/t25-integrar-pii-self-review.md`. Medição de uso/quota fica na **T27/T28**.
+
 ---
 
 ## Active Blockers
@@ -333,6 +353,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
 | 019 | Executar F1 — T12–T23 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `5bcac81` (T23) | ✅ Done |
 | 020 | Executar F1 — T24 (redação de PII por regex + allowlist, sem LLM) | 2026-09-18 | — | ✅ Done |
+| 021 | Executar F1 — T25 (integrar redação no copiloto; persistir versão redigida) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -354,8 +375,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T25–T33
-      (integrar PII no copiloto, auditoria/uso, custo/eval, admin, aceitação).
+- [ ] Executar a F1 — próximas tasks: T26–T33
+      (auditoria/retenção, uso/quota, golden set, admin, KPIs, aceitação P1).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
