@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Chat do copiloto</h1>
+<form
+  class="form-chat"
+  hx-get="/chat/pergunta"
+  hx-target="#conversa"
+  hx-swap="beforeend"
+  hx-on::after-request="this.reset()"
+>
+  <label for="pergunta">Pergunta</label>
+  <input
+    id="pergunta"
+    name="pergunta"
+    type="text"
+    required
+    autofocus
+    autocomplete="off"
+    placeholder="Ex.: como está o estoque?"
+  />
+  <button type="submit">Perguntar</button>
+</form>
+<div id="conversa" class="conversa" aria-live="polite">
+  {% for turno in turnos %}
+  <div class="turno">
+    <p class="pergunta">{{ turno.pergunta }}</p>
+    <div class="resposta">{{ turno.resposta }}</div>
+    {% if turno.recomendacao_id %}
+    {% if turno.fontes %}
+    <p class="fontes">Fontes: {{ turno.fontes | join(", ") }}</p>
+    {% endif %}
+    {% include "_feedback.html" %}
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

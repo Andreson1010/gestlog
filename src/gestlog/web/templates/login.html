@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Entrar</h1>
+<form
+  class="form-login"
+  hx-post="/auth/login"
+  hx-target="#erro-login"
+  hx-swap="innerHTML"
+  hx-on::after-request="if (event.detail.successful) window.location='/'"
+>
+  <label for="username">E-mail</label>
+  <input
+    id="username"
+    name="username"
+    type="email"
+    autocomplete="username"
+    required
+  />
+  <label for="password">Senha</label>
+  <input
+    id="password"
+    name="password"
+    type="password"
+    autocomplete="current-password"
+    required
+  />
+  <button type="submit">Entrar</button>
+</form>
+<div id="erro-login" role="alert"></div>
+{% endblock %}

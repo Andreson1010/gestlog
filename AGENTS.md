@@ -51,9 +51,39 @@ START -> supervisor --(state["next"])--> transporte | fornecedores | estoque
 - **`src/gestlog/agents/{transport,suppliers,inventory}.py`** — prompt + tools de cada especialista.
 - **`src/gestlog/tools/*.py`** — ferramentas `@tool` com **dados mockados e determinísticos**
   (andaime até integração com TMS/ERP/WMS). Troque os corpos das funções, não a estrutura.
-- **`src/gestlog/graph.py`** — `build_graph(model=None, settings=None)`; injete `model`
-  em testes. `run_query` é o helper de invocação (`recursion_limit`).
+- **`src/gestlog/graph.py`** — `build_graph(model=None, settings=None,
+  specialist_tools=None)`; injete `model` em testes e `specialist_tools` para
+  trocar o mock pelas fábricas de tools do tenant (usado pelo Copilot Service).
+  `run_query` é o helper de invocação (`recursion_limit`).
 - **`src/gestlog/cli.py`** — REPL; `main` marcado `# pragma: no cover`.
+
+### Estrutura e fronteiras
+
+**Pacote único** (`src/gestlog/`), fatiado em três fronteiras conceituais. **Não é**
+monorepo multi-pacote (ver AD-012 em `docs/specs/project/STATE.md`); a extração para
+pacotes separados só se justifica quando houver deploy/escala independentes.
+
+```
+apps   (entrada / deploy)     cli.py, web/, auth/, copilot/
+agents (grafo e domínio)      graph.py, state.py, agents/, tools/
+libs   (fundação compartilh.) config.py, llm.py, db/, repositories/
+```
+
+Direção de dependência — **nunca invertida**:
+
+```
+apps  →  agents  →  libs
+  └──────────────→  libs
+```
+
+Regra de bolso para escolher onde uma coisa nova mora:
+
+- endpoint / página / autenticação → `apps` (`web/`, `auth/`, `copilot/`);
+- nó / prompt / ferramenta / roteamento → `agents` (`agents/`, `tools/`, `graph.py`);
+- modelo / repositório / config / integração base → `libs` (`db/`, `repositories/`, `config.py`).
+
+`db/` + `repositories/` são a **única** porta de acesso ao banco; nada fora de `libs`
+escreve SQL. `docs/` é conceitual e nunca é importado pelo código.
 
 ### Adicionar um especialista
 
@@ -74,6 +104,8 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 - Logging com `logger = logging.getLogger(__name__)`, nunca `print()` (a CLI é exceção).
 - Não adicionar comentários fora dos docstrings.
 - Todo agente/nó sem cobertura de teste deve ser testado com o modelo fake.
+- Secrets: apenas em `.env`; referência em `.env.example`
+- Limites de código: funções com até 50 linhas, aninhamento até 4 níveis e arquivos com até 800 linhas; acima disso, extrair/módularizar.
 
 ## Testes
 
@@ -100,3 +132,28 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 
 - Branches: `feat/`, `fix/`, `refactor/`, `data/`.
 - Commits em português, imperativo: `feat: adiciona especialista em estoque`.
+
+### Fluxo da feature (épico + task)
+
+Features grandes (ex.: F1, 34 tasks) usam uma **branch de integração** e um PR por
+task — nunca uma branch longa com force-push.
+
+- **Integração**: `feat/f1-mvp` acumula as tasks da F1. `main` só recebe a F1 no
+  fim, via um PR de release (`feat/f1-mvp → main`) + tag (`v0.1.0`).
+- **Task**: uma branch curta por task, cortada da integração, nomeada
+  `feat/f1-tXX-<slug>` (ex.: `feat/f1-t10-home-auth`).
+- **Self-review antes do review**: toda task, mesmo atômica, passa pelo subagente
+  `developer-self-reviewer` (fase 5.5 do `feature-factory`), que corrige achados
+  menores e gera a ADR `docs/adr/<slug>-self-review.md` — todo PR é revisado por
+  pares, então a crítica própria vem antes.
+- **PR**: um PR por task contra a branch de integração (não contra `main`), sempre
+  com `tasks.md` e testes no mesmo PR. `main` nunca recebe push direto.
+- **Gate antes do merge**: CI verde (`black --check`, `ruff check`, `pytest`) +
+  self-review (com ADR) + code review com o skill **code-reviewer**. Squash-merge
+  e apaga a branch.
+- **Sem reescrever branch compartilhada**: nada de `force-push` em `main` ou na
+  integração; corrigir com commits novos.
+
+## Fluxo de Code Review
+
+  Antes de abrir qualquer PR, executar code review com o skill **code-reviewer**.

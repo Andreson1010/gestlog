@@ -4,7 +4,7 @@
 **Data:** 2026-09-11
 **Status:** Aprovado para orientar o roadmap
 **Owner:** Time gestlog (dev solo)
-**Artefatos relacionados:** `.specs/project/PROJECT.md`, `.specs/project/ROADMAP.md`, `.specs/project/STATE.md`
+**Artefatos relacionados:** `docs/specs/project/PROJECT.md`, `docs/specs/project/ROADMAP.md`, `docs/specs/project/STATE.md`
 
 ---
 
@@ -196,7 +196,7 @@ qualidade/cobertura dos dados importados.
 | **F4 — Proativo** | Alertas | Monitoramento e notificações (estoque baixo, atraso, fornecedor degradando) |
 | **F5 — Enterprise** | Escala/opções | SSO, billing/planos, mobile, BYO-LLM/on-prem, multi-idioma |
 
-Detalhamento em `.specs/project/ROADMAP.md`.
+Detalhamento em `docs/specs/project/ROADMAP.md`.
 
 ---
 

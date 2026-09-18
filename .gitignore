@@ -24,3 +24,6 @@ Thumbs.db
 # opencode
 .opencode/worktrees/
 .opencode/node_modules/
+
+# Avaliação (artefato gerado)
+evals/relatorio.json

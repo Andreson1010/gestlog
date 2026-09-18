@@ -27,7 +27,7 @@ Se o MCP não estiver acessível, escreva explicitamente "graphify indisponível
 — não invente valores.
 
 **3. Documentos de projeto** — liste o que existe e o que mudou nesta sessão:
-`.specs/`, `docs/`, `AGENTS.md`, `README.md`, `.opencode/skills/`. Aponte
+`docs/specs/`, `docs/`, `AGENTS.md`, `README.md`, `.opencode/skills/`. Aponte
 caminhos concretos.
 
 Estrutura do arquivo (substitua o conteúdo antigo; mantenha o histórico curto e
@@ -59,7 +59,7 @@ por sessão, mais recente no topo):
 - Comunidades afetadas: ...
 
 ## Documentos de projeto relevantes
-- `.specs/...`, `docs/...`, ...
+- `docs/specs/...`, `docs/...`, ...
 
 ---
 # Histórico (sessões anteriores, resumido)

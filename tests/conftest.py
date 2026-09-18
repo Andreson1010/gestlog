@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
+from sqlalchemy.orm import Session
+
+from gestlog.config import Settings
+from gestlog.db import build_engine, build_session_factory, init_db
 
 
 class FakeChatModel:
@@ -22,18 +27,33 @@ class FakeChatModel:
         routes: list[str] | None = None,
         final: str = "resposta final",
         tool_calls: list[list[dict[str, Any]]] | None = None,
+        tokens: int = 0,
     ) -> None:
         self._routes = list(routes or [])
         self._final = final
         self._tool_calls = list(tool_calls or [])
+        self._tokens = tokens
         self._step = 0
         self.bound_tools: list[BaseTool] = []
+        self.mensagens_recebidas: list[list[BaseMessage]] = []
+
+    def _uso(self) -> dict[str, int] | None:
+        """Metadados de uso devolvidos pelo modelo, quando configurados."""
+        if not self._tokens:
+            return None
+        return {
+            "input_tokens": self._tokens,
+            "output_tokens": 0,
+            "total_tokens": self._tokens,
+        }
 
     def with_structured_output(self, schema: type) -> Any:
         routes = self._routes
+        recebidas = self.mensagens_recebidas
 
         class _Router:
-            def invoke(self, messages: list) -> Any:
+            def invoke(self, messages: list[BaseMessage]) -> Any:
+                recebidas.append(messages)
                 route = routes.pop(0) if routes else "FINISH"
                 return schema(next=route)
 
@@ -43,15 +63,28 @@ class FakeChatModel:
         self.bound_tools = list(tools)
         return self
 
-    def invoke(self, messages: list) -> AIMessage:
+    def invoke(self, messages: list[BaseMessage]) -> AIMessage:
+        self.mensagens_recebidas.append(messages)
+        uso = self._uso()
         if self._step < len(self._tool_calls):
             calls = self._tool_calls[self._step]
             self._step += 1
-            return AIMessage(content="", tool_calls=calls)
+            return AIMessage(content="", tool_calls=calls, usage_metadata=uso)
         self._step += 1
-        return AIMessage(content=self._final)
+        return AIMessage(content=self._final, usage_metadata=uso)
 
 
 @pytest.fixture
 def fake_model_cls() -> type[FakeChatModel]:
     return FakeChatModel
+
+
+@pytest.fixture
+def db_session() -> Iterator[Session]:
+    """Sessão SQLAlchemy em SQLite em memória com todas as tabelas criadas."""
+    settings = Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:")
+    engine = build_engine(settings)
+    init_db(engine)
+    factory = build_session_factory(engine)
+    with factory() as session:
+        yield session

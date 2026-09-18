@@ -1,0 +1,18 @@
+{% set decisao = turno.decisao %}
+<div class="feedback" id="feedback-{{ turno.recomendacao_id }}">
+  <p class="decisao">
+    {% if decisao %}Decisão: {{ decisao }}{% else %}Sem decisão{% endif %}
+  </p>
+  <form
+    hx-post="/recomendacoes/{{ turno.recomendacao_id }}/feedback"
+    hx-target="#feedback-{{ turno.recomendacao_id }}"
+    hx-swap="outerHTML"
+  >
+    <button type="submit" name="decisao" value="aceita" {% if decisao == "aceita" %}disabled{% endif %}>
+      Aceitar
+    </button>
+    <button type="submit" name="decisao" value="descartada" {% if decisao == "descartada" %}disabled{% endif %}>
+      Descartar
+    </button>
+  </form>
+</div>

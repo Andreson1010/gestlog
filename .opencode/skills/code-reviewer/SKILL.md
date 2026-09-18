@@ -39,6 +39,8 @@ These MUST be flagged — they can cause real damage:
 - **Authentication/authorization bypasses** — Missing access checks on protected routes or data access
 - **Insecure dependencies** — Known vulnerable packages
 - **Exposed secrets in logs** — Logging sensitive data (tokens, passwords, PII)
+- **Prompt injection** — Unsanitized user input concatenated into system/LLM prompts
+- **Data leakage** — PII or other sensitive data sent to external LLM APIs or persisted in prompts/RAG logs without redaction
 
 ```
 // BAD: injection via string construction
@@ -85,6 +87,7 @@ Adapt to the project's stack. The following are common categories — check whic
 - **Async/concurrency** — Shared mutable state, non-atomic read-modify-write, tasks without cancellation/timeout, blocking I/O in async contexts.
 - **Data/ML pipelines** — Non-deterministic steps without a seed, silent schema drift, train/serve skew, missing validation at ingestion boundaries, unhandled empty-result paths.
 - **Config/secrets** — Values read from the single config source, no inline magic values, secrets only from the environment.
+- **Multi-agent / LLM graphs** — Global state bleeding between nodes, tools granting excessive permissions (e.g., unsandboxed shell execution), unbounded agent loops from ill-defined halting conditions.
 
 ```
 // BAD: N+1 query pattern
@@ -104,6 +107,8 @@ users_with_posts = query("""
 - **Large bundle/artifact sizes** — Importing entire libraries when focused alternatives exist
 - **Unoptimized assets** — Large images/assets without compression or lazy loading
 - **Synchronous I/O** — Blocking operations where async or batching applies
+- **LLM token inefficiency** — Sending excessive context (unbounded chat history, unchunked data for RAG) to the model
+- **Missing retry/backoff** — External API calls without throttling or exponential backoff on failure
 
 ### Best Practices (LOW)
 
