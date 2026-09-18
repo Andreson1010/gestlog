@@ -265,6 +265,26 @@ não recebe botões — a decisão aparece ao recarregar o histórico; emitir um
 (fragmento), `web/templates/{chat,_feedback}.html`, `web/static/app.css`; ADR
 `docs/adr/t23-feedback-ui-self-review.md`.
 
+### AD-020: Redação de PII por regex + allowlist, determinística e sem LLM (2026-09-18)
+
+**Decision:** a T24 introduz `src/gestlog/privacy/` com `redact(texto, politica) ->
+RedactedText`, que substitui telefones (`[TELEFONE]`), endereços/CEP (`[ENDERECO]`)
+e nomes comuns (`[NOME]`) por marcadores. A política é um `PoliticaRedacao` frozen
+(allowlist `NOMES_COMUNS` + marcadores, trocável por tenant); nomes são casados
+pela forma acentuada **e** pela forma sem diacríticos (NFKD), e a substituição
+escapa `\` para o marcador ser sempre literal no `re.sub`. O original não é
+guardado: `RedactedText` devolve só `texto` minimizado + `categorias` encontradas.
+**Reason:** o design da F1 (`design.md`, "PII Redaction") exige regex/allowlist
+sem LLM — redação barata, offline e reproduzível, adequada ao MVP em que a PII de
+clientes não pode sair para o provedor do modelo. Não há dependência de
+apps/agents (fronteira `libs`).
+**Trade-off:** a heurística sobre-redige (ex.: "São Paulo" contém o prenome
+"Paulo") e não cobre nomes fora da allowlist; o falso positivo é o erro seguro
+para privacidade. Endereço exige prefixo+numero e nomes exigem forma capitalizada.
+**Impact:** `src/gestlog/privacy/{__init__,politica,redacao}.py`,
+`tests/privacy/test_redacao.py`; ADR `docs/adr/t24-redacao-pii-self-review.md`.
+A integração no copiloto (preservando o texto original para a UI) é a **T25**.
+
 ---
 
 ## Active Blockers
@@ -312,6 +332,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 017 | Executar F1 — T10 home autenticada + redirect ao login (PR por task) | 2026-09-13 | — | ✅ Done |
 | 018 | Executar F1 — T11 parsers/validadores de importação (CSV/XLSX) | 2026-09-13 | — | ✅ Done |
 | 019 | Executar F1 — T12–T23 + T34 (1 PR/task, self-review + code review) | 2026-09-14…17 | `5bcac81` (T23) | ✅ Done |
+| 020 | Executar F1 — T24 (redação de PII por regex + allowlist, sem LLM) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -333,7 +354,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T24 (redação de PII) → T25–T33
+- [ ] Executar a F1 — próximas tasks: T25–T33
       (integrar PII no copiloto, auditoria/uso, custo/eval, admin, aceitação).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
