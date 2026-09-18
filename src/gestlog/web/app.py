@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from gestlog.auth import create_auth_router, current_active_user_optional
 from gestlog.config import Settings, get_settings
 from gestlog.db.models import User
+from gestlog.web.admin import create_admin_router
 from gestlog.web.chat import create_chat_router
 from gestlog.web.chat_ui import create_chat_ui_router
 from gestlog.web.feedback import create_feedback_router
@@ -34,6 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     aplicacao.include_router(create_auth_router(resolved), prefix="/auth")
     aplicacao.include_router(create_onboarding_router())
+    aplicacao.include_router(create_admin_router())
     aplicacao.include_router(create_ingestion_router())
     aplicacao.include_router(create_chat_ui_router())
     aplicacao.include_router(create_chat_router())
