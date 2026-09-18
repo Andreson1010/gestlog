@@ -376,6 +376,29 @@ acumulação e `SpecialistOutput`), `copilot/service.py` (`answer`),
 `tests/copilot/test_service.py`; ADR
 `docs/adr/t28-integracao-uso-quota-self-review.md`.
 
+### AD-025: Golden set declarativo e runner com métricas de qualidade (2026-09-18)
+
+**Decision:** a T29 cria `src/gestlog/evaluation/golden.py` com o formato do golden
+set (`CasoGolden`: id, pergunta, domínio, fontes esperadas, requer recomendação),
+carregamento validado de JSON (`carregar_golden_set`) e o runner
+`run_golden_set(casos, model, settings)` que compila o grafo e, por caso, reusa
+`extrair_recomendacao` (T21) para medir **acurácia** (recomendação/insuficiência e
+domínio esperados), **alucinação** (recomendar quando o caso não pedia base) e
+**fonte correta** (fontes esperadas presentes). `RelatorioAvaliacao` agrega tudo
+com taxas protegidas de divisão por zero. `evals/golden_set.json` é o
+dataset-semente; o script real contra o modelo fica na T30.
+**Reason:** QUA-01 pede medir qualidade por domínio. Separar o dado (JSON) do
+código permite evoluir o conjunto sem tocar no runner e mantém o núcleo testável
+com o modelo fake do `conftest` (grafo real, modelo injetado). Reusar a extração
+da T21 evita divergir do que o runtime realmente entrega.
+**Trade-off:** `evaluation` depende de `copilot` (reuso de `extrair_recomendacao`
+e de `texto_resposta`, agora público) — mover o parser para `agents` seria um
+refactor maior. Tokens do supervisor e redação de PII não entram na avaliação; a
+`fonte_correta` exige as fontes esperadas, sem penalizar fontes extras.
+**Impact:** `src/gestlog/evaluation/{__init__,golden}.py`, `evals/golden_set.json`,
+`copilot/service.py` (`texto_resposta` público), `copilot/__init__.py`,
+`tests/evaluation/test_golden.py`; ADR `docs/adr/t29-golden-set-self-review.md`.
+
 ---
 
 ## Active Blockers
@@ -428,6 +451,7 @@ especificidades do projeto ficam no `AGENTS.md`.
 | 022 | Executar F1 — T26 (auditoria por tenant + retenção configurável) | 2026-09-18 | — | ✅ Done |
 | 023 | Executar F1 — T27 (medição de uso/quota mensal, bloqueio pré-chamada) | 2026-09-18 | — | ✅ Done |
 | 024 | Executar F1 — T28 (medição por chamada no grafo + bloqueio de quota no copiloto) | 2026-09-18 | — | ✅ Done |
+| 025 | Executar F1 — T29 (golden set: formato JSON + runner com métricas) | 2026-09-18 | — | ✅ Done |
 
 ---
 
@@ -449,8 +473,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 
 ## Todos
 
-- [ ] Executar a F1 — próximas tasks: T29–T33
-      (golden set, script de avaliação, admin, KPIs, aceitação P1).
+- [ ] Executar a F1 — próximas tasks: T30–T33
+      (script de avaliação, admin, KPIs, aceitação P1).
 - [ ] Ao fechar a F1: PR de release `feat/f1-mvp → main` + tag `v0.1.0`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
