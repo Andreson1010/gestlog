@@ -1,32 +1,31 @@
-# Contexto da Sessão — F1 do gestlog: T21–T23 mergeadas, T24 pendente
+# Contexto da Sessão — F1 do gestlog: T24 mergeada, T25 pendente
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `feat/f1-mvp` (integração) · HEAD: `e21a66d` (este handoff é um commit
-> docs no topo; o último commit de **código** é `5bcac81`, T23)
+> Branch: `feat/f1-mvp` (integração) · HEAD: `eff38a4` (squash da T24/PR #25; o
+> último commit de **código** é o próprio `eff38a4` — T24)
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
   transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
   https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T23 + T34 CONCLUÍDOS** (24 de 34
-  tasks); **10 PENDENTES (T24–T33)** — `docs/specs/features/f1-mvp/tasks.md`.
+- **F1 (MVP) na integração `feat/f1-mvp`**: **T1–T24 + T34 CONCLUÍDOS** (25 de 34
+  tasks); **9 PENDENTES (T25–T33)** — `docs/specs/features/f1-mvp/tasks.md`.
 - Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
   FastAPI Users. Modelo de entrega (AD-016): `main` verde, `feat/f1-mvp` é a
   integração, **1 PR por task** com CI + self-review + `code-reviewer`; release
   único `feat/f1-mvp → main` + tag `v0.1.0`.
 - **CI**: `.github/workflows/ci.yml` (na `main`, `f639f36`) — `black --check`,
   `ruff check`, `pytest` (gate 80%) em PRs e push. CI da T23 (PR #24) verde em 30s.
-- **Suíte**: **157 testes, 97,76% de cobertura** (`uv run pytest`); Python 3.14.3
-  no `.venv` (projeto exige `>=3.11`). *(não re-verificado neste `/end`; número da
-  última execução da T23: 157 passed, 97,76%)*
-- `main` = `f639f36`; `feat/f1-mvp` = `e21a66d` (= `origin/feat/f1-mvp`, **em
+- **Suíte**: **174 testes, 97,83% de cobertura** (`uv run pytest`, re-verificado na
+  T24); Python 3.14.3 no `.venv` (projeto exige `>=3.11`). `privacy/` com **100%**.
+- `main` = `f639f36`; `feat/f1-mvp` = `eff38a4` (= `origin/feat/f1-mvp`, **em
   sincronia**). **Árvore limpa; nenhum stash; nenhum PR aberto; nenhuma branch de
-  task** (refs remotas de T21–T23 podadas).
-- **Última task concluída — T23** (ver *O que foi feito*): UI de feedback (fontes +
-  botões HTMX), PR #24, squash `5bcac81`, ADR `docs/adr/t23-feedback-ui-self-review.md`.
+  task** (refs remotas de T21–T24 podadas).
+- **Última task concluída — T24** (ver *O que foi feito*): módulo de redação de PII
+  (SEC-01), PR #25, squash `eff38a4`, ADR `docs/adr/t24-redacao-pii-self-review.md`.
 
-## O que foi feito nesta sessão (2026-09-17)
+## O que foi feito nesta sessão (2026-09-17/18)
 
 1. **T21 — Extração de recomendação, fontes e insuficiência** (PR #22, squash
    `88f5b38`). Mecanismo aprovado: a **tool comum vira passo terminal** do
@@ -49,12 +48,21 @@
    passa a devolver **fragmento HTML** (`_feedback.html`) para swap HTMX;
    `chat.html` exibe `Fontes:` + botões. Self-review achou MEDIUM real (desempate)
    e corrigiu + teste. ADR `t23-...-self-review.md`.
-4. **Docs**: `STATE.md` com **AD-017** (T21), **AD-018** (T22), **AD-019** (T23);
-   `tasks.md` com progresso até T23; handoffs `c016131`/`87cc0ab`/`19e72c5`/
-   `43f0bd9`/`bfef8d3`/`d30fed3` e correção de HEAD `e05e77b`.
-5. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
+4. **T24 — Módulo de redação de PII** (PR #25, squash `eff38a4`). Novo pacote
+   `src/gestlog/privacy/`: `redact(texto, politica) -> RedactedText` (frozen) com
+   regex + allowlist, **sem LLM**; telefones/endereços/CEP/nomes →
+   `[TELEFONE]`/`[ENDERECO]`/`[NOME]`; nomes casam forma acentuada e forma sem
+   diacríticos (NFKD); marcador literais via escape de `\` no `re.sub`. Self-review
+   achou e corrigiu nome sem acentuação não redigido (SEC-01 real), marcador com
+   `\` estourando `re.sub` e ordenação não determinística. ADR
+   `t24-...-self-review.md`; `privacy/` 100% coberto. Integração fica na T25.
+5. **Docs**: `STATE.md` com **AD-017** (T21), **AD-018** (T22), **AD-019** (T23) e
+   **AD-020** (T24); `tasks.md` com progresso até T24; handoffs `c016131`/
+   `87cc0ab`/`19e72c5`/`43f0bd9`/`bfef8d3`/`d30fed3`, correção de HEAD `e05e77b` e
+   esta rodada (`8b06f41`).
+6. **Fluxo**: todas as tasks seguiram build → **self-review (ADR)** → gate
    (`pytest`+`black`+`ruff`) → commit PT → PR → **code review** → squash. Code
-   review: **0 CRITICAL/HIGH** nas três tasks.
+   review: **0 CRITICAL/HIGH** nas quatro tasks.
 
 ## Decisões e regras (não esquecer)
 
@@ -85,19 +93,22 @@
   vazar existência; append-only (KPI usa a **última** decisão).
 - **UI de feedback (T23)**: pareamento recomendação↔turno **na leitura** (sem
   migration); empates por `tipo`, nunca por UUID; endpoint devolve fragmento HTML.
+- **PII (T24)**: `privacy/` determinístico, regex + allowlist, **sem LLM**;
+  over-redação é o erro seguro; nomes sem acento também redigidos; o original é
+  preservado por quem chama (a **T25** integra no copiloto sem perder o texto da UI).
 - **Fluxo da task**: `feat/f1-tXX-*` de `feat/f1-mvp` → build-with-tests →
   **self-review (developer-self-reviewer + ADR)** → gate → commit `feat(f1): ...` →
   PR contra `feat/f1-mvp` → **code review** → squash + apagar branch.
 
 ## Próximos passos / bloqueios
 
-1. **T24 — PENDENTE (próxima ação)**: **Módulo de redação de PII** — `redact(text)`
-   que remove/minimiza nomes, endereços e telefones antes do LLM. Where
-   `src/gestlog/privacy/`; depends T1; **testes unit**. Requirement SEC-01. Done
-   when: casos de nome/endereço/telefone redigidos; texto sem PII intacto. Par
-   T24/T25 (T25 integra no copiloto). Branch `feat/f1-t24-*` → PR contra `feat/f1-mvp`.
-2. **T25–T33** seguem (integrar PII, auditoria/retenção, uso/quota, golden set,
-   admin, KPIs, aceitação P1).
+1. **T25 — PENDENTE (próxima ação)**: **Integrar redação no copiloto** — redigir
+   PII do texto do usuário antes de enviar ao LLM, **preservando o original para a
+   UI**. Where `src/gestlog/copilot/`; depends T17, T24; **testes unit**. Requirements
+   SEC-01, SEC-03. Done when: teste confirma que o prompt ao LLM não contém a PII
+   de entrada. Branch `feat/f1-t25-*` → PR contra `feat/f1-mvp`.
+2. **T26–T33** seguem (auditoria/retenção, uso/quota, golden set, admin, KPIs,
+   aceitação P1).
 3. **Débito T23**: turno ao vivo (SSE) ainda não recebe botões — a decisão só
    aparece ao recarregar o histórico; emitir `event: fontes`/fragmento e ordenação
    monotônica de mensagens (substituir pareamento por `created_at`) fica futuro.
@@ -112,7 +123,7 @@
 ## WIP local (não commitado)
 
 - **Nenhum.** Árvore limpa. `feat/f1-mvp` sincronizada com `origin/feat/f1-mvp` em
-  `e21a66d` (commit de handoff); sem stash e sem PR aberto.
+  `eff38a4` (squash da T24); sem stash e sem PR aberto.
 
 ## Artefatos do graphify
 
@@ -133,16 +144,17 @@
 - `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — TLC; decisões AD-001..AD-019.
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (`tasks.md`: 34 tasks;
-  T1–T23 e T34 concluídos).
+  T1–T24 e T34 concluídos).
 - `docs/specs/codebase/TESTING.md` — matriz de testes e gates.
 - `docs/adr/` — self-reviews **fluid-hybrid** (sufixo `-self-review`): `t13` a
-  `t23` + `t34` (12 arquivos).
+  `t24` + `t34` (13 arquivos).
 - `src/gestlog/`: `config.py`, `llm.py`, `graph.py`, `state.py`, `cli.py`,
   `agents/` (base detecta tool comum terminal; `dominio` no estado), `tools/`
   (`common.py` = tool comum + rótulos), `db/`, `repositories/`
   (`conversations.py` = conversas/mensagens/recomendações/feedback), `auth/`,
   `web/` (`chat.py` SSE; `chat_ui.py` UI; `feedback.py` T22/T23; `templates/`),
   `copilot/` (`service.py` = `Recomendacao`/`extrair_recomendacao`/`Turno`),
+  `privacy/` (`politica.py` = allowlist/marcadores; `redacao.py` = `redact`),
   `ingestion/`.
 - `.opencode/skills/` — build-with-tests, code-reviewer, feature-factory,
   git-workflow, ship-feature, write-fluid-hybrid-adr.
@@ -155,9 +167,11 @@
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-17 (esta):** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
+- **2026-09-18 (esta):** **T24** (PR #25, `eff38a4` — redação de PII, AD-020)
+  concluída e mergeada; 157→174 testes (97,76%→97,83%). F1 retoma na **T25**.
+- **2026-09-17:** **T21** (PR #22, `88f5b38`), **T22** (PR #23, `0dfc1dc`) e
   **T23** (PR #24, `5bcac81`) concluídas e mergeadas; `STATE.md` ganhou AD-017/018/019;
-  139→157 testes (97,58%→97,76%). F1 retoma na **T24**.
+  139→157 testes (97,58%→97,76%).
 - **2026-09-17 (anterior):** **T20 concluída e mergeada** (PR #21, `0ab9e03` —
   persistência/histórico por usuário e empresa, ADR `t20-historico-conversa-self-review`).
 - **2026-09-16:** skill `write-fluid-hybrid-adr` criada; **T19 mergeada** (PR #20,
