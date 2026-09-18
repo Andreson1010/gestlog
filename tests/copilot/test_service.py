@@ -13,6 +13,7 @@ from gestlog.config import Settings
 from gestlog.copilot.service import (
     MENSAGEM_FORA_DE_ESCOPO,
     MENSAGEM_INSUFICIENCIA,
+    MENSAGEM_QUOTA_EXCEDIDA,
     CopilotService,
     Recomendacao,
     Turno,
@@ -29,7 +30,7 @@ from gestlog.repositories.conversations import (
     RecommendationRepository,
 )
 from gestlog.repositories.empresas import EmpresaRepository
-from gestlog.repositories.telemetry import AuditRepository
+from gestlog.repositories.telemetry import AuditRepository, UsageRepository
 
 _DOMINIOS = ("estoque", "fornecedores", "transporte")
 
@@ -56,13 +57,14 @@ def _service(
     model: BaseChatModel,
     empresa_id: UUID,
     user_id: UUID | None = None,
+    settings: Settings | None = None,
 ) -> CopilotService:
     return CopilotService(
         session=session,
         empresa_id=empresa_id,
         user_id=user_id or uuid4(),
         model=model,
-        settings=Settings(_env_file=None),
+        settings=settings or Settings(_env_file=None),
     )
 
 
@@ -280,6 +282,61 @@ def test_answer_insuficiente_registra_apenas_pergunta(
 
     eventos = AuditRepository(db_session).list(empresa)
     assert [evento.evento for evento in eventos] == ["pergunta"]
+
+
+def test_answer_registra_uso_do_mes(db_session: Session, fake_model_cls: type) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("repor", fontes="estoque")],
+        tokens=10,
+    )
+
+    _service(db_session, model, empresa).answer("estoque?")
+
+    registros = UsageRepository(db_session).list(empresa)
+    assert len(registros) == 1
+    assert registros[0].tokens == 10
+    assert registros[0].modelo == Settings(_env_file=None).llm_model
+
+
+def test_answer_soma_tokens_de_multiplos_especialistas(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    model = fake_model_cls(
+        routes=["estoque", "transporte", "FINISH"],
+        tool_calls=[
+            _tool_comum("repor", fontes="estoque"),
+            _tool_comum("coletar", fontes="TMS"),
+        ],
+        tokens=10,
+    )
+
+    _service(db_session, model, empresa).answer("estoque e transporte?")
+
+    registros = UsageRepository(db_session).list(empresa)
+    assert len(registros) == 1
+    assert registros[0].tokens == 20
+
+
+def test_answer_bloqueia_quota_sem_chamar_llm(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    UsageRepository(db_session).record(empresa, "qwen", 100)
+    db_session.commit()
+    settings = Settings(_env_file=None, llm_monthly_token_quota=100)
+    model = fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("repor", fontes="estoque")],
+    )
+    servico = _service(db_session, model, empresa, settings=settings)
+
+    assert servico.answer("estoque?") == MENSAGEM_QUOTA_EXCEDIDA
+    assert model.mensagens_recebidas == []
+    assert servico.historico() == []
+    assert len(UsageRepository(db_session).list(empresa)) == 1
 
 
 def test_answer_acumula_turnos_na_mesma_conversa(

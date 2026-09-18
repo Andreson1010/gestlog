@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TypedDict
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -21,9 +21,18 @@ class SpecialistOutput(TypedDict, total=False):
 
     messages: list[BaseMessage]
     dominio: str
+    tokens_usados: int
 
 
 SpecialistNode = Callable[[AgentState], SpecialistOutput]
+
+
+def _tokens_da_resposta(response: BaseMessage) -> int:
+    """Soma os tokens reportados pelo modelo na resposta, quando houver."""
+    uso = getattr(response, "usage_metadata", None)
+    if not isinstance(uso, Mapping):
+        return 0
+    return int(uso.get("total_tokens") or 0)
 
 
 def create_specialist_node(
@@ -36,7 +45,8 @@ def create_specialist_node(
     """Cria um nó ReAct que executa um loop de tool calling com limite de passos.
 
     O nó devolve apenas a resposta final ao estado pai, evitando poluir o
-    histórico do supervisor com mensagens intermediárias de ferramenta.
+    histórico do supervisor com mensagens intermediárias de ferramenta, e
+    acumula em ``tokens_usados`` o uso reportado pelas chamadas ao modelo.
     """
     model_with_tools = model.bind_tools(list(tools))
     tools_by_name = {tool.name: tool for tool in tools}
@@ -46,10 +56,12 @@ def create_specialist_node(
             SystemMessage(content=system_prompt),
             *state["messages"],
         ]
+        tokens = 0
         for _ in range(max_steps):
             response = model_with_tools.invoke(messages)
+            tokens += _tokens_da_resposta(response)
             if not isinstance(response, AIMessage) or not response.tool_calls:
-                return {"messages": [response]}
+                return {"messages": [response], "tokens_usados": tokens}
             terminal = None
             if len(response.tool_calls) == 1:
                 chamada = response.tool_calls[0]
@@ -63,6 +75,7 @@ def create_specialist_node(
                 return {
                     "messages": [AIMessage(content=str(result))],
                     "dominio": name,
+                    "tokens_usados": tokens,
                 }
             messages.append(response)
             for call in response.tool_calls:
@@ -79,7 +92,10 @@ def create_specialist_node(
             "%s atingiu o limite de %d passos de ferramenta", name, max_steps
         )
         return {
-            "messages": [AIMessage(content=f"[{name}] Limite de ferramentas atingido.")]
+            "messages": [
+                AIMessage(content=f"[{name}] Limite de ferramentas atingido.")
+            ],
+            "tokens_usados": tokens,
         }
 
     return node

@@ -11,6 +11,7 @@ from gestlog.copilot.metering import (
 from gestlog.copilot.service import (
     MENSAGEM_FORA_DE_ESCOPO,
     MENSAGEM_INSUFICIENCIA,
+    MENSAGEM_QUOTA_EXCEDIDA,
     CopilotService,
     Recomendacao,
     Turno,
@@ -22,6 +23,7 @@ from gestlog.copilot.service import (
 __all__ = [
     "MENSAGEM_FORA_DE_ESCOPO",
     "MENSAGEM_INSUFICIENCIA",
+    "MENSAGEM_QUOTA_EXCEDIDA",
     "CopilotService",
     "QuotaExcedida",
     "Recomendacao",
