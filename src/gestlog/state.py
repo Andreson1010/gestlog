@@ -21,9 +21,12 @@ class AgentState(TypedDict):
     comum, permitindo ao copiloto estruturar a recomendação (T21).
     ``tokens_usados`` soma (reducer ``operator.add``) os tokens reportados pelos
     especialistas, base da medição de uso da T27/T28.
+    ``especialistas_visitados`` acumula (reducer ``operator.add``) os domínios já
+    executados, para o supervisor não reencaminhar em ciclo ao mesmo especialista.
     """
 
     messages: Annotated[list[BaseMessage], add_messages]
     next: NotRequired[Route]
     dominio: NotRequired[str]
     tokens_usados: NotRequired[Annotated[int, operator.add]]
+    especialistas_visitados: NotRequired[Annotated[list[SpecialistName], operator.add]]

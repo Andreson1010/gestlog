@@ -22,6 +22,7 @@ class SpecialistOutput(TypedDict, total=False):
     messages: list[BaseMessage]
     dominio: str
     tokens_usados: int
+    especialistas_visitados: list[SpecialistName]
 
 
 SpecialistNode = Callable[[AgentState], SpecialistOutput]
@@ -33,6 +34,23 @@ def _tokens_da_resposta(response: BaseMessage) -> int:
     if not isinstance(uso, Mapping):
         return 0
     return int(uso.get("total_tokens") or 0)
+
+
+def _fragmento(
+    name: SpecialistName,
+    messages: list[BaseMessage],
+    tokens: int,
+    dominio: str | None = None,
+) -> SpecialistOutput:
+    """Monta o fragmento devolvido ao grafo, registrando o domínio visitado."""
+    fragmento: SpecialistOutput = {
+        "messages": messages,
+        "tokens_usados": tokens,
+        "especialistas_visitados": [name],
+    }
+    if dominio is not None:
+        fragmento["dominio"] = dominio
+    return fragmento
 
 
 def create_specialist_node(
@@ -61,7 +79,7 @@ def create_specialist_node(
             response = model_with_tools.invoke(messages)
             tokens += _tokens_da_resposta(response)
             if not isinstance(response, AIMessage) or not response.tool_calls:
-                return {"messages": [response], "tokens_usados": tokens}
+                return _fragmento(name, [response], tokens)
             terminal = None
             if len(response.tool_calls) == 1:
                 chamada = response.tool_calls[0]
@@ -72,11 +90,7 @@ def create_specialist_node(
                     terminal = chamada
             if terminal is not None:
                 result = tools_by_name[terminal["name"]].invoke(terminal["args"])
-                return {
-                    "messages": [AIMessage(content=str(result))],
-                    "dominio": name,
-                    "tokens_usados": tokens,
-                }
+                return _fragmento(name, [AIMessage(content=str(result))], tokens, name)
             messages.append(response)
             for call in response.tool_calls:
                 tool = tools_by_name.get(call["name"])
@@ -91,11 +105,10 @@ def create_specialist_node(
         logger.warning(
             "%s atingiu o limite de %d passos de ferramenta", name, max_steps
         )
-        return {
-            "messages": [
-                AIMessage(content=f"[{name}] Limite de ferramentas atingido.")
-            ],
-            "tokens_usados": tokens,
-        }
+        return _fragmento(
+            name,
+            [AIMessage(content=f"[{name}] Limite de ferramentas atingido.")],
+            tokens,
+        )
 
     return node

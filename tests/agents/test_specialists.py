@@ -52,6 +52,7 @@ def test_specialist_stops_at_max_steps(fake_model_cls: type) -> None:
     node = build_inventory_node(model, max_steps=2)
     resultado = node({"messages": [HumanMessage(content="estoque?")]})
     assert "Limite" in resultado["messages"][-1].content
+    assert resultado["especialistas_visitados"] == ["estoque"]
 
 
 def test_specialist_handles_unknown_tool(fake_model_cls: type) -> None:
@@ -104,3 +105,4 @@ def test_specialist_encerra_com_tool_comum(fake_model_cls: type) -> None:
     assert "Repor" in resultado["messages"][-1].content
     assert "Fontes: estoque" in resultado["messages"][-1].content
     assert resultado["dominio"] == "estoque"
+    assert resultado["especialistas_visitados"] == ["estoque"]
