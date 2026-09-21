@@ -118,6 +118,29 @@ Depois, cobrir o nó com `fake_model_cls` (ver Testes).
 - Alvos de tool call têm o formato
   `{"name": ..., "args": {...}, "id": "call-1", "type": "tool_call"}`.
 
+## Loop de auto-melhoria (memória de erros)
+
+Não espere o usuário pedir e não dependa de `/lesson`: ao **perceber que errou e
+corrigiu**, grave a lição por conta própria antes de encerrar. Momentos que
+disparam a gravação:
+
+- gate (teste/lint/typecheck) que **falhou e depois passou** por um conserto seu;
+- achado de **code review** (feature ou task) que você corrigiu;
+- achado do **developer-self-reviewer** que você corrigiu;
+- **dívida técnica** quitada que expôs um erro recorrente seu;
+- **correção do usuário** sobre algo que você fez errado.
+
+Procedimento:
+
+- grave a lição em `.opencode/LESSONS.md` (único tier, deste projeto).
+- Formato de cada entrada: `Gatilho / Erro / Regra / Evidência`; `id` sequencial
+  `L-00N`; mais recente no topo; uma entrada por erro.
+- Só registre lição nascida de erro **real, já corrigido e observado**. Nunca
+  invente nem registre algo genérico/não verificado.
+- Teto de ~40 linhas; o `/end` consolida (dedup + poda). `/lesson` é
+  apenas override manual; o plugin `self-learning` injeta um lembrete no
+  resultado do comando quando um gate vermelho fica verde.
+
 ## Gotchas
 
 - Se um especialista nunca devolver `FINISH`, o loop volta ao supervisor até estourar

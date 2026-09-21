@@ -25,5 +25,8 @@ Thumbs.db
 .opencode/worktrees/
 .opencode/node_modules/
 
+# Playwright MCP (snapshots/console gerados)
+.playwright-mcp/
+
 # Avaliação (artefato gerado)
 evals/relatorio.json

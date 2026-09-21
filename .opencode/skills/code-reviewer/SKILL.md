@@ -169,6 +169,17 @@ Always check the project's own conventions from `AGENTS.md`, `CONTRIBUTING.md`, 
 
 Adapt your review to the project's established patterns. When in doubt, match what the rest of the codebase does.
 
+## Memory Checkpoint — learn from fixed findings
+
+After you (or the builder) fix a finding you raised, record the lesson in
+`.opencode/LESSONS.md` before closing the task. A repeated review finding is a
+process failure, and the only way it stops recurring is by persisting the
+correction.
+
+Format each entry as `Trigger / Error / Rule / Evidence`, newest on top. Only
+record a real, already-fixed, observed mistake — never invent or record something
+generic. See the "Loop de auto-melhoria" section in `AGENTS.md`.
+
 ## AI-Generated Code Review Addendum
 
 When reviewing AI-generated changes, prioritize:

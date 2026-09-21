@@ -84,3 +84,13 @@ uv run pytest tests/path/to/test_file.py::test_name --no-cov -v
 - No new patterns invented without documenting why.
 - Every new function has at least: happy-path test, empty edge case, failure test.
 - Formatter and linter pass.
+
+## Memory checkpoint — learn from the fix
+
+When a gate (test, lint, typecheck) failed **because of your own mistake** and you
+then fixed it, do not finish until you have recorded the lesson in
+`.opencode/LESSONS.md`. This is the self-improvement loop, not an optional step.
+
+Format each entry as `Trigger / Error / Rule / Evidence`, newest on top. Only
+record a real, already-fixed, observed mistake — never invent or record something
+generic. See the "Loop de auto-melhoria" section in `AGENTS.md`.
