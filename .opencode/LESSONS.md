@@ -3,6 +3,20 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-006 · 2026-09-21 · grafo/opencode
+
+- **Gatilho**: endurecer um fluxo (guarda determinística) para matar um loop/estouro.
+- **Erro**: para corrigir o loop do supervisor, forcei `FINISH` sempre que a última mensagem era `AIMessage`, encurtando o fluxo e quebrando o roteamento **multi-especialista** (5 testes falharam: tokens somados de 2 especialistas e o golden set).
+- **Regra**: modele o requisito real (rastrear `especialistas_visitados` e só barrar a **repetição**) em vez de truncar o fluxo; rode a suíte completa, não só os testes do arquivo tocado.
+- **Evidência**: `tests/copilot/test_service.py::test_answer_soma_tokens_de_multiplos_especialistas`, `tests/evaluation/test_golden.py`.
+
+## L-005 · 2026-09-21 · shell/opencode
+
+- **Gatilho**: rodar comando longo ou subir daemon a partir da shell do opencode (Windows/pwsh).
+- **Erro**: (a) `cmd | Select-Object -Last N` bufferiza tudo e a tela fica muda até terminar; (b) `Start-Process -RedirectStandardOutput/Error` de um daemon faz o filho herdar os handles do pipe e a tool call trava (EOF nunca chega; PID órfão segurando o log).
+- **Regra**: não filtrar saída de comando longo (rodar sem pipe ou redirecionar para arquivo); lançar daemon via `Invoke-CimMethod Win32_Process.Create` (sem herdar stdio) e esperar pela porta (`Get-NetTCPConnection -LocalPort`) em loop, nunca `Start-Sleep` fixo.
+- **Evidência**: `pytest | Select-Object -Last 15` mudo por 52 s; PID órfão 22660 segurando `ollama.err.log` → WMI PID 22684, endpoint 11434 OK.
+
 ## L-004 · 2026-09-21 · fluxos/opencode
 
 - **Gatilho**: tornar um artefato obrigatório num passo de fluxo multiarquivo.
@@ -23,10 +37,3 @@
 - **Erro**: `\b\d+\s+failed\b` casava "0 failed" e `\berror\b` texto benigno; os ramos `isFail`/`isPass` eram assimétricos sem exit code.
 - **Regra**: exigir contagem `[1-9]\d*`, não casar "error" solto; com exit code, decidir só por ele.
 - **Evidência**: `.opencode/plugin/self-learning.ts` — `FAIL`/`PASS` e os ternários.
-
-## L-001 · 2026-09-20 · shell/pwsh
-
-- **Gatilho**: rodar comando longo (download, suíte) e querer ver só o fim.
-- **Erro**: `cmd | Select-Object -Last N` bufferiza tudo e a tela fica muda até terminar — parece travado e esconde progresso.
-- **Regra**: não filtrar saída de comando longo; rodar sem pipe ou redirecionar para arquivo e ler depois.
-- **Evidência**: `ollama pull qwen2.5:7b` sem output por minutos; `pytest | Select-Object -Last 15` mudo por 52 s.
