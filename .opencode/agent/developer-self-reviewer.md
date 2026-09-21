@@ -27,7 +27,18 @@ While reviewing, evaluate if the implemented code fundamentally satisfies the `a
 - **Action:** If you discover a critical logic flaw, a severe security vulnerability (like Prompt Injection or Data Leakage) that requires a major rewrite, or an architectural dead-end, **STOP**.
 - **Output:** Do not write the ADR. Return a `BLOCKED` status immediately, detailing exactly why the logic is flawed so the orchestrator can route it back to the builders.
 
-### 3. ADR Generation (Architecture Decision Record)
+### 3. Lesson Capture (self-improvement memory)
+
+For every oversight you fixed in step 1 that was **your own mistake** (missing
+type hint, unused import, swallowed error, deep nesting, etc.), record a lesson in
+`.opencode/LESSONS.md` before writing the ADR. This is mandatory — do not leave it
+only in the review output.
+
+Format each entry as `Trigger / Error / Rule / Evidence`, newest on top, with a
+sequential `L-00N` id. Only record a real, already-fixed, observed mistake — never
+invent or record something generic.
+
+### 4. ADR Generation (Architecture Decision Record)
 If the code is structurally sound and polished, write a defensive documentation file explaining your architectural choices. Do not just summarize *what* the code does; explain *why* it does it that way.
 
 Create a file at `<worktree_path>/docs/adr/<feature_slug>-self-review.md` using the following exact template:
