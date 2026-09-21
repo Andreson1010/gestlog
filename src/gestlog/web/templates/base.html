@@ -19,19 +19,26 @@
     ></script>
   </head>
   <body>
-    <header class="topo">
-      <strong>gestlog</strong>
-      <nav>
-        <a href="/">Início</a>
-        <a href="/importar">Importar</a>
-        <a href="/chat">Chat</a>
-        <a href="/kpis">Indicadores</a>
-      </nav>
-    </header>
-    <main class="conteudo">
-      {% block conteudo %}
-      <p>Bem-vindo ao gestlog.</p>
-      {% endblock %}
-    </main>
+    {% block layout %}
+    <div class="app">
+      <aside class="barra">
+        <div class="marca">
+          <span class="marca-selo">g</span>
+          gestlog
+        </div>
+        <nav>
+          <a href="/">Início</a>
+          <a href="/importar">Importar</a>
+          <a href="/chat">Chat</a>
+          <a href="/kpis">Indicadores</a>
+        </nav>
+      </aside>
+      <main class="conteudo">
+        {% block conteudo %}
+        <p>Bem-vindo ao gestlog.</p>
+        {% endblock %}
+      </main>
+    </div>
+    {% endblock %}
   </body>
 </html>
