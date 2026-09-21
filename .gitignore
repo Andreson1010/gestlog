@@ -30,3 +30,6 @@ Thumbs.db
 
 # Avaliação (artefato gerado)
 evals/relatorio.json
+
+# graphify (grafo gerado)
+graphify-out/
