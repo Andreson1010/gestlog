@@ -6,7 +6,7 @@ import logging
 from collections.abc import Callable
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from gestlog.state import AgentState, Route, SpecialistName
@@ -51,18 +51,26 @@ def create_supervisor_node(
     """Cria o nó de roteamento usando saída estruturada (``RouteDecision``).
 
     O modelo configurado precisa suportar structured output / function calling.
+    Se o modelo decidir reencaminhar para um especialista que já respondeu
+    (presente em ``especialistas_visitados``), o nó força ``FINISH``: isso impede
+    que o supervisor entre em ciclo com o mesmo especialista quando o modelo não
+    sinaliza conclusão, sem bloquear o encadeamento de especialistas distintos.
     """
     router = model.with_structured_output(RouteDecision)
     system_prompt = prompt or build_supervisor_prompt()
 
     def node(state: AgentState) -> dict[str, Route]:
-        decision = router.invoke(
-            [SystemMessage(content=system_prompt), *state["messages"]]
-        )
+        mensagens: list[BaseMessage] = list(state.get("messages") or [])
+        visitados = set(state.get("especialistas_visitados") or [])
+        decision = router.invoke([SystemMessage(content=system_prompt), *mensagens])
         route: Route = (
             decision.next if isinstance(decision, RouteDecision) else "FINISH"
         )
-        logger.info("Supervisor encaminhou para %s", route)
+        if route in visitados:
+            logger.info("Supervisor evitou repetir %s; encerrando.", route)
+            route = "FINISH"
+        else:
+            logger.info("Supervisor encaminhou para %s", route)
         return {"next": route}
 
     return node

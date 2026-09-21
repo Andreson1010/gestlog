@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated
@@ -14,9 +15,12 @@ from sqlalchemy.orm import Session
 from gestlog.auth import get_current_empresa, get_current_user
 from gestlog.config import Settings, get_settings
 from gestlog.copilot import CopilotService
+from gestlog.copilot.service import MENSAGEM_ERRO_COPILOTO
 from gestlog.db.models import Empresa, User
 from gestlog.llm import build_chat_model
 from gestlog.web.ingestion_ui import get_sync_session
+
+logger = logging.getLogger(__name__)
 
 _MEDIA_TYPE_SSE = "text/event-stream"
 
@@ -61,7 +65,11 @@ def create_chat_router() -> APIRouter:
             model=model,
             settings=settings,
         )
-        resposta = servico.answer(pergunta)
+        try:
+            resposta = servico.answer(pergunta)
+        except Exception:
+            logger.exception("Falha ao responder a pergunta do copiloto")
+            resposta = MENSAGEM_ERRO_COPILOTO
         return StreamingResponse(
             _stream_resposta(resposta),
             media_type=_MEDIA_TYPE_SSE,

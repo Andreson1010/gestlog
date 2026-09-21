@@ -11,13 +11,18 @@ from fastapi import FastAPI
 from fastapi_users.password import PasswordHelper
 from httpx import ASGITransport, AsyncClient
 from langchain_core.language_models.chat_models import BaseChatModel
+from langgraph.errors import GraphRecursionError
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session
 
 from gestlog.auth import get_async_session
 from gestlog.config import Settings, get_settings
-from gestlog.copilot.service import MENSAGEM_FORA_DE_ESCOPO
+from gestlog.copilot.service import (
+    MENSAGEM_ERRO_COPILOTO,
+    MENSAGEM_FORA_DE_ESCOPO,
+    CopilotService,
+)
 from gestlog.db.models import Empresa, Membership, User
 from gestlog.db.session import (
     build_async_engine,
@@ -192,3 +197,27 @@ async def test_chat_stream_pergunta_vazia_retorna_422(
     resposta = await client.get("/chat/stream", params={"pergunta": ""})
 
     assert resposta.status_code == 422
+
+
+async def test_chat_stream_falha_do_grafo_responde_amigavel(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls()
+
+    def _explode(self: CopilotService, pergunta: str) -> str:
+        raise GraphRecursionError("recursion limit reached")
+
+    monkeypatch.setattr(CopilotService, "answer", _explode)
+
+    resposta = await client.get("/chat/stream", params={"pergunta": "oi"})
+
+    assert resposta.status_code == 200
+    assert MENSAGEM_ERRO_COPILOTO in resposta.text
+    assert "event: fim" in resposta.text

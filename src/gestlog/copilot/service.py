@@ -62,6 +62,10 @@ MENSAGEM_QUOTA_EXCEDIDA = (
     "Fale com o administrador para ampliar o limite."
 )
 
+MENSAGEM_ERRO_COPILOTO = (
+    "Não foi possível concluir a resposta agora. Tente novamente em instantes."
+)
+
 _SEPARADORES_FONTES = (";", ",")
 
 

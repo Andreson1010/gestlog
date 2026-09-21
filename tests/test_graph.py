@@ -24,3 +24,15 @@ def test_graph_finishes_without_specialist(fake_model_cls: type) -> None:
     grafo = build_graph(model=model, settings=Settings(_env_file=None))
     resultado = run_query(grafo, "qual a capital da França?")
     assert resultado["messages"][-1].content == "qual a capital da França?"
+
+
+def test_graph_encerra_sem_reencaminhar_apos_especialista(
+    fake_model_cls: type,
+) -> None:
+    model = fake_model_cls(
+        routes=["estoque", "estoque", "estoque"], final="resposta do especialista"
+    )
+    grafo = build_graph(model=model, settings=Settings(_env_file=None))
+    resultado = run_query(grafo, "como está o SKU-100?")
+    assert resultado["next"] == "FINISH"
+    assert resultado["messages"][-1].content == "resposta do especialista"

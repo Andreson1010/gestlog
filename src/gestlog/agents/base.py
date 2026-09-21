@@ -22,6 +22,7 @@ class SpecialistOutput(TypedDict, total=False):
     messages: list[BaseMessage]
     dominio: str
     tokens_usados: int
+    especialistas_visitados: list[SpecialistName]
 
 
 SpecialistNode = Callable[[AgentState], SpecialistOutput]
@@ -61,7 +62,11 @@ def create_specialist_node(
             response = model_with_tools.invoke(messages)
             tokens += _tokens_da_resposta(response)
             if not isinstance(response, AIMessage) or not response.tool_calls:
-                return {"messages": [response], "tokens_usados": tokens}
+                return {
+                    "messages": [response],
+                    "tokens_usados": tokens,
+                    "especialistas_visitados": [name],
+                }
             terminal = None
             if len(response.tool_calls) == 1:
                 chamada = response.tool_calls[0]
@@ -76,6 +81,7 @@ def create_specialist_node(
                     "messages": [AIMessage(content=str(result))],
                     "dominio": name,
                     "tokens_usados": tokens,
+                    "especialistas_visitados": [name],
                 }
             messages.append(response)
             for call in response.tool_calls:
@@ -96,6 +102,7 @@ def create_specialist_node(
                 AIMessage(content=f"[{name}] Limite de ferramentas atingido.")
             ],
             "tokens_usados": tokens,
+            "especialistas_visitados": [name],
         }
 
     return node

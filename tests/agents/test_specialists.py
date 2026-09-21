@@ -104,3 +104,4 @@ def test_specialist_encerra_com_tool_comum(fake_model_cls: type) -> None:
     assert "Repor" in resultado["messages"][-1].content
     assert "Fontes: estoque" in resultado["messages"][-1].content
     assert resultado["dominio"] == "estoque"
+    assert resultado["especialistas_visitados"] == ["estoque"]
