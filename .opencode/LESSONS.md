@@ -3,17 +3,23 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
-## L-007 · 2026-09-21 · testes/grafo
-- **Gatilho**: escrever teste de regressão para uma guarda que encerra/trunca um fluxo.
-- **Erro**: o teste do grafo só afirmava `next == "FINISH"`; com a fila de rotas esgotada o resultado seria o mesmo **sem** a guarda — passava mesmo sem a correção.
-- **Regra**: afirme o efeito observável **exclusivo** da correção (aqui `especialistas_visitados == ["estoque"]`), não um estado final que o caminho sem correção também produz.
-- **Evidência**: `tests/test_graph.py::test_graph_encerra_sem_reencaminhar_apos_especialista` (passava sem a guarda).
+## L-009 · 2026-09-21 · web/form
+- **Gatilho**: rota web com `Form()` obrigatório que deve **reexibir o formulário** quando o input é inválido.
+- **Erro**: `Annotated[str, Form()]` com valor vazio é convertido a `None` pelo FastAPI → responde **422 JSON** ("missing"), sem cair no handler que re-renderiza o HTML.
+- **Regra**: dê default `""` aos campos `Form()` e deixe o schema Pydantic rejeitar; assim todo input inválido passa pelo mesmo caminho de erro renderizado.
+- **Evidência**: `tests/web/test_cadastro.py::test_cadastro_nome_empresa_invalido_recusa` (422 antes, 400 após).
 
-## L-006 · 2026-09-21 · grafo/opencode
-- **Gatilho**: endurecer um fluxo (guarda determinística) para matar um loop/estouro.
-- **Erro**: para corrigir o loop do supervisor, forcei `FINISH` sempre que a última mensagem era `AIMessage`, quebrando o roteamento **multi-especialista** (5 testes: tokens somados + golden set).
-- **Regra**: modele o requisito real (rastrear `especialistas_visitados` e só barrar a **repetição**); rode a suíte completa, não só o arquivo tocado.
-- **Evidência**: `tests/copilot/test_service.py::test_answer_soma_tokens_de_multiplos_especialistas`, `tests/evaluation/test_golden.py`.
+## L-008 · 2026-09-21 · css/templates
+- **Gatilho**: entregar estilo que referencia um asset (fonte) por design token.
+- **Erro**: `tokens.css` declarou `--font-sans: Inter, …` mas nenhum `@font-face`/link carregava a Inter; em máquina sem a fonte o requisito ("Inter font") ficava silenciosamente não cumprido.
+- **Regra**: ao nomear um asset externo num token, carregue-o (link/`@font-face`) e confirme que o `base.html` o referencia no `<head>`.
+- **Evidência**: `base.html` ganhou preconnect + stylesheet Google Fonts (Inter).
+
+## L-007 · 2026-09-21 · grafo/testes
+- **Gatilho**: endurecer um fluxo (guarda anti-loop) e cobrir a correção com teste de regressão.
+- **Erro**: forçar `FINISH` em toda `AIMessage` quebrou o roteamento multi-especialista; o teste da guarda só afirmava `next == "FINISH"`, que passava mesmo sem ela.
+- **Regra**: modele o requisito real (rastrear `especialistas_visitados` e barrar só a **repetição**) e afirme o efeito **exclusivo** da correção (`especialistas_visitados == ["estoque"]`); rode a suíte completa.
+- **Evidência**: `test_graph_encerra_sem_reencaminhar_apos_especialista` (passava sem a guarda); `test_answer_soma_tokens_de_multiplos_especialistas`/golden set quebraram com o forcing (consolida L-006/L-007).
 
 ## L-005 · 2026-09-21 · shell/opencode
 - **Gatilho**: rodar comando longo ou subir daemon a partir da shell do opencode (Windows/pwsh).
@@ -28,13 +34,7 @@
 - **Evidência**: `.opencode/skills/feature-factory/SKILL.md` — fase 5.5.
 
 ## L-003 · 2026-09-21 · plugin/opencode
-- **Gatilho**: manter estado por sessão em plugin de longa duração.
-- **Erro**: `failedBySession` (e cada `Set`) crescia sem limite enquanto o processo vivesse; a poda era por primeira aparição, não por uso.
-- **Regra**: apagar a sessão ao esvaziar o `Set`; capar sessões (`MAX_SESSIONS`) e falhas por sessão (`MAX_FAILURES_PER_SESSION`); reordenar a sessão tocada ao fim para evicção LRU.
-- **Evidência**: `.opencode/plugin/self-learning.ts` — `recordFailure`.
-
-## L-002 · 2026-09-21 · plugin/opencode
-- **Gatilho**: decidir gate vermelho→verde por regex no plugin.
-- **Erro**: `\b\d+\s+failed\b` casava "0 failed" e `\berror\b` texto benigno; os ramos `isFail`/`isPass` eram assimétricos sem exit code.
-- **Regra**: exigir contagem `[1-9]\d*`, não casar "error" solto; com exit code, decidir só por ele.
-- **Evidência**: `.opencode/plugin/self-learning.ts` — `FAIL`/`PASS` e os ternários.
+- **Gatilho**: decidir gate vermelho→verde por regex e manter estado por sessão no plugin `self-learning`.
+- **Erro**: `\b\d+\s+failed\b` casava "0 failed" e `\berror\b` texto benigno (ramos assimétricos sem exit code); `failedBySession` crescia sem limite.
+- **Regra**: com exit code decida só por ele, senão exija `[1-9]\d*` (nunca "error" solto); capar sessões/falhas e evictar LRU, apagando a sessão ao esvaziar.
+- **Evidência**: `.opencode/plugin/self-learning.ts` — `FAIL`/`PASS`, `recordFailure` (consolida L-002/L-003).

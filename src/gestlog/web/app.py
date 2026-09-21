@@ -111,10 +111,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @aplicacao.post("/cadastro", response_class=HTMLResponse)
     async def cadastro(
         request: Request,
-        nome_empresa: Annotated[str, Form()],
-        email: Annotated[str, Form()],
-        senha: Annotated[str, Form()],
         session: Annotated[AsyncSession, Depends(get_async_session)],
+        nome_empresa: Annotated[str, Form()] = "",
+        email: Annotated[str, Form()] = "",
+        senha: Annotated[str, Form()] = "",
     ) -> Response:
         """Cria a empresa e o usuário admin; em erro reexibe o formulário."""
         try:

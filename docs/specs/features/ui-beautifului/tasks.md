@@ -24,17 +24,22 @@ página pública **`/cadastro`** (empresa + e-mail + senha).
 - [x] **T1 — Shell + design system (base.html + CSS)**
   - Tokens (cores, tipografia, espaçamento), split do CSS, `base.html` com
     **sidebar nav** e `{% block %}` para shell autenticado vs público.
+    Inter carregada via Google Fonts (preconnect + stylesheet no `<head>`).
   - Preservar hrefs `/`, `/importar`, `/chat`, `/kpis`; adicionar `/cadastro`
     (público) e `/admin/usuarios` (admin).
 - [x] **T2 — Login + Cadastro**
   - Reestilizar `login.html` (card/inputs primitivos) mantendo `hx-post="/auth/login"`,
     nomes `username`/`password` e `#erro-login`; link "Criar conta".
   - `GET /cadastro` + `POST /cadastro` (form) + `cadastro.html`; link "Entrar".
-- [ ] **T3 — Chat**
+    Campos `Form()` com default `""` → validação no `ContaCreate` garante que
+    vazio/comprimento inválido re-renderize o HTML (400), nunca 422 JSON.
+- [x] **T3 — Chat**
   - Composer, Streaming Text (SSE), Thinking/Loading, Recommendation Card,
     Context Cards (fontes), Approval Card (aceitar/descartar), Tool Chips.
   - Preservar `hx-get="/chat/pergunta"`, `#conversa`, `sse-connect/sse-swap/sse-close`,
     `hx-post="/recomendacoes/{id}/feedback"` e a semântica de `textContent`.
+  - Portado o primitivo **ChatComposer** (card, bolhas, composer com botão de envio)
+    para `chat.html`/`chat_turno.html`; SSE validado no navegador.
 - [ ] **T4 — Importar + Histórico**
   - Upload (card/dropzone), resultado (status card), histórico (Records/Filter table).
   - Preservar `name="tipo"`/`name="arquivo"` e textos assertados.

@@ -165,3 +165,18 @@ async def test_cadastro_email_invalido_recusa(client: AsyncClient) -> None:
 
     assert resposta.status_code == 400
     assert 'name="nome_empresa"' in resposta.text
+
+
+@pytest.mark.parametrize(
+    "nome_empresa",
+    ["", "x" * 121],
+)
+async def test_cadastro_nome_empresa_invalido_recusa(
+    client: AsyncClient, nome_empresa: str
+) -> None:
+    resposta = await client.post(
+        "/cadastro", data={**_CONTA, "nome_empresa": nome_empresa}
+    )
+
+    assert resposta.status_code == 400
+    assert 'name="nome_empresa"' in resposta.text

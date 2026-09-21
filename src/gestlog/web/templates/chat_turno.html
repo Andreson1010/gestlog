@@ -1,14 +1,19 @@
 <div class="turno">
-  <p class="pergunta">{{ pergunta }}</p>
-  <div
-    class="resposta"
-    hx-ext="sse"
-    hx-swap="textContent"
-    sse-connect="/chat/stream?pergunta={{ pergunta | urlencode }}"
-    sse-swap="resposta"
-    sse-close="fim"
-  >
-    <span class="carregando">Consultando…</span>
+  <div class="bolha">{{ pergunta }}</div>
+  <div class="agente">
+    <div class="agente-rotulo">
+      <span class="nome">Copiloto</span>
+      <span class="papel">resposta</span>
+    </div>
+    <div
+      class="resposta"
+      hx-ext="sse"
+      hx-swap="textContent"
+      sse-connect="/chat/stream?pergunta={{ pergunta | urlencode }}"
+      sse-swap="resposta"
+      sse-close="fim"
+    >
+      <span class="carregando">Consultando…</span>
+    </div>
   </div>
 </div>
-
