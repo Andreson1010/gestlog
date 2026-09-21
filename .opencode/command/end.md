@@ -26,7 +26,13 @@ registre os números reais, priorizando os módulos tocados nesta sessão:
 Se o MCP não estiver acessível, escreva explicitamente "graphify indisponível"
 — não invente valores.
 
-**3. Documentos de projeto** — liste o que existe e o que mudou nesta sessão:
+**3. Lições (memória de erros)** — se nesta sessão houve algum erro seu já
+corrigido e ainda não registrado, grave a lição **agora** em
+`.opencode/LESSONS.md`. Depois **consolide** o arquivo: deduplique, remova lições
+obsoletas e mantenha ~40 linhas ou menos, mais recente no topo. Não invente
+lições.
+
+**4. Documentos de projeto** — liste o que existe e o que mudou nesta sessão:
 `docs/specs/`, `docs/`, `AGENTS.md`, `README.md`, `.opencode/skills/`. Aponte
 caminhos concretos.
 
