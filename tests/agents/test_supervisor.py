@@ -38,3 +38,15 @@ def test_supervisor_evita_repetir_especialista_visitado(fake_model_cls: type) ->
 
     assert node(estado) == {"next": "FINISH"}
     assert model.mensagens_recebidas
+
+
+def test_supervisor_permite_especialista_ainda_nao_visitado(
+    fake_model_cls: type,
+) -> None:
+    node = create_supervisor_node(fake_model_cls(routes=["transporte"]))
+    estado = {
+        "messages": [HumanMessage(content="e o frete?")],
+        "especialistas_visitados": ["estoque"],
+    }
+
+    assert node(estado) == {"next": "transporte"}

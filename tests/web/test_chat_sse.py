@@ -220,4 +220,5 @@ async def test_chat_stream_falha_do_grafo_responde_amigavel(
 
     assert resposta.status_code == 200
     assert MENSAGEM_ERRO_COPILOTO in resposta.text
+    assert "recursion limit reached" not in resposta.text
     assert "event: fim" in resposta.text

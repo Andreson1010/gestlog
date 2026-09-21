@@ -14,8 +14,7 @@ from sqlalchemy.orm import Session
 
 from gestlog.auth import get_current_empresa, get_current_user
 from gestlog.config import Settings, get_settings
-from gestlog.copilot import CopilotService
-from gestlog.copilot.service import MENSAGEM_ERRO_COPILOTO
+from gestlog.copilot import MENSAGEM_ERRO_COPILOTO, CopilotService
 from gestlog.db.models import Empresa, User
 from gestlog.llm import build_chat_model
 from gestlog.web.ingestion_ui import get_sync_session

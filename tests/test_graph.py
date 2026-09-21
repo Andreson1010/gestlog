@@ -36,3 +36,29 @@ def test_graph_encerra_sem_reencaminhar_apos_especialista(
     resultado = run_query(grafo, "como está o SKU-100?")
     assert resultado["next"] == "FINISH"
     assert resultado["messages"][-1].content == "resposta do especialista"
+
+
+def test_graph_encerra_quando_especialista_esgota_passos(
+    fake_model_cls: type,
+) -> None:
+    def _chamada(id_: str) -> list[dict]:
+        return [
+            {
+                "name": "consultar_estoque",
+                "args": {"sku": "SKU-100"},
+                "id": id_,
+                "type": "tool_call",
+            }
+        ]
+
+    model = fake_model_cls(
+        routes=["estoque", "estoque"],
+        tool_calls=[_chamada("c1"), _chamada("c2")],
+    )
+    grafo = build_graph(
+        model=model, settings=Settings(_env_file=None, max_tool_steps=2)
+    )
+    resultado = run_query(grafo, "como está o SKU-100?")
+    assert resultado["next"] == "FINISH"
+    assert resultado["especialistas_visitados"] == ["estoque"]
+    assert "Limite" in resultado["messages"][-1].content
