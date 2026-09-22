@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-014 · 2026-09-22 · git/PR
+- **Gatilho**: abrir o PR de uma branch de task cuja base é uma branch de integração criada localmente na sessão.
+- **Erro**: criei `feat/f2-hitl` local mas não a pushei; `gh pr create --base feat/f2-hitl` falhou ("Base ref must be a branch").
+- **Regra**: antes de abrir o PR da task, garanta que a branch de base existe no `origin` (`git push origin <integracao>`), mesmo que ainda vazia.
+- **Evidência**: PR #47 (T1 da F2) só abriu após `git push origin feat/f2-hitl:feat/f2-hitl`.
+
 ## L-013 · 2026-09-22 · web/schema
 - **Gatilho**: página HTML cujo `<select>`/validação usa um conjunto de valores que já existe como `Literal` no schema JSON.
 - **Erro**: redeclarei `_PAPEIS = ("admin", "gestor", "operador")` no router, duplicando a fonte de verdade; ao mudar o domínio, formulário e API divergem em silêncio.
