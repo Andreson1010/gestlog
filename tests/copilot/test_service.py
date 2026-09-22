@@ -20,6 +20,7 @@ from gestlog.copilot.service import (
     _montar_turnos,
     carregar_historico,
     extrair_recomendacao,
+    texto_principal,
 )
 from gestlog.db.models import Message, Recommendation
 from gestlog.repositories.catalog import StockRepository
@@ -98,8 +99,7 @@ def test_answer_roteia_e_responde_em_cada_dominio(
             tool_calls=[_tool_comum(f"resposta de {dominio}", fontes="TMS")],
         )
         resposta = _service(db_session, model, empresa).answer("pergunta")
-        assert f"resposta de {dominio}" in resposta
-        assert "Fontes: TMS" in resposta
+        assert resposta == f"resposta de {dominio}"
 
 
 def test_answer_fora_de_escopo(db_session: Session, fake_model_cls: type) -> None:
@@ -543,6 +543,18 @@ def test_extrair_recomendacao_estrutura_texto_justificativa_e_fontes() -> None:
         fontes=("estoque", "TMS"),
     )
     assert not recomendacao.insuficiente
+
+
+def test_texto_principal_corta_rotulo_justificativa_e_fontes() -> None:
+    resposta = (
+        "Resposta logística:\n"
+        "Repor SKU-1\n"
+        "Justificativa: abaixo do mínimo\n"
+        "Fontes: estoque"
+    )
+
+    assert texto_principal(resposta) == "Repor SKU-1"
+    assert texto_principal("Sem rótulo") == "Sem rótulo"
 
 
 def test_extrair_recomendacao_sem_fontes_vira_insuficiencia() -> None:

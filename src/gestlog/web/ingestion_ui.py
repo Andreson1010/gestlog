@@ -54,7 +54,13 @@ def create_ingestion_router() -> APIRouter:
         if usuario is None:
             return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
         return _TEMPLATES.TemplateResponse(
-            request, "importar.html", {"titulo": "Importar · gestlog", "tipos": _TIPOS}
+            request,
+            "importar.html",
+            {
+                "titulo": "Importar · gestlog",
+                "tipos": _TIPOS,
+                "email": usuario.email,
+            },
         )
 
     @router.post("/importar", response_class=HTMLResponse)
@@ -86,6 +92,7 @@ def create_ingestion_router() -> APIRouter:
     @router.get("/importar/historico", response_class=HTMLResponse)
     def pagina_historico(
         request: Request,
+        usuario: Annotated[User | None, Depends(current_active_user_optional)],
         empresa: Annotated[Empresa, Depends(get_current_empresa)],
         session: Annotated[Session, Depends(get_sync_session)],
     ) -> Response:
@@ -93,7 +100,11 @@ def create_ingestion_router() -> APIRouter:
         return _TEMPLATES.TemplateResponse(
             request,
             "historico.html",
-            {"titulo": "Histórico · gestlog", "jobs": historico(session, empresa.id)},
+            {
+                "titulo": "Histórico · gestlog",
+                "jobs": historico(session, empresa.id),
+                "email": usuario.email if usuario else "",
+            },
         )
 
     return router

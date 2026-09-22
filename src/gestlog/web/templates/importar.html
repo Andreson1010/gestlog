@@ -1,23 +1,28 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Importar dados</h1>
-<form
-  class="form-importar"
-  hx-post="/importar"
-  hx-target="#resultado"
-  hx-swap="innerHTML"
-  hx-encoding="multipart/form-data"
->
-  <label for="tipo">Tipo de dados</label>
-  <select id="tipo" name="tipo" required>
-    {% for tipo in tipos %}
-    <option value="{{ tipo }}">{{ tipo }}</option>
-    {% endfor %}
-  </select>
-  <label for="arquivo">Arquivo (CSV)</label>
-  <input id="arquivo" name="arquivo" type="file" accept=".csv" required />
-  <button type="submit">Importar</button>
-</form>
-<div id="resultado"></div>
-<p><a href="/importar/historico">Ver histórico</a></p>
+<div class="pagina">
+  <h1>Importar dados</h1>
+  <p class="subtitulo">Envie um CSV e o copiloto passa a usá-lo nas respostas.</p>
+  <div class="painel">
+    <form
+      class="form-importar"
+      hx-post="/importar"
+      hx-target="#resultado"
+      hx-swap="innerHTML"
+      hx-encoding="multipart/form-data"
+    >
+      <label for="tipo">Tipo de dados</label>
+      <select id="tipo" name="tipo" required>
+        {% for tipo in tipos %}
+        <option value="{{ tipo }}">{{ tipo }}</option>
+        {% endfor %}
+      </select>
+      <label for="arquivo">Arquivo (CSV)</label>
+      <input id="arquivo" name="arquivo" type="file" accept=".csv" required />
+      <button type="submit">Importar</button>
+    </form>
+    <div id="resultado"></div>
+  </div>
+  <a class="link-voltar" href="/importar/historico">Ver histórico de importações</a>
+</div>
 {% endblock %}

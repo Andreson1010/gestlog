@@ -160,7 +160,7 @@ async def test_chat_stream_emite_resposta_sse(
     assert resposta.headers["content-type"].startswith("text/event-stream")
     assert "event: resposta" in resposta.text
     assert "Há estoque suficiente" in resposta.text
-    assert "Fontes: estoque" in resposta.text
+    assert "Fontes: estoque" not in resposta.text
     assert "event: fim" in resposta.text
 
 

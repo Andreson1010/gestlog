@@ -4,6 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block titulo %}{{ titulo | default("gestlog") }}{% endblock %}</title>
+    <script>
+      (function () {
+        try {
+          var tema = localStorage.getItem("gestlog-tema");
+          if (tema === "claro" || tema === "escuro") {
+            document.documentElement.dataset.tema = tema;
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,7 +35,7 @@
     ></script>
   </head>
   <body>
-    {% block layout %}
+    {% block layout %}{% set caminho = request.url.path %}
     <div class="app">
       <aside class="barra">
         <div class="marca">
@@ -33,11 +43,39 @@
           gestlog
         </div>
         <nav>
-          <a href="/">Início</a>
-          <a href="/importar">Importar</a>
-          <a href="/chat">Chat</a>
-          <a href="/kpis">Indicadores</a>
+          <a href="/" {% if caminho == "/" %}class="ativo" aria-current="page"{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
+            Início
+          </a>
+          <a href="/importar" {% if caminho.startswith("/importar") %}class="ativo" aria-current="page"{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+            Importar
+          </a>
+          <a href="/chat" {% if caminho.startswith("/chat") %}class="ativo" aria-current="page"{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z" /></svg>
+            Chat
+          </a>
         </nav>
+        <div class="barra-rodape">
+          {% if email %}
+          <p class="usuario" title="{{ email }}">{{ email }}</p>
+          {% endif %}
+          <div class="barra-acoes">
+            <button
+              class="tema-toggle"
+              type="button"
+              data-tema-toggle
+              aria-pressed="false"
+              aria-label="Alternar tema claro/escuro"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+              Tema
+            </button>
+            <form method="post" action="/auth/logout">
+              <button class="sair" type="submit">Sair</button>
+            </form>
+          </div>
+        </div>
       </aside>
       <main class="conteudo">
         {% block conteudo %}
@@ -45,6 +83,25 @@
         {% endblock %}
       </main>
     </div>
+    <script>
+      (function () {
+        var botao = document.querySelector("[data-tema-toggle]");
+        if (!botao) return;
+        var claro =
+          document.documentElement.dataset.tema === "claro";
+        botao.setAttribute("aria-pressed", String(claro));
+        botao.addEventListener("click", function () {
+          var claroAgora =
+            document.documentElement.dataset.tema !== "claro";
+          var tema = claroAgora ? "claro" : "escuro";
+          document.documentElement.dataset.tema = tema;
+          try {
+            localStorage.setItem("gestlog-tema", tema);
+          } catch (e) {}
+          botao.setAttribute("aria-pressed", String(claroAgora));
+        });
+      })();
+    </script>
     {% endblock %}
   </body>
 </html>

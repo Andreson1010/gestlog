@@ -167,6 +167,31 @@ async def test_cadastro_email_invalido_recusa(client: AsyncClient) -> None:
     assert 'name="nome_empresa"' in resposta.text
 
 
+async def test_cadastro_nome_empresa_vazio_recusa(client: AsyncClient) -> None:
+    resposta = await client.post("/cadastro", data={**_CONTA, "nome_empresa": "   "})
+
+    assert resposta.status_code == 400
+    assert 'name="nome_empresa"' in resposta.text
+
+
+async def test_cadastro_corrida_de_email_retorna_409(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from sqlalchemy.exc import IntegrityError
+
+    import gestlog.web.app as app_module
+
+    async def _colidir(*args: object, **kwargs: object) -> None:
+        raise IntegrityError("insert", {}, Exception("duplicado"))
+
+    monkeypatch.setattr(app_module, "criar_conta", _colidir)
+
+    resposta = await client.post("/cadastro", data=_CONTA)
+
+    assert resposta.status_code == 409
+    assert "já cadastrado" in resposta.text
+
+
 @pytest.mark.parametrize(
     "nome_empresa",
     ["", "x" * 121],

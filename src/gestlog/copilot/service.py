@@ -122,6 +122,17 @@ def _quebrar_resposta(resposta: str) -> tuple[str, str, tuple[str, ...]]:
     return corpo.strip(), justificativa.strip(), _separar_fontes(referencia)
 
 
+def texto_principal(resposta: str) -> str:
+    """Devolve só o corpo da resposta, sem rótulo, justificativa e fontes.
+
+    O chat exibe apenas o texto principal; justificativa e fontes seguem
+    gravados na ``Recommendation`` para relatórios futuros. Também é aplicado ao
+    reidratar o histórico, limpando turnos gravados no formato antigo.
+    """
+    corpo, _, _ = _quebrar_resposta(resposta)
+    return corpo or resposta
+
+
 def extrair_recomendacao(resposta: str, dominio: str) -> Recomendacao:
     """Estrutura a resposta em recomendação; sem base virá insuficiência."""
     if resposta == MENSAGEM_FORA_DE_ESCOPO:
@@ -303,7 +314,7 @@ class CopilotService:
         bruto = texto_resposta(estado["messages"])
         dominio = str(estado.get("dominio", ""))
         recomendacao = extrair_recomendacao(bruto, dominio)
-        resposta = recomendacao.texto if recomendacao.insuficiente else bruto
+        resposta = recomendacao.texto
         _registrar_auditoria(
             self.session,
             self.empresa_id,

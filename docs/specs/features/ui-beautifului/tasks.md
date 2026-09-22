@@ -33,18 +33,29 @@ página pública **`/cadastro`** (empresa + e-mail + senha).
   - `GET /cadastro` + `POST /cadastro` (form) + `cadastro.html`; link "Entrar".
     Campos `Form()` com default `""` → validação no `ContaCreate` garante que
     vazio/comprimento inválido re-renderize o HTML (400), nunca 422 JSON.
-- [x] **T3 — Chat**
-  - Composer, Streaming Text (SSE), Thinking/Loading, Recommendation Card,
-    Context Cards (fontes), Approval Card (aceitar/descartar), Tool Chips.
-  - Preservar `hx-get="/chat/pergunta"`, `#conversa`, `sse-connect/sse-swap/sse-close`,
-    `hx-post="/recomendacoes/{id}/feedback"` e a semântica de `textContent`.
-  - Portado o primitivo **ChatComposer** (card, bolhas, composer com botão de envio)
-    para `chat.html`/`chat_turno.html`; SSE validado no navegador.
-- [ ] **T4 — Importar + Histórico**
-  - Upload (card/dropzone), resultado (status card), histórico (Records/Filter table).
-  - Preservar `name="tipo"`/`name="arquivo"` e textos assertados.
-- [ ] **T5 — KPIs**
-  - Insight Cards + período; preservar os 7 rótulos/valores e `name="desde"`/`"ate"`.
+- [x] **T3 — Chat (redesign full-screen)**
+  - Painel ocupa a altura da tela (`.chat`); **lista rolável** no topo e
+    **composer fixo embaixo**; pergunta em bolha à direita e resposta do copiloto
+    separada (rótulo + bloco próprio); auto-scroll.
+  - Botão **Copiar conversa** (`data-copiar-conversa`) monta o texto da sessão
+    (Você/Copiloto por turno) e copia via Clipboard API com fallback.
+  - Preservar `hx-get="/chat/pergunta"`, `#conversa`, `sse-connect/sse-swap/sse-close`
+    e a semântica de `textContent`.
+  - **Limpeza**: saíram do chat o rótulo "Copiloto resposta", os marcadores
+    "Resposta logística:"/"Justificativa:"/"Fontes:" (`texto_principal`) e os controles
+    "Sem decisão/Aceitar/Descartar" (o endpoint de feedback continua, agora sem uso na
+    tela). Justificativa/fontes seguem na `Recommendation` para relatórios futuros.
+  - SSE validado no navegador (pergunta → resposta, rolagem, copiar).
+- [ ] **T4 — Importar + Histórico** (parcial)
+  - [x] Importar em **painel compacto** (largura de leitura), `input[type=file]`
+    estilizado, botão pill; hrefs/names preservados.
+  - [x] Histórico: tabela em painel + chip de status.
+  - [ ] Dropzone primitivo e status card dedicado (opcional).
+- [x] **T5 — KPIs**: filtro (datas) e cards reestilizados no tema. **Removido do
+      menu** a pedido (rota `/kpis` e KPI-01 preservados; acessível por URL).
+- [x] **T7 — Shell + tema**: nav com **estado ativo** (aria-current), rodapé com
+      usuário + **Sair** (`POST /auth/logout`) e **toggle claro/escuro** persistido
+      em `localStorage` (`data-tema`), com script anti-FOUC no `<head>`.
 - [ ] **T6 — Admin (HTML)**
   - `/admin/usuarios`: tabela de usuários, alterar papel, remover;
     `exigir_papel("admin")`; endpoints form-encoded.

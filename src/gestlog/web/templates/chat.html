@@ -1,66 +1,106 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Chat do copiloto</h1>
-<section class="chat-painel">
-  <header class="chat-topo">
-    <div class="chat-abas">
-      <span class="chat-aba" aria-pressed="true">Copiloto logístico</span>
+<section class="chat">
+  <header class="chat-cabecalho">
+    <div>
+      <h1>Copiloto logístico</h1>
+      <p class="chat-sub">pergunte sobre estoque, fornecedores ou transporte</p>
     </div>
-    <span class="chat-hint">pergunte sobre estoque, fornecedores ou transporte</span>
+    <button class="chat-copiar" type="button" data-copiar-conversa>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+      <span data-rotulo-copiar>Copiar conversa</span>
+    </button>
   </header>
-  <div id="conversa" class="conversa chat-lista" aria-live="polite">
-    {% for turno in turnos %}
-    <div class="turno">
-      <div class="bolha">{{ turno.pergunta }}</div>
-      <div class="agente">
-        <div class="agente-rotulo">
-          <span class="nome">Copiloto</span>
-          <span class="papel">resposta</span>
+  <div class="chat-corpo">
+    <div id="conversa" class="conversa chat-lista" aria-live="polite">
+      {% for turno in turnos %}
+      <div class="turno">
+        <div class="bolha">{{ turno.pergunta }}</div>
+        <div class="agente">
+          <div class="resposta">{{ turno.resposta }}</div>
         </div>
-        <div class="resposta">{{ turno.resposta }}</div>
       </div>
-      {% if turno.recomendacao_id %}
-      {% if turno.fontes %}
-      <p class="fontes">Fontes: {{ turno.fontes | join(", ") }}</p>
-      {% endif %}
-      {% include "_feedback.html" %}
-      {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
+    <form
+      class="form-chat chat-composer"
+      hx-get="/chat/pergunta"
+      hx-target="#conversa"
+      hx-swap="beforeend"
+      hx-on::after-request="this.reset()"
+    >
+      <div class="chat-entrada">
+        <label class="sr-only" for="pergunta">Pergunta</label>
+        <input
+          id="pergunta"
+          name="pergunta"
+          type="text"
+          required
+          autofocus
+          autocomplete="off"
+          placeholder="Ex.: como está o estoque?"
+        />
+        <button class="chat-enviar" type="submit" aria-label="Perguntar">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </button>
+      </div>
+    </form>
   </div>
-  <form
-    class="form-chat chat-composer"
-    hx-get="/chat/pergunta"
-    hx-target="#conversa"
-    hx-swap="beforeend"
-    hx-on::after-request="this.reset()"
-  >
-    <div class="chat-entrada">
-      <label class="sr-only" for="pergunta">Pergunta</label>
-      <input
-        id="pergunta"
-        name="pergunta"
-        type="text"
-        required
-        autofocus
-        autocomplete="off"
-        placeholder="Ex.: como está o estoque?"
-      />
-      <button class="chat-enviar" type="submit" aria-label="Perguntar">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 19V5M5 12l7-7 7 7" />
-        </svg>
-      </button>
-    </div>
-  </form>
 </section>
+<script>
+  (function () {
+    var lista = document.getElementById("conversa");
+    function rolarParaFim() {
+      if (lista) lista.scrollTop = lista.scrollHeight;
+    }
+    rolarParaFim();
+    document.body.addEventListener("htmx:afterSwap", rolarParaFim);
+    document.body.addEventListener("htmx:sseMessage", rolarParaFim);
+    document.body.addEventListener("htmx:sseClose", rolarParaFim);
+
+    var botao = document.querySelector("[data-copiar-conversa]");
+    if (botao) {
+      botao.addEventListener("click", function () {
+        var partes = [];
+        document.querySelectorAll("#conversa .turno").forEach(function (turno) {
+          var pergunta = turno.querySelector(".bolha");
+          var resposta = turno.querySelector(".agente .resposta");
+          if (pergunta) partes.push("Você: " + pergunta.textContent.trim());
+          if (resposta) partes.push("Copiloto: " + resposta.textContent.trim());
+        });
+        var texto = partes.join("\n\n");
+        var rotulo = botao.querySelector("[data-rotulo-copiar]");
+        var confirmar = function () {
+          if (!rotulo) return;
+          rotulo.textContent = "Copiado!";
+          setTimeout(function () {
+            rotulo.textContent = "Copiar conversa";
+          }, 1500);
+        };
+        if (navigator.clipboard && texto) {
+          navigator.clipboard.writeText(texto).then(confirmar);
+        } else if (texto) {
+          var area = document.createElement("textarea");
+          area.value = texto;
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          document.body.removeChild(area);
+          confirmar();
+        }
+      });
+    }
+  })();
+</script>
 {% endblock %}

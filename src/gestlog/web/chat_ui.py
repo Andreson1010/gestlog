@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated
 
@@ -11,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from gestlog.auth import current_active_user_optional, get_current_empresa_optional
-from gestlog.copilot import carregar_historico
+from gestlog.copilot import carregar_historico, texto_principal
 from gestlog.db.models import Empresa, User
 from gestlog.web.ingestion_ui import get_sync_session
 
@@ -37,8 +38,11 @@ def create_chat_ui_router() -> APIRouter:
             if empresa is not None
             else []
         )
+        turnos = [replace(t, resposta=texto_principal(t.resposta)) for t in turnos]
         return _TEMPLATES.TemplateResponse(
-            request, "chat.html", {"titulo": "Chat · gestlog", "turnos": turnos}
+            request,
+            "chat.html",
+            {"titulo": "Chat · gestlog", "turnos": turnos, "email": usuario.email},
         )
 
     @router.get("/chat/pergunta", response_class=HTMLResponse)
