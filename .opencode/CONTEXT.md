@@ -1,8 +1,8 @@
-# Contexto da Sessão — UI beautifului: pente geral, tema e chat enxuto
+# Contexto da Sessão — F2 (HITL) em execução + UI beautifului entregue
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-22.
-> `main` @ `586d2e8` · tag **`v0.2.0`**. PRs **#42/#43/#44/#45 mergeados**; branches de task apagadas.
-> Integração `feat/ui-beautifului` @ `c25eda1` (fica à frente de `main`, que recebeu o squash).
+> `main` @ `83af7d9` · tag **`v0.2.0` = `586d2e8`**. UI beautifului entregue (PRs #42–#46).
+> **F2 em andamento** na integração `feat/f2-hitl` @ `1df7e16` (T1 e T2 mergeadas).
 
 ## Estado atual
 
@@ -15,6 +15,21 @@
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
   fora do repo em `...\Temp\opencode\gestlog_dev\serve_dev.py` (sem `--reload`); **Ollama ativo**.
+
+## F2 (HITL) — em andamento
+
+- **Planejamento aprovado** (Checkpoint 2): `docs/specs/features/f2-hitl/{story,spec,design,tasks}.md`
+  (12 tasks, 6 fases). Decisões humanas: aprovador `admin`+`gestor`; "incompleto" = vazio/zero/default;
+  sugestão com **payload estruturado**; escrita = só correção interna de cadastros; item **terminal/imutável**;
+  retenção segue a `Empresa`; fila só **web/API** (chat segue read-only — AD-002 preservado, sem tool de escrita no grafo).
+- **Integração `feat/f2-hitl`** (pushada) @ `1df7e16`: **T1** `fd42412` (PR #47) e **T2** `1df7e16` (PR #48) mergeadas.
+- **T1**: modelo `ItemCorrecao` + migration `9c2f7a41b6d3`.
+- **T2**: `CorrectionRepository` (ADR + L-015).
+- Extra: `uv.lock` sincronizado com `0.2.0` no `main` (PR #49, `83af7d9`).
+- **Restantes T3–T12**: completude, sugestões, serviço de fila, eventos de auditoria, aprovar/aplicar,
+  rejeitar, retenção, web (fila + trilha), aceitação. Fluxo por task: builder → self-review (ADR) →
+  code review → PR contra `feat/f2-hitl` → squash-merge.
+- **Gate atual**: **287 passed, 98,39%**; `black`/`ruff` verdes.
 
 ## O que foi feito nesta sessão
 
@@ -88,8 +103,7 @@ Concluído: UI inteira (T1–T7). Próximo épico: **F2** (tools com HITL) ou **
 
 1. **CONCLUÍDO**: PRs #42 (`d18918a`), #43 (`e5e8688`) e #44 (`e316489`) mergeados; release #45
    em `main` (`586d2e8`) + tag `v0.2.0`. UI inteira entregue (T1–T7).
-2. **PRÓXIMO**: escolher entre **F2** (tools de escrita/ação com HITL — AD-001) e a feature de
-   **relatórios/gráficos/tabelas** (pedido do usuário).
+2. **EM ANDAMENTO**: **F2 (HITL)** — T1/T2 mergeadas; próximas T3–T12 (ver seção "F2 (HITL) — em andamento").
 3. Débitos: T23 (botões de feedback agora **sem uso no chat**), T20/T31, auditoria de
    feedback/importação, CI sem `evals/`.
 4. Housekeeping: a integração `feat/ui-beautifului` (`c25eda1`) está à frente de `main`; alinhar/descartar.
