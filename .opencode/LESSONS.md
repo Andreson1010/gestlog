@@ -5,15 +5,15 @@
 
 ## L-015 · 2026-09-22 · repositórios/domínio
 - **Gatilho**: agrupar status em constantes de módulo num repositório que serve tanto à trilha quanto à purga.
-- **Erro**: nomeei `_STATUS_TERMINAIS = ("aplicado", "falhou")`, mas o design define terminais como `rejeitado/aplicado/falhou`; a purga usava outro conjunto (`_STATUS_DECIDIDOS`), e o nome errado escondia que a trilha P2 ("correções aplicadas") é um recorte distinto da terminalidade.
+- **Erro**: nomeei `_STATUS_TERMINAIS = ("aplicado", "falhou")`, mas o design define terminais como `rejeitado/aplicado/falhou`; o nome errado escondia que a trilha P2 ("correções aplicadas") é um recorte distinto da terminalidade.
 - **Regra**: nomeie cada conjunto pelo critério real (`_STATUS_TERMINAIS` = transições finais do design; `_STATUS_TRILHA` = recorte de escrita) e explique no docstring por que a trilha difere do terminal.
 - **Evidência**: self-review T2; `repositories/correcoes.py` passou a ter `_STATUS_TERMINAIS`/`_STATUS_TRILHA` e o teste `test_listar_trilha_ignora_rejeitado` fixa o recorte.
 
 ## L-014 · 2026-09-22 · git/PR
-- **Gatilho**: abrir o PR de uma branch de task cuja base é uma branch de integração criada localmente na sessão.
-- **Erro**: criei `feat/f2-hitl` local mas não a pushei; `gh pr create --base feat/f2-hitl` falhou ("Base ref must be a branch").
-- **Regra**: antes de abrir o PR da task, garanta que a branch de base existe no `origin` (`git push origin <integracao>`), mesmo que ainda vazia.
-- **Evidência**: PR #47 (T1 da F2) só abriu após `git push origin feat/f2-hitl:feat/f2-hitl`.
+- **Gatilho**: branca/PR de task a partir de uma branch de integração criada ou atualizada nesta sessão.
+- **Erro**: (a) criei `feat/f2-hitl` local sem push; `gh pr create --base` falhou ("Base ref must be a branch"); (b) cortei a branch da T2 da integração local desatualizada (sem upstream), faltando a T1.
+- **Regra**: antes de cortar a task e de abrir o PR, sincronize a integração com o `origin` (setar upstream + `git push`/`git pull --ff-only`).
+- **Evidência**: PR #47 e a branch da T2 tiveram de ser refeitos após `git push origin feat/f2-hitl` e `git pull --ff-only`.
 
 ## L-013 · 2026-09-22 · web/schema
 - **Gatilho**: página HTML cujo `<select>`/validação usa um conjunto de valores que já existe como `Literal` no schema JSON.
@@ -23,36 +23,18 @@
 
 ## L-012 · 2026-09-22 · html/js
 - **Gatilho**: botão com ícone SVG + texto que precisa mudar de rótulo temporariamente (ex.: "Copiar conversa" → "Copiado!").
-- **Erro**: usei `botao.textContent = "Copiado!"` e depois restaurei só o texto; `textContent` apaga TODOS os filhos, então o `<svg>` do botão foi destruído na primeira cópia (regressão visual silenciosa, sem teste).
-- **Regra**: ao trocar o rótulo de um controle que contém ícone, envolva o texto num `<span data-...>` e altere só o `textContent` desse span — nunca o do container.
-- **Evidência**: code review do pente geral; `chat.html` agora tem `[data-rotulo-copiar]` e o JS preserva o SVG.
+- **Erro**: usei `botao.textContent = "Copiado!"` e depois restaurei só o texto; `textContent` apaga TODOS os filhos, destruindo o `<svg>` na primeira cópia.
+- **Regra**: ao trocar o rótulo de um controle com ícone, envolva o texto num `<span data-...>` e altere só o `textContent` desse span — nunca o do container.
+- **Evidência**: code review do pente geral; `chat.html` ganhou `[data-rotulo-copiar]` e o JS preserva o SVG.
 
 ## L-011 · 2026-09-21 · web/testes
 - **Gatilho**: remover da UI um controle/markup que outra camada consome (ex.: botões de feedback do chat).
-- **Erro**: rodei só `tests/web/` e esqueci que `tests/acceptance/test_f1_mvp.py` raspava o HTML do chat (`/recomendacoes/<id>/feedback`) para obter o id da recomendação — quebrou após a remoção.
+- **Erro**: rodei só `tests/web/` e esqueci que `tests/acceptance/test_f1_mvp.py` raspava o HTML do chat para obter o id da recomendação — quebrou após a remoção.
 - **Regra**: ao remover/renomear markup, rode a suíte **completa** e prefira buscar ids no banco/repositório em vez de extraí-los do HTML renderizado.
 - **Evidência**: `test_cop_aceite_registra_decisao` — agora usa `_recomendacao_do_usuario(fabrica_sync, email)`.
-
-## L-010 · 2026-09-21 · css/templates
-- **Gatilho**: reescrever um CSS global que ainda serve páginas não migradas / declarar asset externo por token.
-- **Erro**: (a) ao reescrever `app.css` removi `.form-importar select,input` (página `importar` sem estilo) e mantive `.form-chat button` legado que, por especificidade, sobrescreveu `.chat-enviar`; (b) `--font-sans: Inter` sem carregar a fonte.
-- **Regra**: ao reescrever CSS global, inventarie TODAS as regras legadas ainda referenciadas por templates e remova/escope as que colidem com os novos componentes; ao nomear um asset num token, carregue-o no `<head>`.
-- **Evidência**: code review do PR (HIGH `importar` sem estilo; MEDIUM `.form-chat button` > `.chat-enviar`); `base.html` ganhou Google Fonts (consolida L-008).
 
 ## L-009 · 2026-09-21 · web/form
 - **Gatilho**: rota web com `Form()` obrigatório que deve **reexibir o formulário** quando o input é inválido.
 - **Erro**: `Annotated[str, Form()]` com valor vazio vira `None` no FastAPI → responde **422 JSON** ("missing"), sem cair no handler que re-renderiza o HTML.
-- **Regra**: dê default `""` aos campos `Form()` e deixe o schema Pydantic rejeitar; assim todo input inválido passa pelo mesmo caminho de erro renderizado.
+- **Regra**: dê default `""` aos campos `Form()` e deixe o schema Pydantic rejeitar; todo input inválido passa pelo mesmo caminho de erro renderizado.
 - **Evidência**: `tests/web/test_cadastro.py::test_cadastro_nome_empresa_vazio_recusa` (422 antes, 400 após).
-
-## L-007 · 2026-09-21 · grafo/testes
-- **Gatilho**: endurecer um fluxo (guarda anti-loop) e cobrir a correção com teste de regressão.
-- **Erro**: forçar `FINISH` em toda `AIMessage` quebrou o roteamento multi-especialista; o teste da guarda só afirmava `next == "FINISH"`, que passava mesmo sem ela.
-- **Regra**: modele o requisito real (rastrear `especialistas_visitados` e barrar só a **repetição**) e afirme o efeito **exclusivo** da correção; rode a suíte completa.
-- **Evidência**: `test_graph_encerra_sem_reencaminhar_apos_especialista` (passava sem a guarda); golden set quebrou com o forcing.
-
-## L-004 · 2026-09-21 · opencode (fluxo + plugin) — consolida L-002/L-003
-- **Gatilho**: tornar um artefato obrigatório num passo de fluxo multiarquivo; decidir gate vermelho→verde por regex no plugin `self-learning`.
-- **Erro**: (a) adicionei "Lesson Capture" ao `developer-self-reviewer`/skills mas não ao `feature-factory` (fase 5.5), então o Persistence Gate mutava arquivo "inesperado"; (b) `\b\d+\s+failed\b` casava "0 failed" e `\berror\b` texto benigno, e `failedBySession` crescia sem limite.
-- **Regra**: ao mudar o que um passo produz, atualize TODOS os lugares que o enumeram (skill, gate, agent); com exit code decida só por ele, senão exija `[1-9]\d*`; cape sessões/falhas com evict LRU.
-- **Evidência**: `feature-factory/SKILL.md` fase 5.5; `.opencode/plugin/self-learning.ts` (`FAIL`/`PASS`, `recordFailure`).
