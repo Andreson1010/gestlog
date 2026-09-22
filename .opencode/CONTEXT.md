@@ -1,7 +1,8 @@
 # Contexto da Sessão — UI beautifului: pente geral, tema e chat enxuto
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-21.
-> Branch: `feat/ui-beautifului-t3` · HEAD: `7cd9123` (`7cd91239c85627df051ed12ae4e692c32b19b740`)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-22.
+> Branch: `feat/ui-beautifului-t3` · HEAD: `d9fada7` · **PR [#42](https://github.com/Andreson1010/gestlog/pull/42)**
+> (base `feat/ui-beautifului`). CI em andamento.
 
 ## Estado atual
 
@@ -9,9 +10,11 @@
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
 - `main` = `5845358` (= `origin/main`) · tag `v0.1.0` = `1c0768c`. Integração
   `feat/ui-beautifului` (**local, vazia** = `main`, ainda não pushada).
-- **UI overhaul concluído na árvore, EM PR**: branch `feat/ui-beautifului-t3` já tem 2 commits
-  (`219fb82` + `7cd9123`); todo o trabalho desta sessão está **não commitado**.
-- **Suíte**: **270 passed, 98,31%**; `black`/`ruff` verdes (verificado nesta sessão).
+- **UI overhaul concluído e COMMITADO**: branch `feat/ui-beautifului-t3` tem 3 commits
+  (`219fb82` + `7cd9123` + `d9fada7`); working tree limpo exceto `opencode.json` (MCPs, não meu).
+- Integração `feat/ui-beautifului` = `main` e **já pushada** (`origin/feat/ui-beautifului`).
+  PR **#42** aberto (`feat/ui-beautifului-t3 → feat/ui-beautifului`), CI rodando.
+- **Meu gate local**: **270 passed, 98,31%**; `black`/`ruff` verdes (verificado nesta sessão).
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
   fora do repo em `...\Temp\opencode\gestlog_dev\serve_dev.py` (sem `--reload`); **Ollama ativo**.
@@ -41,7 +44,20 @@ Concluído e validado no navegador (tema escuro **e** claro):
 - Correções do code review (T1/T2), também não commitadas: `schemas.py` (strip de
   `nome_empresa`) e `test_cadastro.py` (`IntegrityError` 409 + nome só-espaços).
 
-Pendente: code review formal, commit, PR e release; T4 (parcial) e T6 (admin).
+### Sessão 2026-09-22 (continuação)
+
+- **Code review** (skill `code-reviewer`) executado sobre todo o WIP; achados corrigidos e
+  commitados em `d9fada7`:
+  - **HIGH** `app.css` 874 linhas > 800 → seção de chat extraída para `static/chat.css`
+    (`@import` no topo do `app.css`).
+  - **MEDIUM** CSS legado sem uso removido (L-010): `.chat-abas`, `.chat-aba`, `.chat-painel`,
+    `.fontes`, `.form-login`.
+  - **MEDIUM** botão "Copiar conversa" perdia o `<svg>` na 1ª cópia (`textContent` apaga filhos)
+    → rótulo agora em `[data-rotulo-copiar]`; lição **L-012** gravada.
+- Commit `d9fada7` empilha T1+T2+T3+T7 + pente geral; `feat/ui-beautifului` pushada e **PR #42**
+  aberto contra a integração.
+
+Pendente: CI/merge do PR #42, ADR de self-review da task, T4 (parcial) e T6 (admin).
 
 ## Decisões e regras (não esquecer)
 
@@ -61,9 +77,8 @@ Pendente: code review formal, commit, PR e release; T4 (parcial) e T6 (admin).
 
 ## Próximos passos / bloqueios
 
-1. **PENDENTE**: rodar **code review** (skill `code-reviewer`) sobre o pente geral, corrigir
-   achados, **commitar** na `feat/ui-beautifului-t3` e **abrir o PR** (base `feat/ui-beautifului`,
-   que precisa ser pushada).
+1. **EM ANDAMENTO**: PR **#42** (`feat/ui-beautifului-t3 → feat/ui-beautifului`). Aguardar CI
+   verde, (opcional) ADR de self-review e **squash-merge**; apagar a branch da task.
 2. **PENDENTE**: **T6** (admin HTML). **T4** parcial (falta dropzone/status card — opcional).
 3. **PENDENTE**: ao fim da UI, **PR de release** `feat/ui-beautifului → main` + tag.
 4. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido futuro do usuário).
@@ -73,15 +88,11 @@ Pendente: code review formal, commit, PR e release; T4 (parcial) e T6 (admin).
 
 ## WIP local (não commitado)
 
-- ` M .opencode/CONTEXT.md`, ` M .opencode/LESSONS.md` (consolidado), ` M docs/specs/features/ui-beautifului/tasks.md`.
-- ` M opencode.json` — **não fui eu**: ganhou os MCPs `chrome-devtools` e `context7`.
-- UI: ` M src/gestlog/web/templates/{base,home,importar,historico,kpis,chat,chat_turno}.html`,
-  ` M src/gestlog/web/static/{tokens,app}.css`, ` M src/gestlog/web/{chat_ui,ingestion_ui,kpis}.py`.
-- Backend copiloto: ` M src/gestlog/copilot/{service,__init__}.py` (`texto_principal`).
-- Review T1/T2: ` M src/gestlog/web/schemas.py`, ` M tests/web/test_cadastro.py`.
-- Testes: `?? tests/web/test_shell.py`; ` M tests/web/{test_chat_ui,test_chat_sse,test_feedback}.py`,
-  ` M tests/copilot/test_service.py`, ` M tests/acceptance/test_f1_mvp.py`.
-- Branches: `feat/ui-beautifului-t3` (HEAD `7cd9123`); `feat/ui-beautifului` (= `main`, vazia).
+- ` M opencode.json` — **não fui eu**: ganhou os MCPs `chrome-devtools` e `context7` (deixado
+  fora do commit da UI de propósito).
+- Todo o restante foi commitado em `d9fada7`; árvore limpa exceto o `opencode.json`.
+- Branches: `feat/ui-beautifului-t3` (HEAD `d9fada7`, pushada); `feat/ui-beautifului`
+  (pushada, = `main`). PR #42 aberto.
 
 ## Artefatos do graphify
 
@@ -102,7 +113,7 @@ Pendente: code review formal, commit, PR e release; T4 (parcial) e T6 (admin).
   `memoria-auto-melhoria-self-review.md` + os `t13..t34`.
 - Código UI: `src/gestlog/web/{app,chat_ui,chat,onboarding,ingestion_ui,kpis,admin,feedback}.py`,
   `templates/{base,login,cadastro,chat,chat_turno,_feedback,home,importar,importar_resultado,historico,kpis}.html`,
-  `static/{tokens.css,app.css}`.
+  `static/{tokens.css,app.css,chat.css}`.
 - `.opencode/LESSONS.md`, `.opencode/plugin/self-learning.ts`, `.opencode/command/{lesson,end}.md`,
   `.opencode/skills/{build-with-tests,code-reviewer,feature-factory,git-workflow,ship-feature,write-fluid-hybrid-adr}`.
 
@@ -110,7 +121,9 @@ Pendente: code review formal, commit, PR e release; T4 (parcial) e T6 (admin).
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-21 (esta sessão)**: pente geral da UI (shell/tema/home/importar/histórico/kpis),
+- **2026-09-22**: code review do pente geral (skill `code-reviewer`), correções (split `chat.css`,
+  CSS legado removido, ícone do copiar — L-012), commit `d9fada7` e **PR #42** contra a integração.
+- **2026-09-21 (sessão anterior)**: pente geral da UI (shell/tema/home/importar/histórico/kpis),
   redesign do chat (full-height, copiar, rolagem) e chat enxuto (só a resposta); WIP não commitado.
 - **2026-09-21**: memória de auto-melhoria (PR #38); fix do supervisor/SSE (PR #40);
   graphify no gestlog (PR #41); UI beautifului T1–T3.
