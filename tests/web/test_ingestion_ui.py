@@ -134,6 +134,9 @@ async def test_pagina_importar_renderiza_formulario(
     assert 'name="tipo"' in resposta.text
     assert 'name="arquivo"' in resposta.text
     assert "estoque" in resposta.text
+    assert "data-dropzone" in resposta.text
+    assert "data-nome-arquivo" in resposta.text
+    assert 'class="sr-only"' in resposta.text
 
 
 async def test_upload_valido_reflete_status_e_grava_dados(
@@ -159,6 +162,7 @@ async def test_upload_valido_reflete_status_e_grava_dados(
     assert "estoque" in resposta.text
     assert "1 aceitas" in resposta.text
     assert "0 rejeitadas" in resposta.text
+    assert 'class="status-card status-ok"' in resposta.text
     with Session(motor_sync) as session:
         assert StockRepository(session).get_by_sku(empresa.id, "SKU-1") is not None
 
@@ -204,6 +208,7 @@ async def test_upload_arquivo_invalido_nao_grava(
 
     assert resposta.status_code == 200
     assert "desconhecido" in resposta.text
+    assert 'class="status-card status-erro"' in resposta.text
 
 
 async def test_historico_lista_importacoes_da_empresa(

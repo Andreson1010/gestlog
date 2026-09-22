@@ -46,11 +46,14 @@ página pública **`/cadastro`** (empresa + e-mail + senha).
     "Sem decisão/Aceitar/Descartar" (o endpoint de feedback continua, agora sem uso na
     tela). Justificativa/fontes seguem na `Recommendation` para relatórios futuros.
   - SSE validado no navegador (pergunta → resposta, rolagem, copiar).
-- [ ] **T4 — Importar + Histórico** (parcial)
-  - [x] Importar em **painel compacto** (largura de leitura), `input[type=file]`
-    estilizado, botão pill; hrefs/names preservados.
+- [x] **T4 — Importar + Histórico**
+  - [x] Importar em **painel compacto** (largura de leitura), botão pill; hrefs/names preservados.
+  - [x] **Dropzone primitivo** (`data-dropzone`): alvo clicável/arrastável com `input[type=file]`
+    `sr-only` (mantém `name="arquivo"`), realce ao arrastar e nome do arquivo escolhido
+    (`data-nome-arquivo`) via JS progressivo; sem JS o clique no alvo abre o seletor nativo.
+  - [x] **Status card** dedicado no resultado (`status-ok`/`status-erro`) com ícone e textos
+    assertados preservados ("N aceitas · M rejeitadas", "Linha X: motivo").
   - [x] Histórico: tabela em painel + chip de status.
-  - [ ] Dropzone primitivo e status card dedicado (opcional).
 - [x] **T5 — KPIs**: filtro (datas) e cards reestilizados no tema. **Removido do
       menu** a pedido (rota `/kpis` e KPI-01 preservados; acessível por URL).
 - [x] **T7 — Shell + tema**: nav com **estado ativo** (aria-current), rodapé com
