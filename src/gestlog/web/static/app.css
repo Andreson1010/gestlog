@@ -510,6 +510,64 @@ h1 + p,
   border-radius: 999px;
 }
 
+/* Admin (T6) */
+.form-papel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-papel select {
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.form-papel select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+.botao-mini {
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.botao-mini:hover {
+  filter: brightness(1.08);
+}
+
+.botao-remover {
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--red);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.botao-remover:hover {
+  background: var(--field);
+}
+
+.col-acao {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
 /* Indicadores (fora do menu) */
 .form-periodo {
   display: flex;

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="pagina">
+  <div class="hero">
+    <h1>Usuários da empresa</h1>
+    <p>Gerencie o papel e o acesso da sua equipe.</p>
+  </div>
+  {% if erro %}
+  <div class="aviso erro" role="alert">{{ erro }}</div>
+  {% endif %}
+  <div class="painel-tabela">
+    <table class="tabela-historico">
+      <thead>
+        <tr>
+          <th>E-mail</th>
+          <th>Papel</th>
+          <th class="col-acao" aria-label="Ações"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+          <td>{{ usuario.email }}</td>
+          <td>
+            <form
+              class="form-papel"
+              method="post"
+              action="/admin/usuarios/{{ usuario.usuario_id }}/papel"
+            >
+              <select name="papel" aria-label="Papel de {{ usuario.email }}">
+                {% for papel in papeis %}
+                <option value="{{ papel }}" {% if papel == usuario.papel %}selected{% endif %}>
+                  {{ papel }}
+                </option>
+                {% endfor %}
+              </select>
+              <button
+                class="botao-mini"
+                type="submit"
+                aria-label="Salvar papel de {{ usuario.email }}"
+              >
+                Salvar
+              </button>
+            </form>
+          </td>
+          <td class="col-acao">
+            <form
+              method="post"
+              action="/admin/usuarios/{{ usuario.usuario_id }}/remover"
+            >
+              <button
+                class="botao-remover"
+                type="submit"
+                aria-label="Remover {{ usuario.email }}"
+              >
+                Remover
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

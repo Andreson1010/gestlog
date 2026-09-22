@@ -56,9 +56,14 @@ página pública **`/cadastro`** (empresa + e-mail + senha).
 - [x] **T7 — Shell + tema**: nav com **estado ativo** (aria-current), rodapé com
       usuário + **Sair** (`POST /auth/logout`) e **toggle claro/escuro** persistido
       em `localStorage` (`data-tema`), com script anti-FOUC no `<head>`.
-- [ ] **T6 — Admin (HTML)**
-  - `/admin/usuarios`: tabela de usuários, alterar papel, remover;
-    `exigir_papel("admin")`; endpoints form-encoded.
+- [x] **T6 — Admin (HTML)**
+  - `/admin/usuarios`: tabela de usuários (e-mail + papel), alterar papel e remover,
+    sob `exigir_papel("admin")`; endpoints form-encoded
+    (`POST /admin/usuarios/{id}/papel`, `POST /admin/usuarios/{id}/remover`) que
+    re-renderizam a página com erro (400 papel inválido / 409 último admin / 404
+    outro tenant) ou redirecionam (303) ao sucesso.
+  - Link **"Usuários"** na nav visível só para admin (`get_current_membership_optional`);
+    a API JSON `/empresa/usuarios*` permanece inalterada.
 
 ## Testes a atualizar (ver pesquisa)
 

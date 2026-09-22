@@ -13,9 +13,13 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from gestlog.auth import current_active_user_optional, get_current_empresa
+from gestlog.auth import (
+    current_active_user_optional,
+    get_current_empresa,
+    get_current_membership_optional,
+)
 from gestlog.config import get_settings
-from gestlog.db.models import Empresa, User
+from gestlog.db.models import Empresa, Membership, User
 from gestlog.db.session import build_engine, build_session_factory
 from gestlog.ingestion import ErroImportacao, historico, importar
 
@@ -49,6 +53,9 @@ def create_ingestion_router() -> APIRouter:
     def pagina_importar(
         request: Request,
         usuario: Annotated[User | None, Depends(current_active_user_optional)],
+        membership: Annotated[
+            Membership | None, Depends(get_current_membership_optional)
+        ],
     ) -> Response:
         """Exibe o formulário de upload; sem sessão redireciona ao login."""
         if usuario is None:
@@ -60,6 +67,7 @@ def create_ingestion_router() -> APIRouter:
                 "titulo": "Importar · gestlog",
                 "tipos": _TIPOS,
                 "email": usuario.email,
+                "admin": membership is not None and membership.papel == "admin",
             },
         )
 
@@ -93,6 +101,9 @@ def create_ingestion_router() -> APIRouter:
     def pagina_historico(
         request: Request,
         usuario: Annotated[User | None, Depends(current_active_user_optional)],
+        membership: Annotated[
+            Membership | None, Depends(get_current_membership_optional)
+        ],
         empresa: Annotated[Empresa, Depends(get_current_empresa)],
         session: Annotated[Session, Depends(get_sync_session)],
     ) -> Response:
@@ -104,6 +115,7 @@ def create_ingestion_router() -> APIRouter:
                 "titulo": "Histórico · gestlog",
                 "jobs": historico(session, empresa.id),
                 "email": usuario.email if usuario else "",
+                "admin": membership is not None and membership.papel == "admin",
             },
         )
 

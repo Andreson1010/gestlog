@@ -11,9 +11,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from gestlog.auth import current_active_user_optional, get_current_empresa_optional
+from gestlog.auth import (
+    current_active_user_optional,
+    get_current_empresa_optional,
+    get_current_membership_optional,
+)
 from gestlog.copilot import carregar_historico, texto_principal
-from gestlog.db.models import Empresa, User
+from gestlog.db.models import Empresa, Membership, User
 from gestlog.web.ingestion_ui import get_sync_session
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -28,6 +32,9 @@ def create_chat_ui_router() -> APIRouter:
         request: Request,
         usuario: Annotated[User | None, Depends(current_active_user_optional)],
         empresa: Annotated[Empresa | None, Depends(get_current_empresa_optional)],
+        membership: Annotated[
+            Membership | None, Depends(get_current_membership_optional)
+        ],
         session: Annotated[Session, Depends(get_sync_session)],
     ) -> Response:
         """Exibe a tela de chat com o histórico; sem sessão vai ao login."""
@@ -42,7 +49,12 @@ def create_chat_ui_router() -> APIRouter:
         return _TEMPLATES.TemplateResponse(
             request,
             "chat.html",
-            {"titulo": "Chat · gestlog", "turnos": turnos, "email": usuario.email},
+            {
+                "titulo": "Chat · gestlog",
+                "turnos": turnos,
+                "email": usuario.email,
+                "admin": membership is not None and membership.papel == "admin",
+            },
         )
 
     @router.get("/chat/pergunta", response_class=HTMLResponse)

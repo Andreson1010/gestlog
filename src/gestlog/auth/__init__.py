@@ -11,6 +11,7 @@ from gestlog.auth.deps import (
     get_current_empresa,
     get_current_empresa_optional,
     get_current_membership,
+    get_current_membership_optional,
     get_current_user,
     verificar_empresa_do_recurso,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "get_current_empresa",
     "get_current_empresa_optional",
     "get_current_membership",
+    "get_current_membership_optional",
     "get_current_user",
     "get_jwt_strategy",
     "get_user_db",
