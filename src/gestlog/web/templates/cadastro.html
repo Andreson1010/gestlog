@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Criar conta · gestlog{% endblock %}
+{% block layout %}
+<main class="publico">
+  <div class="cartao">
+    <div class="marca">
+      <span class="marca-selo">g</span>
+      gestlog
+    </div>
+    <h1>Criar conta</h1>
+    <form method="post" action="/cadastro">
+      <div class="campo">
+        <label for="nome_empresa">Nome da empresa</label>
+        <input
+          id="nome_empresa"
+          name="nome_empresa"
+          type="text"
+          maxlength="120"
+          required
+          value="{{ nome_empresa | default('') }}"
+        />
+      </div>
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          value="{{ email | default('') }}"
+        />
+      </div>
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input
+          id="senha"
+          name="senha"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          required
+        />
+      </div>
+      <button class="botao" type="submit">Criar conta</button>
+    </form>
+    {% if erro %}
+    <div class="aviso erro" role="alert">{{ erro }}</div>
+    {% endif %}
+    <p class="rodape-form">Já tem conta? <a href="/login">Entrar</a></p>
+  </div>
+</main>
+{% endblock %}

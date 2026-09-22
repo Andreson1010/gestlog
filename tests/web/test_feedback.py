@@ -189,7 +189,7 @@ async def test_registra_aceite_e_descarte(
     assert {registro.user_id for registro in registros} == {user_id}
 
 
-async def test_historico_exibe_fontes_e_botoes(
+async def test_historico_exibe_so_a_resposta_sem_controles(
     client: AsyncClient, app: FastAPI, engines: tuple[AsyncEngine, Engine]
 ) -> None:
     motor_async, motor_sync = engines
@@ -199,14 +199,16 @@ async def test_historico_exibe_fontes_e_botoes(
 
     pagina = await client.get("/chat")
 
-    assert "Fontes: estoque" in pagina.text
-    assert f'hx-post="/recomendacoes/{recomendacao_id}/feedback"' in pagina.text
-    assert "Aceitar" in pagina.text
-    assert "Descartar" in pagina.text
-    assert "Sem decisão" in pagina.text
+    assert "Repor SKU-1" in pagina.text
+    assert "Resposta logística" not in pagina.text
+    assert "Fontes: estoque" not in pagina.text
+    assert f'hx-post="/recomendacoes/{recomendacao_id}/feedback"' not in pagina.text
+    assert "Aceitar" not in pagina.text
+    assert "Descartar" not in pagina.text
+    assert "Sem decisão" not in pagina.text
 
 
-async def test_feedback_reflete_no_historico_sem_recarregar(
+async def test_feedback_fragmento_persiste_decisao(
     client: AsyncClient, app: FastAPI, engines: tuple[AsyncEngine, Engine]
 ) -> None:
     motor_async, motor_sync = engines
@@ -222,7 +224,10 @@ async def test_feedback_reflete_no_historico_sem_recarregar(
     assert fragmento.status_code == 200
     assert "Decisão: aceita" in fragmento.text
     assert fragmento.text.count("disabled") == 1
-    assert "Decisão: aceita" in pagina.text
+    assert [
+        registro.decisao for registro in _feedbacks(motor_sync, recomendacao_id)
+    ] == ["aceita"]
+    assert "Decisão: aceita" not in pagina.text
     assert "Sem decisão" not in pagina.text
 
 

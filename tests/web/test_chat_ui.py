@@ -146,6 +146,22 @@ async def test_pagina_chat_renderiza_formulario(
     assert "/static/app.css" in resposta.text
 
 
+async def test_pagina_chat_exibe_acao_copiar_e_rolagem(
+    client: AsyncClient, engines: tuple[AsyncEngine, Engine]
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get("/chat")
+
+    assert resposta.status_code == 200
+    assert "data-copiar-conversa" in resposta.text
+    assert "Copiar conversa" in resposta.text
+    assert 'class="conversa chat-lista"' in resposta.text
+    assert 'class="chat-corpo"' in resposta.text
+
+
 async def test_turno_sem_sessao_redireciona_ao_login(client: AsyncClient) -> None:
     resposta = await client.get(
         "/chat/pergunta", params={"pergunta": "oi"}, follow_redirects=False
@@ -219,6 +235,10 @@ async def test_pagina_chat_exibe_historico_apos_pergunta(
     assert resposta.status_code == 200
     assert "como está o estoque?" in resposta.text
     assert "Há estoque suficiente" in resposta.text
+    assert "Resposta logística" not in resposta.text
+    assert "Justificativa" not in resposta.text
+    assert "Fontes" not in resposta.text
+    assert "Aceitar" not in resposta.text
 
 
 async def test_historico_nao_vaza_entre_empresas(

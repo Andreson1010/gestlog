@@ -11,8 +11,8 @@ from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from gestlog.auth import exigir_papel
-from gestlog.db.models import Membership
+from gestlog.auth import current_active_user_optional, exigir_papel
+from gestlog.db.models import Membership, User
 from gestlog.repositories.kpis import KpiRepository
 from gestlog.web.ingestion_ui import get_sync_session
 
@@ -36,6 +36,7 @@ def create_kpis_router() -> APIRouter:
     @router.get("/kpis")
     def pagina_kpis(
         request: Request,
+        usuario: Annotated[User | None, Depends(current_active_user_optional)],
         vinculo: Annotated[Membership, Depends(exigir_papel("admin", "gestor"))],
         session: Annotated[Session, Depends(get_sync_session)],
         desde: date | None = None,
@@ -53,6 +54,7 @@ def create_kpis_router() -> APIRouter:
                 "kpis": resumo,
                 "desde": desde.isoformat() if desde else "",
                 "ate": ate.isoformat() if ate else "",
+                "email": usuario.email if usuario else "",
             },
         )
 

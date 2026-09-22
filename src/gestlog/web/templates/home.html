@@ -1,7 +1,28 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Bem-vindo ao gestlog</h1>
-<p>Você está autenticado como <strong>{{ email }}</strong>.</p>
-<p>Use <a href="/importar">Importar</a> para carregar seus dados ou
-<a href="/chat">Chat</a> para pedir recomendações.</p>
+<div class="pagina">
+  <div class="hero">
+    <h1>Bem-vindo ao gestlog</h1>
+    <p>
+      Você está autenticado como <strong>{{ email }}</strong>. Comece importando
+      seus dados ou pergunte ao copiloto logístico.
+    </p>
+  </div>
+  <section class="acoes" aria-label="Ações rápidas">
+    <a class="acao-card" href="/importar">
+      <span class="acao-icone">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+      </span>
+      <span class="acao-titulo">Importar dados</span>
+      <p class="acao-texto">Carregue planilhas de estoque, fornecedores e transporte.</p>
+    </a>
+    <a class="acao-card" href="/chat">
+      <span class="acao-icone">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z" /></svg>
+      </span>
+      <span class="acao-titulo">Chat do copiloto</span>
+      <p class="acao-texto">Peça recomendações sobre estoque, fornecedores ou transporte.</p>
+    </a>
+  </section>
+</div>
 {% endblock %}
