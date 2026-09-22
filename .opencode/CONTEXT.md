@@ -1,17 +1,17 @@
 # Contexto da Sessão — UI beautifului: pente geral, tema e chat enxuto
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-22.
-> Branch atual: `feat/ui-beautifului` (integração) · HEAD: `d18918a`.
-> **PR [#42](https://github.com/Andreson1010/gestlog/pull/42) squash-merged**; branch da task apagada.
+> Branch atual: `feat/ui-beautifului` (integração) · HEAD: `e5e8688`.
+> PRs **#42 e #43 squash-merged**; branches de task apagadas.
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
 - `main` = `5845358` (= `origin/main`) · tag `v0.1.0` = `1c0768c`.
-- **UI overhaul MERGEADO na integração**: `feat/ui-beautifului` = `d18918a` (squash do PR #42),
-  pushada. Working tree limpo exceto `opencode.json` (MCPs, não meu).
-- **Meu gate local**: **270 passed, 98,31%**; `black`/`ruff` verdes (verificado nesta sessão).
+- **UI overhaul MERGEADO na integração**: `feat/ui-beautifului` = `e5e8688` (squash dos PR #42
+  + #43), pushada. Working tree limpo exceto `opencode.json` (MCPs, não meu).
+- **Meu gate local**: **279 passed, 98,34%**; `black`/`ruff` verdes (verificado nesta sessão).
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
   fora do repo em `...\Temp\opencode\gestlog_dev\serve_dev.py` (sem `--reload`); **Ollama ativo**.
@@ -53,9 +53,15 @@ Concluído e validado no navegador (tema escuro **e** claro):
     → rótulo agora em `[data-rotulo-copiar]`; lição **L-012** gravada.
 - Commit `d9fada7` empilha T1+T2+T3+T7 + pente geral; `feat/ui-beautifului` pushada e **PR #42**
   aberto contra a integração e **squash-mergeado** (`d18918a`); branch `feat/ui-beautifului-t3` apagada.
+- **T6 — Admin HTML** implementado, self-review (ADR `docs/adr/ui-beautifului-t6-admin-self-review.md`)
+  e code review (APPROVE) aplicados; **PR #43** aberto, CI verde e **squash-mergeado** (`e5e8688`).
+  - Página `/admin/usuarios` sob `exigir_papel("admin")`: lista, altera papel e remove via endpoints
+    form-encoded (PRG 303; erros 400/404/409 espelhando a API JSON). API JSON intacta.
+  - Nav "Usuários" só para admin, via novo `get_current_membership_optional` (flag `admin` no shell).
+  - `tests/web/test_admin_ui.py` (8 casos, incluindo tenancy e guard do último admin). Lição **L-013**.
+  - Branch `feat/ui-beautifului-t6-admin` (HEAD `5efda13`) apagada (local + remota).
 
-Pendente: ADR de self-review da task (retroativo, se exigido), T4 (parcial) e T6 (admin),
-depois o PR de release `feat/ui-beautifului → main` + tag.
+Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului → main` + tag.
 
 ## Decisões e regras (não esquecer)
 
@@ -75,8 +81,8 @@ depois o PR de release `feat/ui-beautifului → main` + tag.
 
 ## Próximos passos / bloqueios
 
-1. **CONCLUÍDO**: PR **#42** squash-mergeado na integração (`d18918a`); CI verde; branch da task apagada.
-2. **PENDENTE**: **T6** (admin HTML). **T4** parcial (falta dropzone/status card — opcional).
+1. **CONCLUÍDO**: PR **#42** (`d18918a`) e PR **#43** (`e5e8688`) squash-mergeados; branches apagadas.
+2. **PENDENTE/opcional**: **T4** parcial (dropzone/status card — opcional). **T6** concluído.
 3. **PENDENTE**: ao fim da UI, **PR de release** `feat/ui-beautifului → main` + tag.
 4. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido futuro do usuário).
 5. **F2 (próximo épico)**: tools de escrita/ação com HITL — AD-001.
@@ -87,9 +93,9 @@ depois o PR de release `feat/ui-beautifului → main` + tag.
 
 - ` M opencode.json` — **não fui eu**: ganhou os MCPs `chrome-devtools` e `context7` (deixado
   fora do commit da UI de propósito).
-- Todo o restante foi commitado e mergeado (`d18918a`); árvore limpa exceto o `opencode.json`.
-- Branches: `feat/ui-beautifului` (integração, HEAD `d18918a`, pushada); `main` = `5845358`.
-  PR #42 **mergeado**; branch da task apagada.
+- Todo o restante foi commitado e mergeado (`e5e8688`); árvore limpa exceto o `opencode.json`.
+- Branches: `feat/ui-beautifului` (integração, HEAD `e5e8688`, pushada); `main` = `5845358`.
+  PRs #42 e #43 **mergeados**; branches de task apagadas.
 
 ## Artefatos do graphify
 
@@ -105,11 +111,11 @@ depois o PR de release `feat/ui-beautifului → main` + tag.
 - `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` (AD-001..AD-030).
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` (34/34);
-  **`docs/specs/features/ui-beautifului/tasks.md`** (T1–T3/T5/T7 feitos; T4 parcial; T6 pendente).
+  **`docs/specs/features/ui-beautifului/tasks.md`** (T1–T3/T5/T6/T7 feitos; T4 parcial).
 - `docs/adr/`: `supervisor-loop-chat-self-review.md`, `ui-beautifului-t1-self-review.md`,
-  `memoria-auto-melhoria-self-review.md` + os `t13..t34`.
-- Código UI: `src/gestlog/web/{app,chat_ui,chat,onboarding,ingestion_ui,kpis,admin,feedback}.py`,
-  `templates/{base,login,cadastro,chat,chat_turno,_feedback,home,importar,importar_resultado,historico,kpis}.html`,
+  `ui-beautifului-t6-admin-self-review.md`, `memoria-auto-melhoria-self-review.md` + os `t13..t34`.
+- Código UI: `src/gestlog/web/{app,chat_ui,chat,onboarding,ingestion_ui,kpis,admin,admin_ui,feedback}.py`,
+  `templates/{base,login,cadastro,chat,chat_turno,_feedback,home,importar,importar_resultado,historico,kpis,admin_usuarios}.html`,
   `static/{tokens.css,app.css,chat.css}`.
 - `.opencode/LESSONS.md`, `.opencode/plugin/self-learning.ts`, `.opencode/command/{lesson,end}.md`,
   `.opencode/skills/{build-with-tests,code-reviewer,feature-factory,git-workflow,ship-feature,write-fluid-hybrid-adr}`.
@@ -120,7 +126,8 @@ depois o PR de release `feat/ui-beautifului → main` + tag.
 
 - **2026-09-22**: code review do pente geral (skill `code-reviewer`), correções (split `chat.css`,
   CSS legado removido, ícone do copiar — L-012), commit `d9fada7`; **PR #42** aberto, CI verde,
-  **squash-merge** na integração `feat/ui-beautifului` (`d18918a`); branch da task apagada.
+  **squash-merge** na integração `feat/ui-beautifului` (`d18918a`). Depois **T6** (admin HTML):
+  self-review + ADR, code review APPROVE, **PR #43** squash-mergeado (`e5e8688`); branch da task apagada.
 - **2026-09-21 (sessão anterior)**: pente geral da UI (shell/tema/home/importar/histórico/kpis),
   redesign do chat (full-height, copiar, rolagem) e chat enxuto (só a resposta); WIP não commitado.
 - **2026-09-21**: memória de auto-melhoria (PR #38); fix do supervisor/SSE (PR #40);
