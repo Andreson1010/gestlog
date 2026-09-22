@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-015 · 2026-09-22 · repositórios/domínio
+- **Gatilho**: agrupar status em constantes de módulo num repositório que serve tanto à trilha quanto à purga.
+- **Erro**: nomeei `_STATUS_TERMINAIS = ("aplicado", "falhou")`, mas o design define terminais como `rejeitado/aplicado/falhou`; a purga usava outro conjunto (`_STATUS_DECIDIDOS`), e o nome errado escondia que a trilha P2 ("correções aplicadas") é um recorte distinto da terminalidade.
+- **Regra**: nomeie cada conjunto pelo critério real (`_STATUS_TERMINAIS` = transições finais do design; `_STATUS_TRILHA` = recorte de escrita) e explique no docstring por que a trilha difere do terminal.
+- **Evidência**: self-review T2; `repositories/correcoes.py` passou a ter `_STATUS_TERMINAIS`/`_STATUS_TRILHA` e o teste `test_listar_trilha_ignora_rejeitado` fixa o recorte.
+
 ## L-014 · 2026-09-22 · git/PR
 - **Gatilho**: abrir o PR de uma branch de task cuja base é uma branch de integração criada localmente na sessão.
 - **Erro**: criei `feat/f2-hitl` local mas não a pushei; `gh pr create --base feat/f2-hitl` falhou ("Base ref must be a branch").
