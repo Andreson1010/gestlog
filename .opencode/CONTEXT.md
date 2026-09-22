@@ -1,136 +1,139 @@
-# Contexto da Sessão — F1 entregue (v0.1.0) e teste local do app
+# Contexto da Sessão — UI beautifului: pente geral, tema e chat enxuto
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-18.
-> Branch: `main` · HEAD: `156d749` · tag: `v0.1.0` (`1c0768c`)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-22.
+> Branch atual: `feat/ui-beautifului` (integração) · HEAD: `e5e8688`.
+> PRs **#42 e #43 squash-merged**; branches de task apagadas.
 
 ## Estado atual
 
-- **gestlog**: fluxo multiagente em LangGraph (supervisor + especialistas
-  transporte / fornecedores / estoque) com tools `@tool`. Remote `origin` =
-  https://github.com/Andreson1010/gestlog (privado).
-- **F1 (MVP) CONCLUÍDA E RELEASADA**: 34/34 tasks; release PR #35 (`feat/f1-mvp →
-  main`, squash `1c0768c`) + tag/release `v0.1.0`; `main` é a base agora.
-- **Suíte**: **248 testes, 98,26% de cobertura** (`uv run pytest`); CI
-  (`black --check`, `ruff check`, `pytest` gate 80%) verde em PRs e push. Python
-  3.14.3 no `.venv` (projeto exige `>=3.11`).
-- `main` = `156d749` (= `origin/main`, sincronia). Árvore limpa exceto
-  `.playwright-mcp/` (não commitado, ver WIP). Tag local/remota `v0.1.0` presente.
-- Stack travado (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) +
-  FastAPI Users; entrega por 1 PR/task com self-review (ADR) + code review (AD-016).
+- **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
+  com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
+- `main` = `5845358` (= `origin/main`) · tag `v0.1.0` = `1c0768c`.
+- **UI overhaul MERGEADO na integração**: `feat/ui-beautifului` = `e5e8688` (squash dos PR #42
+  + #43), pushada. Working tree limpo exceto `opencode.json` (MCPs, não meu).
+- **Meu gate local**: **279 passed, 98,34%**; `black`/`ruff` verdes (verificado nesta sessão).
+- Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
+- **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
+  fora do repo em `...\Temp\opencode\gestlog_dev\serve_dev.py` (sem `--reload`); **Ollama ativo**.
 
 ## O que foi feito nesta sessão
 
-- **T24 — Redação de PII** (`src/gestlog/privacy/`): `redact` regex + allowlist, sem
-  LLM. PR #25, AD-020, ADR `t24-redacao-pii-self-review.md`.
-- **T25 — Integrar PII no copiloto**: pergunta redigida vai ao LLM **e** é a
-  persistida (`Message.conteudo_redigido`); original não circula. PR #26, AD-021.
-- **T26 — Auditoria e retenção** (`src/gestlog/audit/`): catálogo validado +
-  `registrar_evento` (sem commit) e `purgar_expiradas` por empresa. PR #27, AD-022.
-- **T27 — Uso/quota** (`copilot/metering.py`): `record_usage`, `check_quota` (mês,
-  `QuotaExcedida`). PR #28, AD-023.
-- **T28 — Integrar uso/quota**: `AgentState.tokens_usados`; bloqueio pré-chamada com
-  `MENSAGEM_QUOTA_EXCEDIDA`. PR #29, AD-024.
-- **T29 — Golden set** (`src/gestlog/evaluation/`, `evals/golden_set.json`). PR #30,
-  AD-025.
-- **T30 — Script de avaliação** (`evaluation/script.py`, `relatorio.py`,
-  `evals/run_golden_set.py`). PR #31, AD-026.
-- **T31 — Admin usuários/papéis** (`web/admin.py`, `auth/accounts.py`). PR #32,
-  AD-027.
-- **T32 — Dashboard de KPIs** (`repositories/kpis.py`, `web/kpis.py`, `kpis.html`).
-  PR #33, AD-028.
-- **T33 — Aceitação P1** (`tests/acceptance/test_f1_mvp.py`, 20 testes). PR #34,
-  AD-029.
-- **Release**: PR #35 `feat/f1-mvp → main` (squash `1c0768c`) + tag/release
-  `v0.1.0`; docs finais no PR #36 (`156d749`).
-- **Teste local**: subi o app web real com um harness de dev (SQLite compartilhado +
-  Ollama), com conta e dados demo; validei login e páginas no navegador (Playwright).
-  Detalhes em WIP/Próximos.
+Concluído e validado no navegador (tema escuro **e** claro):
+
+- **Shell/T7**: nav com **estado ativo** (`aria-current`), **"Indicadores" saiu do menu**
+  (rota `/kpis` e feature KPI-01 preservadas), rodapé com **usuário + Sair**
+  (`POST /auth/logout`) e **toggle claro/escuro** persistido (`localStorage` + `data-tema`,
+  script anti-FOUC no `<head>`, `[data-tema="claro"]` em `tokens.css`).
+- **Home**: dashboard com **cards de ação** (Importar/Chat).
+- **Importar**: **painel compacto** (largura de leitura) + `input[type=file]` estilizado.
+- **Histórico**: tabela em painel + **chip** de status.
+- **KPIs**: filtro/datas e cards estilizados (apesar de fora do menu).
+- **Chat (redesign)**: **full-height**, lista **rolável** no topo, composer **fixo embaixo**;
+  pergunta em bolha à direita e resposta **separada**; **auto-scroll**; **Copiar conversa**
+  (sessão inteira via Clipboard API + fallback). SSE validado ao vivo.
+- **Chat enxuto (a pedido)**: só o corpo da resposta. Removidos rótulo "Copiloto resposta",
+  "Resposta logística:", "Justificativa:", "Fontes:" e o bloco "Sem decisão/Aceitar/Descartar".
+  `CopilotService.answer()` devolve `recomendacao.texto`; `chat_ui` aplica `texto_principal()`
+  ao reidratar (limpa histórico antigo). **Justificativa/fontes seguem na `Recommendation`**.
+- **Runs de rota** passaram `email` ao shell (`chat_ui`, `ingestion_ui`, `kpis`).
+- **Testes**: novo `tests/web/test_shell.py`; atualizados `test_chat_ui`, `test_chat_sse`,
+  `test_feedback`, `test_service`, `test_f1_mvp`; corrigida lição L-011.
+- Correções do code review (T1/T2), também não commitadas: `schemas.py` (strip de
+  `nome_empresa`) e `test_cadastro.py` (`IntegrityError` 409 + nome só-espaços).
+
+### Sessão 2026-09-22 (continuação)
+
+- **Code review** (skill `code-reviewer`) executado sobre todo o WIP; achados corrigidos e
+  commitados em `d9fada7`:
+  - **HIGH** `app.css` 874 linhas > 800 → seção de chat extraída para `static/chat.css`
+    (`@import` no topo do `app.css`).
+  - **MEDIUM** CSS legado sem uso removido (L-010): `.chat-abas`, `.chat-aba`, `.chat-painel`,
+    `.fontes`, `.form-login`.
+  - **MEDIUM** botão "Copiar conversa" perdia o `<svg>` na 1ª cópia (`textContent` apaga filhos)
+    → rótulo agora em `[data-rotulo-copiar]`; lição **L-012** gravada.
+- Commit `d9fada7` empilha T1+T2+T3+T7 + pente geral; `feat/ui-beautifului` pushada e **PR #42**
+  aberto contra a integração e **squash-mergeado** (`d18918a`); branch `feat/ui-beautifului-t3` apagada.
+- **T6 — Admin HTML** implementado, self-review (ADR `docs/adr/ui-beautifului-t6-admin-self-review.md`)
+  e code review (APPROVE) aplicados; **PR #43** aberto, CI verde e **squash-mergeado** (`e5e8688`).
+  - Página `/admin/usuarios` sob `exigir_papel("admin")`: lista, altera papel e remove via endpoints
+    form-encoded (PRG 303; erros 400/404/409 espelhando a API JSON). API JSON intacta.
+  - Nav "Usuários" só para admin, via novo `get_current_membership_optional` (flag `admin` no shell).
+  - `tests/web/test_admin_ui.py` (8 casos, incluindo tenancy e guard do último admin). Lição **L-013**.
+  - Branch `feat/ui-beautifului-t6-admin` (HEAD `5efda13`) apagada (local + remota).
+
+Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului → main` + tag.
 
 ## Decisões e regras (não esquecer)
 
-- **PII (T24/T25)**: determinístico, sem LLM; over-redação é o erro seguro; a versão
-  redigida é a enviada e a persistida; `texto_resposta` é público no copiloto.
-- **Auditoria (T26)**: `registrar_evento` sem commit (entra na unidade de trabalho);
-  `detalhe` só metadados, nunca PII; SQL de purga só em `repositories/`.
-- **Uso/quota (T27/T28)**: quota mensal por empresa via `Settings`; bloqueio
-  best-effort pré-chamada; `QuotaExcedida` vira mensagem, sem derrubar a sessão.
-- **Admin (T31)**: rotas sob `exigir_papel("admin")`; 404 entre empresas; último
-  admin protegido (409); remoção apaga o vínculo (revoga acesso).
-- **KPIs (T32)**: decisão vigente "última vence"; cobertura é snapshot; período em
-  UTC inclusivo; guard admin/gestor.
-- **Débito GUID/Uuid**: `Membership.user_id` (`Uuid`) × `User.id` (`GUID`) não fazem
-  JOIN no SQLite; contornado com `IN` (AD-027). Alinhar exige migration.
-- **Modelo LLM**: configurável em `src/gestlog/config.py` (`LLM_MODEL`,
-  `SUPERVISOR_MODEL`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_TEMPERATURE`); usados em
-  `src/gestlog/llm.py`; recomendação com `SUPERVISOR_MODEL` separado em `graph.py`.
-  A troca exige reiniciar o processo (`get_settings` é `lru_cache`).
+- **UI = port do beautifului para Jinja2+HTMX/SSE**, sem React/Tailwind/build. Tokens oklch
+  + Inter; HTMX/SSE via CDN com SRI (assertado em teste).
+- **Chat mostra só o corpo**: sem rótulo de agente, "Resposta logística:/Justificativa:/Fontes:"
+  nem feedback. Persistência de justificativa/fontes **não** foi removida (vai para relatórios).
+- **Roadmap UI (intenção do usuário)**: adiante **geração de relatório com gráficos e tabelas**,
+  consumindo `Recommendation`/turnos; decidir se KPIs (fora do menu) voltam nesse formato.
+- **Tema**: escuro é o padrão; toggle inverte para claro e persiste (`gestlog-tema`).
+- **Indicadores**: fora do menu; rota/KPI-01 continuam (não deletadas).
+- **Entrega faseada**: integração `feat/ui-beautifului` recebe T1..T7 por PR; só `main` no fim
+  (release + tag). Task atual empilha T1+T2+T3+T7 + pente geral num PR só.
+- **Supervisor anti-loop**: repetir especialista → `FINISH`; multi-especialista preservado.
+- **`/cadastro`**: `Form()` sempre com default `""` (senão 422 JSON — L-009).
+- **Memória de auto-melhoria**: `.opencode/LESSONS.md` (teto ~40 linhas, consolidado nesta sessão).
 
 ## Próximos passos / bloqueios
 
-1. **F1 entregue (v0.1.0)** — nada pendente do épico. Próximo épico: **F2** (tools de
-   escrita/ação com HITL — AD-001).
-2. **Teste local (opcional retomar)**: o harness de dev está/estava rodando em
-   `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`). O chat com o
-   `qwen2.5:3b` (único baixado) tende a responder **insuficiência** por não fechar a
-   recomendação com fontes. Para melhorar: baixar `qwen2.5:7b` e reiniciar apontando
-   `LLM_MODEL`; ou rodar com modelo fake determinístico.
-3. **Débito T23**: botões no turno ao vivo (SSE) e ordenação monotônica de mensagens.
-4. **Débitos T20/T31**: `UniqueConstraint(empresa_id, user_id)`; reavaliar
-   `String(4000)`/`Text`; mover `get_sync_session` para `web/deps.py`; alinhar
-   `Membership.user_id` a `User.id`.
-5. **Pendência pós-T17**: remover `TOOLS` mock do REPL quando a CLI ganhar banco.
-6. **Auditoria faltante**: feedback e importação ainda não registram em `AuditLog`.
-7. **CI**: `black`/`ruff` rodam em `src/ tests/` (o launcher `evals/` fica fora do
-   workflow); alinhar em passada futura.
+1. **CONCLUÍDO**: PR **#42** (`d18918a`) e PR **#43** (`e5e8688`) squash-mergeados; branches apagadas.
+2. **PENDENTE/opcional**: **T4** parcial (dropzone/status card — opcional). **T6** concluído.
+3. **PENDENTE**: ao fim da UI, **PR de release** `feat/ui-beautifului → main` + tag.
+4. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido futuro do usuário).
+5. **F2 (próximo épico)**: tools de escrita/ação com HITL — AD-001.
+6. Débitos: T23 (botões de feedback agora **sem uso no chat**), T20/T31, auditoria de
+   feedback/importação, CI sem `evals/`.
 
 ## WIP local (não commitado)
 
-- `?? .playwright-mcp/` — 6 arquivos gerados pelo Playwright durante o teste do app
-  (console log + snapshots YAML). Pode ser apagado; não é código.
-- **Nenhuma alteração de código pendente**; `main` sincronizada com `origin/main`.
-- **Harness de dev fora do repo** (não versionado):
-  `C:\Users\ander\AppData\Local\Temp\opencode\gestlog_dev\serve_dev.py` (SQLite
-  compartilhado async/sync, seed da conta demo, `LLM_MODEL` do ambiente com fallback
-  `qwen2.5:3b`). Banco em `...\gestlog_dev\dev.db`; logs `out.log`/`err.log`; PID em
-  `pid.txt`. Ollama iniciado localmente (`ollama serve`). **Pode haver um servidor
-  ainda escutando em `127.0.0.1:8000`** — encerrar com `Stop-Process` no PID do
-  `python` correspondente, se necessário.
+- ` M opencode.json` — **não fui eu**: ganhou os MCPs `chrome-devtools` e `context7` (deixado
+  fora do commit da UI de propósito).
+- Todo o restante foi commitado e mergeado (`e5e8688`); árvore limpa exceto o `opencode.json`.
+- Branches: `feat/ui-beautifului` (integração, HEAD `e5e8688`, pushada); `main` = `5845358`.
+  PRs #42 e #43 **mergeados**; branches de task apagadas.
 
 ## Artefatos do graphify
 
-- **graphify indisponível para o gestlog.** `graphify_graph_stats` e
-  `graphify_god_nodes` retornaram
-  `graph.json not found: C:\Users\ander\8_projetos\gestlog\graphify-out\graph.json`.
-  **Nenhum número registrado (não verificado); não inventar valores.**
-- Não há `graphify-out/graph.json` no repo. Comunidades afetadas: **não verificado**.
+- **graphify indisponível** nesta sessão: nenhuma tool `graphify_*` acessível (MCP `context7`
+  apenas). `GRAPH_REPORT.md` **ausente** no repo. Números anteriores (de `5845358`, pré-UI) —
+  **não verificados nesta sessão**: ~2032 nós / ~5066 arestas / ~110 comunidades; god nodes
+  `Settings`, `get_settings()`, `Membership`, `User`, `Empresa`, `build_graph()`.
+- Rodar `graphify update .` quando o MCP estiver acessível.
 
 ## Documentos de projeto relevantes
 
-- `AGENTS.md`, `README.md`, `Makefile`, `pyproject.toml`, `opencode.json`,
-  `.env.example` (raiz).
+- `AGENTS.md`, `README.md`, `Makefile`, `pyproject.toml`, `opencode.json`, `.env.example`.
 - `docs/business/PRD.md`.
-- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — decisões AD-001..AD-029.
-- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` — F1 (tasks 34/34).
-- `docs/specs/codebase/TESTING.md`.
-- `docs/adr/t13..t33 + t34` (22 self-reviews em `docs/adr/*-self-review.md`).
-- Código: `src/gestlog/{config,llm,graph,state,cli}.py`, `agents/`, `tools/`,
-  `db/`, `repositories/{conversations,kpis,telemetry,...}.py`, `auth/`, `web/`,
-  `copilot/{service,metering}.py`, `privacy/`, `audit/`, `evaluation/`, `ingestion/`.
-- `evals/{golden_set.json,run_golden_set.py}`; `tests/acceptance/test_f1_mvp.py`.
-- `.opencode/skills/`: build-with-tests, code-reviewer, feature-factory,
-  git-workflow, ship-feature, write-fluid-hybrid-adr.
-- `.opencode/agent/`, `.opencode/command/`.
+- `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` (AD-001..AD-030).
+- `docs/specs/features/f1-mvp/{spec,design,tasks}.md` (34/34);
+  **`docs/specs/features/ui-beautifului/tasks.md`** (T1–T3/T5/T6/T7 feitos; T4 parcial).
+- `docs/adr/`: `supervisor-loop-chat-self-review.md`, `ui-beautifului-t1-self-review.md`,
+  `ui-beautifului-t6-admin-self-review.md`, `memoria-auto-melhoria-self-review.md` + os `t13..t34`.
+- Código UI: `src/gestlog/web/{app,chat_ui,chat,onboarding,ingestion_ui,kpis,admin,admin_ui,feedback}.py`,
+  `templates/{base,login,cadastro,chat,chat_turno,_feedback,home,importar,importar_resultado,historico,kpis,admin_usuarios}.html`,
+  `static/{tokens.css,app.css,chat.css}`.
+- `.opencode/LESSONS.md`, `.opencode/plugin/self-learning.ts`, `.opencode/command/{lesson,end}.md`,
+  `.opencode/skills/{build-with-tests,code-reviewer,feature-factory,git-workflow,ship-feature,write-fluid-hybrid-adr}`.
 
 ---
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-18 (esta)**: T24–T33 concluídas e mergeadas (AD-020..AD-029); F1 completa
-  (34/34); release PR #35 + tag `v0.1.0`; docs PR #36; teste local do app web
-  (harness SQLite/Ollama, login demo validado no navegador).
-- **2026-09-17**: T21 (PR #22, `88f5b38`), T22 (PR #23, `0dfc1dc`), T23 (PR #24,
-  `5bcac81`); STATE ganhou AD-017/018/019; 139→157 testes.
-- **2026-09-17 (anterior)**: T20 mergeada (PR #21, `0ab9e03` — histórico/tenancy).
-- **2026-09-16**: skill `write-fluid-hybrid-adr`; T19 (PR #20, `450df94` — UI chat).
-- **2026-09-15**: T14–T18/T34 (PRs mesclados); 109→125 testes.
+- **2026-09-22**: code review do pente geral (skill `code-reviewer`), correções (split `chat.css`,
+  CSS legado removido, ícone do copiar — L-012), commit `d9fada7`; **PR #42** aberto, CI verde,
+  **squash-merge** na integração `feat/ui-beautifului` (`d18918a`). Depois **T6** (admin HTML):
+  self-review + ADR, code review APPROVE, **PR #43** squash-mergeado (`e5e8688`); branch da task apagada.
+- **2026-09-21 (sessão anterior)**: pente geral da UI (shell/tema/home/importar/histórico/kpis),
+  redesign do chat (full-height, copiar, rolagem) e chat enxuto (só a resposta); WIP não commitado.
+- **2026-09-21**: memória de auto-melhoria (PR #38); fix do supervisor/SSE (PR #40);
+  graphify no gestlog (PR #41); UI beautifului T1–T3.
+- **2026-09-18**: T24–T33; F1 completa (34/34); release PR #35 + tag `v0.1.0`; docs PR #36.
+- **2026-09-17**: T21 (PR #22), T22 (PR #23), T23 (PR #24); AD-017/018/019; 139→157 testes.
+- **2026-09-16**: skill `write-fluid-hybrid-adr`; T19 (UI chat).
+- **2026-09-15**: T14–T18/T34; 109→125 testes.
 - **2026-09-11..14**: scaffold `.opencode/`, PRD/TLC, F1 planejada, T1–T13.

@@ -1,10 +1,11 @@
 # State
 
-**Last Updated:** 2026-09-18
-**Current Work:** F1 (MVP) **entregue e releasada** — `main` (@ `1c0768c`) com a
-tag `v0.1.0` (release PR #35); 34/34 tasks. Próximo épico: **F2** (tools de
-escrita/ação com HITL). Detalhe por task em `docs/specs/features/f1-mvp/tasks.md` e
-no handoff `.opencode/CONTEXT.md`.
+**Last Updated:** 2026-09-22
+**Current Work:** F1 (MVP) entregue (`v0.1.0`) e **UI overhaul (beautifului) entregue**
+(`v0.2.0`, PRs #42/#43/#44 na integração `feat/ui-beautifului`): shell/tema, login/cadastro,
+chat enxuto, home, importar (dropzone + status card), histórico, KPIs e admin HTML (`/admin/usuarios`).
+Próximo épico: **F2** (tools de escrita/ação com HITL). Detalhe em
+`docs/specs/features/ui-beautifului/tasks.md` e no handoff `.opencode/CONTEXT.md`.
 
 ---
 

@@ -1,41 +1,47 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Indicadores</h1>
-<form class="form-periodo" method="get" action="/kpis">
-  <label for="desde">De</label>
-  <input id="desde" name="desde" type="date" value="{{ desde }}" />
-  <label for="ate">Até</label>
-  <input id="ate" name="ate" type="date" value="{{ ate }}" />
-  <button type="submit">Filtrar</button>
-</form>
-<section class="kpis" aria-label="Indicadores da empresa">
-  <div class="kpi">
-    <span class="valor">{{ kpis.conversas }}</span>
-    <span class="rotulo">Conversas</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ kpis.perguntas }}</span>
-    <span class="rotulo">Perguntas</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ kpis.recomendacoes }}</span>
-    <span class="rotulo">Recomendações</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ "%.0f"|format(kpis.taxa_aceitacao * 100) }}%</span>
-    <span class="rotulo">Aceitação</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ kpis.aceitas }}</span>
-    <span class="rotulo">Aceitas</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ kpis.descartadas }}</span>
-    <span class="rotulo">Descartadas</span>
-  </div>
-  <div class="kpi">
-    <span class="valor">{{ kpis.cobertura_dados }}</span>
-    <span class="rotulo">Cobertura de dados</span>
-  </div>
-</section>
+<div class="pagina">
+  <h1>Indicadores</h1>
+  <form class="form-periodo" method="get" action="/kpis">
+    <div>
+      <label for="desde">De</label>
+      <input id="desde" name="desde" type="date" value="{{ desde }}" />
+    </div>
+    <div>
+      <label for="ate">Até</label>
+      <input id="ate" name="ate" type="date" value="{{ ate }}" />
+    </div>
+    <button type="submit">Filtrar</button>
+  </form>
+  <section class="kpis" aria-label="Indicadores da empresa">
+    <div class="kpi">
+      <span class="valor">{{ kpis.conversas }}</span>
+      <span class="rotulo">Conversas</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ kpis.perguntas }}</span>
+      <span class="rotulo">Perguntas</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ kpis.recomendacoes }}</span>
+      <span class="rotulo">Recomendações</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ "%.0f"|format(kpis.taxa_aceitacao * 100) }}%</span>
+      <span class="rotulo">Aceitação</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ kpis.aceitas }}</span>
+      <span class="rotulo">Aceitas</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ kpis.descartadas }}</span>
+      <span class="rotulo">Descartadas</span>
+    </div>
+    <div class="kpi">
+      <span class="valor">{{ kpis.cobertura_dados }}</span>
+      <span class="rotulo">Cobertura de dados</span>
+    </div>
+  </section>
+</div>
 {% endblock %}

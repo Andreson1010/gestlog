@@ -6,7 +6,6 @@ QUA-01..02. O modelo de chat é o fake injetado (nenhum teste toca Ollama).
 
 from __future__ import annotations
 
-import re
 from collections.abc import AsyncIterator, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -29,6 +28,7 @@ from gestlog.db.models import (
     Conversation,
     Empresa,
     Membership,
+    Recommendation,
     UsageRecord,
     User,
 )
@@ -174,10 +174,43 @@ def _empresa_id(fabrica: sessionmaker[Session], email: str) -> UUID:
         return vinculo.empresa_id
 
 
-def _recomendacao_id(html: str) -> UUID:
-    casado = re.search(r"/recomendacoes/([0-9a-f-]+)/feedback", html)
-    assert casado is not None, html
-    return UUID(casado.group(1))
+def _recomendacao_do_usuario(
+    fabrica: sessionmaker[Session], email: str
+) -> Recommendation:
+    """Devolve a recomendação do turno gravado para o usuário informado."""
+    with fabrica() as session:
+        usuario = (
+            session.execute(select(User).where(User.email == email)).scalars().first()
+        )
+        assert usuario is not None
+        vinculo = (
+            session.execute(select(Membership).where(Membership.user_id == usuario.id))
+            .scalars()
+            .first()
+        )
+        assert vinculo is not None
+        conversa = (
+            session.execute(
+                select(Conversation).where(
+                    Conversation.empresa_id == vinculo.empresa_id,
+                    Conversation.user_id == usuario.id,
+                )
+            )
+            .scalars()
+            .first()
+        )
+        assert conversa is not None
+        recomendacao = (
+            session.execute(
+                select(Recommendation).where(
+                    Recommendation.conversation_id == conversa.id
+                )
+            )
+            .scalars()
+            .first()
+        )
+        assert recomendacao is not None
+        return recomendacao
 
 
 async def test_acc_01_admin_cria_conta_e_administra_o_tenant(
@@ -369,7 +402,10 @@ async def test_cop_03_sem_base_informa_insuficiencia(
 
 
 async def test_cop_04_recomendacao_explicada(
-    client: AsyncClient, app: FastAPI, fake_model_cls: type
+    client: AsyncClient,
+    app: FastAPI,
+    fake_model_cls: type,
+    fabrica_sync: sessionmaker[Session],
 ) -> None:
     _usar_modelo(
         app,
@@ -388,8 +424,12 @@ async def test_cop_04_recomendacao_explicada(
     texto = await _conversar(client, "o que fazer?")
 
     assert "Repor SKU-1" in texto
-    assert "Justificativa: abaixo do mínimo" in texto
-    assert f"Fontes: {_FONTES}" in texto
+    assert "Justificativa" not in texto
+    assert "Fontes" not in texto
+
+    recomendacao = _recomendacao_do_usuario(fabrica_sync, "op@cop.com")
+    assert recomendacao.justificativa == "abaixo do mínimo"
+    assert recomendacao.fontes == [_FONTES]
 
 
 async def test_cop_05_fora_de_escopo(
@@ -424,8 +464,11 @@ async def test_cop_06_resposta_em_streaming(
     assert "event: fim" in resposta.text
 
 
-async def test_cop_aceite_registra_decisao_e_historico(
-    client: AsyncClient, app: FastAPI, fake_model_cls: type
+async def test_cop_aceite_registra_decisao(
+    client: AsyncClient,
+    app: FastAPI,
+    fake_model_cls: type,
+    fabrica_sync: sessionmaker[Session],
 ) -> None:
     _usar_modelo(
         app,
@@ -438,16 +481,12 @@ async def test_cop_aceite_registra_decisao_e_historico(
     await _login(client, "op@cop.com")
     await _conversar(client, "o que fazer?")
 
-    pagina = await client.get("/chat")
-    recommendation_id = _recomendacao_id(pagina.text)
+    recomendacao = _recomendacao_do_usuario(fabrica_sync, "op@cop.com")
     feedback = await client.post(
-        f"/recomendacoes/{recommendation_id}/feedback", data={"decisao": "aceita"}
+        f"/recomendacoes/{recomendacao.id}/feedback", data={"decisao": "aceita"}
     )
     assert feedback.status_code == 200
     assert "aceita" in feedback.text
-
-    recarregada = await client.get("/chat")
-    assert "Decisão: aceita" in recarregada.text
 
 
 async def test_sec_01_pii_nao_vai_ao_llm(
