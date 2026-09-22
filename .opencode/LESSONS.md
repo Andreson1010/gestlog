@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-013 · 2026-09-22 · web/schema
+- **Gatilho**: página HTML cujo `<select>`/validação usa um conjunto de valores que já existe como `Literal` no schema JSON.
+- **Erro**: redeclarei `_PAPEIS = ("admin", "gestor", "operador")` no router, duplicando a fonte de verdade; ao mudar o domínio, formulário e API divergem em silêncio.
+- **Regra**: derive opções e validação de uma única fonte (`get_args(Papel)`), nunca recopie o enum.
+- **Evidência**: self-review T6; `admin_ui.py` passou a usar `get_args(Papel)` em vez da tupla local.
+
 ## L-012 · 2026-09-22 · html/js
 - **Gatilho**: botão com ícone SVG + texto que precisa mudar de rótulo temporariamente (ex.: "Copiar conversa" → "Copiado!").
 - **Erro**: usei `botao.textContent = "Copiado!"` e depois restaurei só o texto; `textContent` apaga TODOS os filhos, então o `<svg>` do botão foi destruído na primeira cópia (regressão visual silenciosa, sem teste).
@@ -32,12 +38,6 @@
 - **Erro**: forçar `FINISH` em toda `AIMessage` quebrou o roteamento multi-especialista; o teste da guarda só afirmava `next == "FINISH"`, que passava mesmo sem ela.
 - **Regra**: modele o requisito real (rastrear `especialistas_visitados` e barrar só a **repetição**) e afirme o efeito **exclusivo** da correção; rode a suíte completa.
 - **Evidência**: `test_graph_encerra_sem_reencaminhar_apos_especialista` (passava sem a guarda); golden set quebrou com o forcing.
-
-## L-005 · 2026-09-21 · shell/opencode
-- **Gatilho**: rodar comando longo ou subir daemon a partir da shell do opencode (Windows/pwsh).
-- **Erro**: `cmd | Select-Object -Last N` bufferiza e a tela fica muda; `Start-Process -RedirectStandardOutput/Error` de um daemon faz o filho herdar o pipe e a tool call trava (EOF nunca chega; PID órfão no log).
-- **Regra**: não filtrar saída de comando longo; lançar daemon via `Invoke-CimMethod Win32_Process.Create` e esperar pela porta (`Get-NetTCPConnection -LocalPort`) em loop, nunca `Start-Sleep` fixo.
-- **Evidência**: `pytest | Select-Object -Last 15` mudo por 52 s; PID órfão segurando `ollama.err.log` → WMI PID, endpoint 11434 OK.
 
 ## L-004 · 2026-09-21 · opencode (fluxo + plugin) — consolida L-002/L-003
 - **Gatilho**: tornar um artefato obrigatório num passo de fluxo multiarquivo; decidir gate vermelho→verde por regex no plugin `self-learning`.

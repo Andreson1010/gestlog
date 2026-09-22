@@ -76,6 +76,20 @@ async def get_current_empresa(
     return empresa
 
 
+async def get_current_membership_optional(
+    user: Annotated[User | None, Depends(current_active_user_optional)],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> Membership | None:
+    """Devolve o vínculo do usuário, ou ``None`` sem usuário/empresa.
+
+    Usado por páginas que decidem o que exibir conforme o papel, sem exigir
+    um papel específico.
+    """
+    if user is None:
+        return None
+    return await _buscar_membership(session, user.id)
+
+
 async def get_current_empresa_optional(
     user: Annotated[User | None, Depends(current_active_user_optional)],
     session: Annotated[AsyncSession, Depends(get_async_session)],

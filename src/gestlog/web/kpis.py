@@ -55,6 +55,7 @@ def create_kpis_router() -> APIRouter:
                 "desde": desde.isoformat() if desde else "",
                 "ate": ate.isoformat() if ate else "",
                 "email": usuario.email if usuario else "",
+                "admin": vinculo.papel == "admin",
             },
         )
 
