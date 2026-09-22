@@ -1,10 +1,20 @@
 {% if erro %}
-<p class="erro-importar" role="alert">{{ erro }}</p>
+<div class="status-card status-erro" role="alert">
+  <span class="status-icone" aria-hidden="true">!</span>
+  <p class="erro-importar">{{ erro }}</p>
+</div>
 {% elif job %}
-<p class="sucesso-importar">
-  Importação <strong>{{ job.tipo }}</strong> concluída: {{ job.aceitas }} aceitas
-  · {{ job.rejeitadas }} rejeitadas.
-</p>
+<div class="status-card status-ok">
+  <span class="status-icone" aria-hidden="true">✓</span>
+  <div>
+    <p class="status-titulo">
+      Importação <strong>{{ job.tipo }}</strong> concluída
+    </p>
+    <p class="sucesso-importar">
+      {{ job.aceitas }} aceitas · {{ job.rejeitadas }} rejeitadas.
+    </p>
+  </div>
+</div>
 {% if job.errors %}
 <ul class="erros-linha">
   {% for e in job.errors %}

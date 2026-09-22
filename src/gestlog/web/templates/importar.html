@@ -17,12 +17,64 @@
         <option value="{{ tipo }}">{{ tipo }}</option>
         {% endfor %}
       </select>
-      <label for="arquivo">Arquivo (CSV)</label>
-      <input id="arquivo" name="arquivo" type="file" accept=".csv" required />
+      <div class="dropzone" data-dropzone>
+        <input
+          id="arquivo"
+          class="sr-only"
+          name="arquivo"
+          type="file"
+          accept=".csv"
+          required
+        />
+        <label class="dropzone-alvo" for="arquivo">
+          <span class="dropzone-icone" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+          </span>
+          <span class="dropzone-titulo">Arraste o CSV aqui ou clique para escolher</span>
+          <span class="dropzone-arquivo" data-nome-arquivo>Nenhum arquivo selecionado</span>
+        </label>
+      </div>
       <button type="submit">Importar</button>
     </form>
     <div id="resultado"></div>
   </div>
   <a class="link-voltar" href="/importar/historico">Ver histórico de importações</a>
 </div>
+<script>
+  (function () {
+    var zona = document.querySelector("[data-dropzone]");
+    var campo = document.getElementById("arquivo");
+    var nome = document.querySelector("[data-nome-arquivo]");
+    if (!zona || !campo) return;
+    function rotular() {
+      if (!nome) return;
+      nome.textContent =
+        campo.files && campo.files.length
+          ? campo.files[0].name
+          : "Nenhum arquivo selecionado";
+    }
+    campo.addEventListener("change", rotular);
+    zona.addEventListener("dragenter", function (e) {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    });
+    zona.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    });
+    zona.addEventListener("dragleave", function (e) {
+      e.preventDefault();
+      zona.classList.remove("arrastando");
+    });
+    zona.addEventListener("drop", function (e) {
+      e.preventDefault();
+      zona.classList.remove("arrastando");
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        campo.files = e.dataTransfer.files;
+        rotular();
+      }
+    });
+    rotular();
+  })();
+</script>
 {% endblock %}
