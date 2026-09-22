@@ -15,6 +15,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -239,6 +240,42 @@ class AuditLog(Base):
     )
     evento: Mapped[str] = mapped_column(String(60))
     detalhe: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_agora
+    )
+
+
+class ItemCorrecao(Base):
+    """Item de correção cadastral aguardando decisão humana."""
+
+    __tablename__ = "item_correcao"
+    __table_args__ = (
+        Index("ix_item_correcao_empresa_status", "empresa_id", "status"),
+        Index("ix_item_correcao_alvo", "empresa_id", "tipo", "alvo_chave", "campo"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
+    tipo: Mapped[str] = mapped_column(String(20))
+    alvo_chave: Mapped[str] = mapped_column(String(40))
+    campo: Mapped[str] = mapped_column(String(40))
+    valor_no_pedido: Mapped[str] = mapped_column(String(255))
+    valor_sugerido: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    justificativa: Mapped[str] = mapped_column(String(2000))
+    fonte: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(20), default="pendente")
+    motivo_rejeicao: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    decidido_por: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("user.id"), nullable=True
+    )
+    papel_aprovador: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    decidido_em: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    aplicado_em: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    motivo_falha: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
