@@ -1,16 +1,16 @@
 # Contexto da Sessão — UI beautifului: pente geral, tema e chat enxuto
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-22.
-> Branch atual: `feat/ui-beautifului` (integração) · HEAD: `e5e8688`.
-> PRs **#42 e #43 squash-merged**; branches de task apagadas.
+> `main` @ `586d2e8` · tag **`v0.2.0`**. PRs **#42/#43/#44/#45 mergeados**; branches de task apagadas.
+> Integração `feat/ui-beautifului` @ `c25eda1` (fica à frente de `main`, que recebeu o squash).
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` = `5845358` (= `origin/main`) · tag `v0.1.0` = `1c0768c`.
-- **UI overhaul MERGEADO na integração**: `feat/ui-beautifului` = `e5e8688` (squash dos PR #42
-  + #43), pushada. Working tree limpo exceto `opencode.json` (MCPs, não meu).
+- `main` = `586d2e8` (= `origin/main`) · tags `v0.1.0` = `1c0768c` e **`v0.2.0` = `586d2e8`**.
+- **UI overhaul RELEASADA em `main`**: `586d2e8` (PR de release #45), tag `v0.2.0`; `pyproject`
+  `0.2.0`. Working tree limpo exceto `opencode.json` (MCPs, não meu).
 - **Meu gate local**: **279 passed, 98,34%**; `black`/`ruff` verdes (verificado nesta sessão).
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
@@ -60,8 +60,13 @@ Concluído e validado no navegador (tema escuro **e** claro):
   - Nav "Usuários" só para admin, via novo `get_current_membership_optional` (flag `admin` no shell).
   - `tests/web/test_admin_ui.py` (8 casos, incluindo tenancy e guard do último admin). Lição **L-013**.
   - Branch `feat/ui-beautifului-t6-admin` (HEAD `5efda13`) apagada (local + remota).
+- **T4 — Importar (dropzone + status card)** concluído; **PR #44** squash-mergeado (`e316489`).
+  Dropzone `data-dropzone` com input `sr-only` (mantém `name="arquivo"`) e JS progressivo
+  (arrastar/soltar + nome do arquivo); status card `status-ok`/`status-erro` no resultado.
+- **Release v0.2.0**: `pyproject` → `0.2.0`, `STATE.md` atualizado, **PR #45** squash-mergeado em
+  `main` (`586d2e8`); tag **`v0.2.0`** publicada. Branch `feat/ui-beautifului` mantida (à frente de main).
 
-Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului → main` + tag.
+Concluído: UI inteira (T1–T7). Próximo épico: **F2** (tools com HITL) ou **relatórios/gráficos**.
 
 ## Decisões e regras (não esquecer)
 
@@ -81,21 +86,22 @@ Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului �
 
 ## Próximos passos / bloqueios
 
-1. **CONCLUÍDO**: PR **#42** (`d18918a`) e PR **#43** (`e5e8688`) squash-mergeados; branches apagadas.
-2. **PENDENTE/opcional**: **T4** parcial (dropzone/status card — opcional). **T6** concluído.
-3. **PENDENTE**: ao fim da UI, **PR de release** `feat/ui-beautifului → main` + tag.
-4. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido futuro do usuário).
-5. **F2 (próximo épico)**: tools de escrita/ação com HITL — AD-001.
-6. Débitos: T23 (botões de feedback agora **sem uso no chat**), T20/T31, auditoria de
+1. **CONCLUÍDO**: PRs #42 (`d18918a`), #43 (`e5e8688`) e #44 (`e316489`) mergeados; release #45
+   em `main` (`586d2e8`) + tag `v0.2.0`. UI inteira entregue (T1–T7).
+2. **PRÓXIMO**: escolher entre **F2** (tools de escrita/ação com HITL — AD-001) e a feature de
+   **relatórios/gráficos/tabelas** (pedido do usuário).
+3. Débitos: T23 (botões de feedback agora **sem uso no chat**), T20/T31, auditoria de
    feedback/importação, CI sem `evals/`.
+4. Housekeeping: a integração `feat/ui-beautifului` (`c25eda1`) está à frente de `main`; alinhar/descartar.
 
 ## WIP local (não commitado)
 
 - ` M opencode.json` — **não fui eu**: ganhou os MCPs `chrome-devtools` e `context7` (deixado
   fora do commit da UI de propósito).
-- Todo o restante foi commitado e mergeado (`e5e8688`); árvore limpa exceto o `opencode.json`.
-- Branches: `feat/ui-beautifului` (integração, HEAD `e5e8688`, pushada); `main` = `5845358`.
-  PRs #42 e #43 **mergeados**; branches de task apagadas.
+- Todo o restante foi commitado, mergeado e **released** (`586d2e8`, tag `v0.2.0`); árvore limpa
+  exceto o `opencode.json`.
+- Branches: `main` = `586d2e8` (tag `v0.2.0`); `feat/ui-beautifului` (integração) = `c25eda1`.
+  PRs #42–#45 **mergeados**; branches de task apagadas.
 
 ## Artefatos do graphify
 
@@ -111,7 +117,7 @@ Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului �
 - `docs/business/PRD.md`.
 - `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` (AD-001..AD-030).
 - `docs/specs/features/f1-mvp/{spec,design,tasks}.md` (34/34);
-  **`docs/specs/features/ui-beautifului/tasks.md`** (T1–T3/T5/T6/T7 feitos; T4 parcial).
+  **`docs/specs/features/ui-beautifului/tasks.md`** (T1–T7 feitos).
 - `docs/adr/`: `supervisor-loop-chat-self-review.md`, `ui-beautifului-t1-self-review.md`,
   `ui-beautifului-t6-admin-self-review.md`, `memoria-auto-melhoria-self-review.md` + os `t13..t34`.
 - Código UI: `src/gestlog/web/{app,chat_ui,chat,onboarding,ingestion_ui,kpis,admin,admin_ui,feedback}.py`,
@@ -124,10 +130,10 @@ Pendente: T4 (parcial, opcional), depois o PR de release `feat/ui-beautifului �
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-09-22**: code review do pente geral (skill `code-reviewer`), correções (split `chat.css`,
-  CSS legado removido, ícone do copiar — L-012), commit `d9fada7`; **PR #42** aberto, CI verde,
-  **squash-merge** na integração `feat/ui-beautifului` (`d18918a`). Depois **T6** (admin HTML):
-  self-review + ADR, code review APPROVE, **PR #43** squash-mergeado (`e5e8688`); branch da task apagada.
+- **2026-09-22**: **UI beautifului entregue e releasada (v0.2.0)**. Code review do pente geral
+  (split `chat.css`, CSS legado removido, ícone do copiar — L-012) → **PR #42** (#42 `d18918a`);
+  **T6** admin HTML (self-review + ADR + code review) → **PR #43** (`e5e8688`); **T4** dropzone +
+  status card → **PR #44** (`e316489`); **release #45** squash-mergeado em `main` (`586d2e8`) + tag `v0.2.0`.
 - **2026-09-21 (sessão anterior)**: pente geral da UI (shell/tema/home/importar/histórico/kpis),
   redesign do chat (full-height, copiar, rolagem) e chat enxuto (só a resposta); WIP não commitado.
 - **2026-09-21**: memória de auto-melhoria (PR #38); fix do supervisor/SSE (PR #40);
