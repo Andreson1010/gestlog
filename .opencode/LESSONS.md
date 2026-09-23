@@ -3,6 +3,18 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-017 · 2026-09-23 · tipagem
+- **Gatilho**: anotar helper que devolve uma de duas formas de valor conforme um ramo (`moda` → textos; numérico → floats).
+- **Erro**: declarei `-> list`, apagando a união real; o chamador não enxerga que ora vêm `str`, ora `float`, e a checagem estática não distingue.
+- **Regra**: anote a união real (`list[str] | list[float]`) em vez de `list` cru; "lista de qualquer coisa" esconde o contrato de quem consome.
+- **Evidência**: self-review T4; `correcoes/sugestoes.py::_valores` passou de `-> list` para `-> list[str] | list[float]`.
+
+## L-016 · 2026-09-23 · domínio/refatoração
+- **Gatilho**: refatorar uma função para delegar a um helper de reuso (validação + serialização).
+- **Erro**: em `valor_atual` passei `getattr(registro, campo)` como argumento de `serializar` antes de validar o campo; campo desconhecido estourou `AttributeError` em vez do erro de domínio `CampoCorrecaoInvalido`.
+- **Regra**: ao extrair helper, preserve a ordem original de avaliação — valide o campo **antes** de avaliar `getattr` (`tipo_campo = natureza(...)`; depois `_serializar(getattr(...))`).
+- **Evidência**: T4; `tests/correcoes/test_completude.py::test_campo_desconhecido_recusa` (falhou e passou após o ajuste).
+
 ## L-015 · 2026-09-22 · repositórios/domínio
 - **Gatilho**: agrupar status em constantes de módulo num repositório que serve tanto à trilha quanto à purga.
 - **Erro**: nomeei `_STATUS_TERMINAIS = ("aplicado", "falhou")`, mas o design define terminais como `rejeitado/aplicado/falhou`; o nome errado escondia que a trilha P2 ("correções aplicadas") é um recorte distinto da terminalidade.

@@ -75,9 +75,20 @@ def campos_faltantes(tipo: str, registro: Registro) -> list[str]:
     ]
 
 
-def valor_atual(tipo: str, registro: Registro, campo: str) -> str:
-    """Serializa o valor atual do campo para o snapshot de conflito."""
+def natureza(tipo: str, campo: str) -> str:
+    """Devolve a natureza do campo no tipo, recusando campo desconhecido."""
     naturezas = _campos(tipo)
     if campo not in naturezas:
         raise CampoCorrecaoInvalido(tipo, campo)
-    return _serializar(getattr(registro, campo), naturezas[campo])
+    return naturezas[campo]
+
+
+def serializar(tipo: str, campo: str, valor: object) -> str:
+    """Serializa o valor do campo na string canônica do design."""
+    return _serializar(valor, natureza(tipo, campo))
+
+
+def valor_atual(tipo: str, registro: Registro, campo: str) -> str:
+    """Serializa o valor atual do campo para o snapshot de conflito."""
+    tipo_campo = natureza(tipo, campo)
+    return _serializar(getattr(registro, campo), tipo_campo)
