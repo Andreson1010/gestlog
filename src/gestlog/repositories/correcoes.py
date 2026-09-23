@@ -107,10 +107,11 @@ class CorrectionRepository(EmpresaScopedRepository[ItemCorrecao]):
         return list(self.session.execute(stmt).scalars().all())
 
     def purgar_expiradas(self, empresa_id: UUID, limite: datetime) -> int:
-        """Apaga os itens decididos da empresa anteriores a ``limite``.
+        """Apaga os itens decididos da empresa antes de ``limite``.
 
-        Itens operacionais (``pendente``/``aprovado``) nunca são removidos;
-        devolve a quantidade de itens apagados.
+        O corte é por ``created_at`` (e não ``decidido_em``), conforme o design;
+        itens operacionais (``pendente``/``aprovado``) nunca são removidos.
+        Devolve a quantidade de itens apagados.
         """
         stmt = select(ItemCorrecao.id).where(
             ItemCorrecao.empresa_id == empresa_id,

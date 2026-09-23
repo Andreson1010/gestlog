@@ -20,13 +20,20 @@ from gestlog.audit import (
 )
 from gestlog.audit.retencao import purgar_expiradas, retencao_dias
 from gestlog.config import Settings
-from gestlog.db.models import Conversation, Feedback, Message, Recommendation
+from gestlog.db.models import (
+    Conversation,
+    Feedback,
+    ItemCorrecao,
+    Message,
+    Recommendation,
+)
 from gestlog.repositories.conversations import (
     ConversationRepository,
     FeedbackRepository,
     MessageRepository,
     RecommendationRepository,
 )
+from gestlog.repositories.correcoes import CorrectionRepository
 from gestlog.repositories.empresas import EmpresaRepository
 from gestlog.repositories.telemetry import AuditRepository
 
@@ -57,6 +64,31 @@ def _conversa_com_dependentes(
 
 def _contar(session: Session, model: type) -> int:
     return int(session.execute(select(func.count()).select_from(model)).scalar_one())
+
+
+def _item_correcao(
+    session: Session,
+    empresa_id: UUID,
+    *,
+    status: str = "pendente",
+    alvo_chave: str = "SKU-1",
+    created_at: datetime | None = None,
+) -> ItemCorrecao:
+    item = ItemCorrecao(
+        empresa_id=empresa_id,
+        tipo="estoque",
+        alvo_chave=alvo_chave,
+        campo="minimo",
+        valor_no_pedido="0",
+        valor_sugerido="9",
+        justificativa="justificativa de teste",
+        fonte="fonte de teste",
+        status=status,
+        created_at=created_at or datetime.now(UTC),
+    )
+    session.add(item)
+    session.flush()
+    return item
 
 
 def test_registrar_evento_persiste_por_empresa(db_session: Session) -> None:
@@ -178,3 +210,54 @@ def test_purga_usa_padrao_do_sistema(db_session: Session) -> None:
 
     assert removidas == 1
     assert _contar(db_session, Conversation) == 1
+
+
+def test_purga_remove_itens_de_correcao_decididos(db_session: Session) -> None:
+    empresa = _empresa(db_session, "A", retention_days=30)
+    antigo = datetime.now(UTC) - timedelta(days=60)
+    _item_correcao(db_session, empresa, status="rejeitado", created_at=antigo)
+    _item_correcao(db_session, empresa, status="aplicado", created_at=antigo)
+    _item_correcao(db_session, empresa, status="falhou", created_at=antigo)
+    _item_correcao(db_session, empresa, status="pendente", created_at=antigo)
+    _item_correcao(db_session, empresa, status="aprovado", created_at=antigo)
+    recente = _item_correcao(db_session, empresa, status="aplicado", alvo_chave="SKU-9")
+    db_session.commit()
+
+    removidas = purgar_expiradas(db_session, settings=Settings(_env_file=None))
+
+    assert removidas == 3
+    restantes = {item.status for item in CorrectionRepository(db_session).list(empresa)}
+    assert restantes == {"pendente", "aprovado", "aplicado"}
+    assert CorrectionRepository(db_session).get(empresa, recente.id) is not None
+
+
+def test_purga_itens_isola_entre_empresas(db_session: Session) -> None:
+    vencida = _empresa(db_session, "Vencida", retention_days=30)
+    retida = _empresa(db_session, "Retida", retention_days=365)
+    antigo = datetime.now(UTC) - timedelta(days=60)
+    _item_correcao(db_session, vencida, status="aplicado", created_at=antigo)
+    sobrevivente = _item_correcao(
+        db_session, retida, status="aplicado", created_at=antigo
+    )
+    db_session.commit()
+
+    removidas = purgar_expiradas(db_session, settings=Settings(_env_file=None))
+
+    assert removidas == 1
+    assert CorrectionRepository(db_session).list(vencida) == []
+    assert CorrectionRepository(db_session).get(retida, sobrevivente.id) is not None
+
+
+def test_purga_preserva_audit_log(db_session: Session) -> None:
+    empresa = _empresa(db_session, "A", retention_days=30)
+    antigo = datetime.now(UTC) - timedelta(days=60)
+    _item_correcao(db_session, empresa, status="aplicado", created_at=antigo)
+    registrar_evento(
+        db_session, empresa, EVENTO_CORRECAO_APLICADA, detalhe={"item_id": "x"}
+    )
+    db_session.commit()
+
+    purgar_expiradas(db_session, settings=Settings(_env_file=None))
+
+    assert CorrectionRepository(db_session).list(empresa) == []
+    assert len(AuditRepository(db_session).list(empresa)) == 1
