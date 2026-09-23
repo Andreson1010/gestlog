@@ -3,7 +3,7 @@
 **Design**: `docs/specs/features/f2-hitl/design.md`
 **Spec**: `docs/specs/features/f2-hitl/spec.md`
 **Status**: In progress
-**Progresso**: T1 ✅ · T2 ✅ · T3 ✅ · T4–T12 pendentes
+**Progresso**: T1 ✅ · T2 ✅ · T3 ✅ · T4 ✅ · T5–T12 pendentes
 
 ---
 
