@@ -15,11 +15,22 @@ class CorrecaoNaoEncontrada(ErroCorrecao):
 
 
 class CorrecaoNaoAprovavel(ErroCorrecao):
-    """Item em estado que não permite aprovação (HTTP 409), sem alterá-lo."""
+    """Decisão recusada pelo estado do item (HTTP 409), sem alterá-lo.
+
+    Item terminal recusa aprovar e rejeitar; item sem sugestão recusa apenas
+    aprovar (a rejeição é sempre permitida enquanto pendente).
+    """
 
     def __init__(self, motivo: str) -> None:
         super().__init__(motivo)
         self.motivo = motivo
+
+
+class JustificativaObrigatoria(ErroCorrecao):
+    """Rejeição sem justificativa após ``strip()`` (HTTP 422)."""
+
+    def __init__(self) -> None:
+        super().__init__("A rejeição exige justificativa.")
 
 
 class CorrecaoAlvoInvalido(ErroCorrecao):
