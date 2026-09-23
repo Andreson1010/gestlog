@@ -3,6 +3,18 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-025 · 2026-09-23 · documentação/contrato
+- **Gatilho**: documentar o corte temporal de um método numa entidade que tem **dois** timestamps candidatos (`created_at` e `decidido_em`).
+- **Erro**: o docstring de `CorrectionRepository.purgar_expiradas` dizia só "anteriores a ``limite``", sem nomear a coluna; como `listar_trilha` corta por `decidido_em`, o leitor poderia supor o campo errado (qualificador do design omitido — reforça L-019).
+- **Regra**: ao documentar corte temporal, nomeie a coluna explicitamente (`created_at`, não `decidido_em`) sempre que houver mais de um timestamp possível.
+- **Evidência**: self-review T9; docstring passou a citar ``created_at`` e a contrastar com ``decidido_em``.
+
+## L-024 · 2026-09-23 · testes/multitenant
+- **Gatilho**: incluir uma nova tabela multitenant (`item_correcao`) num laço de retenção que percorre empresas e purga por prazo.
+- **Erro**: os testes só cobriam a nova tabela numa única empresa; a composição por empresa (prazo próprio + `empresa.id`) não tinha teste de integração, então um `limite`/escopo errado passaria em silêncio.
+- **Regra**: ao estender um laço multitenant para uma nova tabela, replique os testes de isolamento/prazo-por-empresa que já existem para as tabelas antigas (espelha L-021/L-023).
+- **Evidência**: self-review T9; `test_purga_itens_isola_entre_empresas` (vencida 30d removida, retida 365d preservada); foco 13→14.
+
 ## L-023 · 2026-09-23 · testes/terminalidade
 - **Gatilho**: testar guard que recusa decisão para um **conjunto** de estados terminais (`status != "pendente"`) exercitando só um estado.
 - **Erro**: o teste de rejeição da T8 só cobria `status="aplicado"`; os outros terminais (`rejeitado`, `falhou`) passariam mesmo se o guard regredisse, e o `motivo_rejeicao` de um item já rejeitado poderia ser sobrescrito em silêncio.
