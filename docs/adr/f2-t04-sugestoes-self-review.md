@@ -21,7 +21,7 @@ e (c) **reuso sem divergência** — a sugestão precisa ser serializada na *mes
 canônica que a T3 usa para o valor atual, pois é isso que permite ao serviço detectar
 no-op e conflito (EDG-05, EDG-02) sem duas tabelas de serialização que possam divergir.
 
-## 2. Decisões Arquiteturais
+## 2. Decisões de Arquitetura
 
 **1. O determinismo é um requisito de primeira classe, e cada estratégia tem uma regra
 de desempate explícita.**
@@ -105,7 +105,7 @@ cobertura: antes, `transporte.destino`, `transporte.status` e outros campos só 
 cobertos indiretamente por compartilharem o mesmo corpo. O arquivo passou de 15 para 24
 casos, mantendo `tests/correcoes/test_sugestoes.py` espelhando a fronteira criada.
 
-## 3. Trade-offs & Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **A média usa `round` do Python, que é bancário (para o par mais próximo), e não
   half-up como a mediana.** São determinísticos os dois, mas podem divergir no empate
@@ -137,7 +137,7 @@ casos, mantendo `tests/correcoes/test_sugestoes.py` espelhando a fronteira criad
   `Literal`/mapa de handlers porque a checagem estática não roda no gate (só `ruff`) e
   a tabela é pequena e testada; fica registrado como limitação.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **Empate `.x5` da média arredonda para o par (bancário).** `4.25 → "4.2"`. Se o
   produto quiser half-up para a avaliação média, é trocar `round` por uma função
@@ -164,6 +164,15 @@ casos, mantendo `tests/correcoes/test_sugestoes.py` espelhando a fronteira criad
   `_FONTES`) para travar a paridade.** É a forma direta de pinçar a invariante
   "sem órfãos"; a alternativa (exercitar todos os campos públicos) já está coberta pelo
   teste paramétrico, mas não detectaria uma fonte órfã de campo sem estratégia.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T5 (Serviço de fila):** chamará `sugerir` passando os irmãos do tenant como
+  `contexto` e gravará `valor_sugerido`, `justificativa` e `fonte` no `ItemCorrecao`,
+  fechando a rastreabilidade entre sugestão e item (SUG-04).
+- **T7 (Aprovação):** usará a serialização canônica compartilhada (`serializar`) dos
+  dois lados para decidir no-op (EDG-05) e conflito (EDG-02) sem depender de formato
+  de número escrito à mão.
 
 ## 5. Validação de Qualidade e Segurança
 

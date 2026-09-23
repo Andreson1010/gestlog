@@ -16,7 +16,7 @@ purgar por retenção — **sem que nenhuma leitura escape do escopo de empresa*
 acrescentar as consultas específicas mantendo essa mesma régua de tenancy,
 determinismo de ordenação e recortes de status explícitos.
 
-## 2. Decisões Arquiteturais
+## 2. Decisões de Arquitetura
 
 - **Todas as consultas nascem e permanecem escopadas por `empresa_id`, incluindo
   as de dedup e a purga.**
@@ -82,7 +82,7 @@ determinismo de ordenação e recortes de status explícitos.
     anteriores, coerente com a divisão por fronteira (a T12 ainda pode reafirmar o
     contrato no agregado).
 
-## 3. Trade-offs & Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **`purgar_expiradas` seleciona os ids antes de apagar (duas idas ao banco), em
   vez de um `DELETE` único com `rowcount`.** O shape foi mantido igual ao do
@@ -110,7 +110,7 @@ determinismo de ordenação e recortes de status explícitos.
   contexto de erro HTTP); a contrapartida é que um chamador descuidado pode
   montar filtros inconsistentes — coberto pelo uso interno da T5/T7/T11.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **Trilha vs. `AuditLog` — possível divergência sob retenção.** A purga pode
   remover o item terminal antes de a trilha P2 ser consultada, enquanto o
@@ -133,3 +133,27 @@ determinismo de ordenação e recortes de status explícitos.
   idempotência depende de `abertos_para`/`existe_para` + serviço; duas chamadas
   concorrentes de `gerar_fila` ainda poderiam criar itens duplicados (EDG-04 fica
   como *hardening* no serviço).
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T5 (`CorrectionService.gerar_fila`):** consumirá `abertos_para`/`existe_para` na
+  ordem que implementa as três regras de dedup, e `list_by_status` para alimentar a
+  fila; `list_by_status` ganhará `limite` na própria T5 (EDG-08).
+- **T7/T8 (Decisão):** usarão `get` escopado para o 404 cross-tenant e a atualização de
+  status do item; **T9 (Retenção)** ligará `purgar_expiradas` à purga da Empresa e
+  **T11 (Trilha)** consumirá `listar_trilha`.
+
+## 5. Validação de Qualidade e Segurança
+
+- **Garantias de negócio e isolamento:** nenhuma leitura escapa do `empresa_id`;
+  `test_correcoes_isoladas_por_empresa` exercita leitura, dedup, trilha e `get`
+  cross-tenant com dois tenants. A purga usa *allow-list* de terminais
+  (`test_purgar_expiradas_remove_so_decididos`) e a trilha P2 não mostra `rejeitado`
+  (`test_listar_trilha_ignora_rejeitado`), fixando os recortes para a T9/T11.
+- **Cobertura e testes automatizados:** `tests/test_repositories_correcoes.py` cobre
+  isolamento, ordenação determinística, semântica de dedup por `valor_no_pedido`,
+  recorte da trilha e purga seletiva contra SQLite em memória, sem rede. Suíte completa
+  no gate do PR: **287 passed, 98,39%** (gate de 80% ok).
+- **Padrões de qualidade:** `uv run black` e `uv run ruff check` verdes;
+  `from __future__ import annotations` presente; docstrings em português; sem
+  comentários fora de docstring; repositório somente-SQL, sem regra de negócio.

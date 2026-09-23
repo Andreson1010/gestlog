@@ -71,7 +71,7 @@ pertinência e não por exaustão; a T6 apenas amplia o vocabulário permitido. 
 é que a suíte completa permanece verde sem sequer editar o teste do turno — a fronteira
 AD-022 está garantida por construção, não por ajuste de asserção.
 
-## 3. Trade-offs e Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **O docstring referencia `aprovar`/`rejeitar`, que só existem na T7/T8.** É uma
   referência prospectiva: documentamos o contrato antes do código. Aceitável porque o
@@ -93,7 +93,7 @@ AD-022 está garantida por construção, não por ajuste de asserção.
   ordenação exigida pelo isort. Não há impacto funcional (a pertinência é por conjunto),
   apenas legibilidade intencional ligada ao documento de origem.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **Não há *enforcement* de runtime do `detalhe`.** Um futuro call site que passe
   `justificativa` no `detalhe` não será barrado por `registrar_evento`; a garantia do
@@ -108,6 +108,14 @@ AD-022 está garantida por construção, não por ajuste de asserção.
   T6 prova que o catálogo existe e aceita os eventos; a prova de que cada decisão os
   emite nos momentos corretos (após validar, após o `upsert`, no rollback) pertence à T7,
   T8 e à aceitação da T12.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T7 (Aprovação):** emitirá `correcao_aprovada`, `correcao_aplicada` (após o `upsert`)
+  e `correcao_falhou` (conflito/alvo/erro/rollback) exatamente nos ramos documentados
+  aqui.
+- **T8 (Rejeição):** emitirá `correcao_rejeitada` com justificativa obrigatória (422), e
+  **T12 (Aceitação)** fechará a rastreabilidade ponta a ponta dos quatro eventos.
 
 ## 5. Validação de Qualidade e Segurança
 
