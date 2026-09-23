@@ -9,7 +9,15 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from gestlog.audit import EVENTO_PERGUNTA, registrar_evento
+from gestlog.audit import (
+    EVENTO_CORRECAO_APLICADA,
+    EVENTO_CORRECAO_APROVADA,
+    EVENTO_CORRECAO_FALHOU,
+    EVENTO_CORRECAO_REJEITADA,
+    EVENTO_PERGUNTA,
+    EVENTOS,
+    registrar_evento,
+)
 from gestlog.audit.retencao import purgar_expiradas, retencao_dias
 from gestlog.config import Settings
 from gestlog.db.models import Conversation, Feedback, Message, Recommendation
@@ -72,6 +80,31 @@ def test_registrar_evento_rejeita_desconhecido(db_session: Session) -> None:
 
     with pytest.raises(ValueError):
         registrar_evento(db_session, empresa, "inexistente")
+
+
+_EVENTOS_CORRECAO = (
+    EVENTO_CORRECAO_APROVADA,
+    EVENTO_CORRECAO_REJEITADA,
+    EVENTO_CORRECAO_APLICADA,
+    EVENTO_CORRECAO_FALHOU,
+)
+
+
+def test_eventos_de_correcao_estao_no_catalogo() -> None:
+    assert set(_EVENTOS_CORRECAO) <= set(EVENTOS)
+
+
+def test_registrar_eventos_de_correcao_sem_commit(db_session: Session) -> None:
+    empresa = _empresa(db_session, "A")
+
+    for evento in _EVENTOS_CORRECAO:
+        registrar_evento(
+            db_session, empresa, evento, detalhe={"item_id": "abc", "campo": "local"}
+        )
+
+    eventos = AuditRepository(db_session).list(empresa)
+    assert {registro.evento for registro in eventos} == set(_EVENTOS_CORRECAO)
+    assert all(registro.detalhe["campo"] == "local" for registro in eventos)
 
 
 def test_retencao_usa_prazo_da_empresa(db_session: Session) -> None:

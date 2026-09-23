@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-019 · 2026-09-23 · documentação/auditoria
+- **Gatilho**: transcrever para o docstring de um módulo o contrato de um campo (`detalhe` de auditoria) já especificado no design.
+- **Erro**: copiei "nunca carrega justificativa/motivo_rejeicao nem PII", mas omiti o qualificador do design "o `valor` é dado operacional de catálogo, **truncado**"; o docstring virou contrato incompleto e deixava ambíguo que `motivo` (FALHOU) é código de falha, não texto livre.
+- **Regra**: ao transcrever um contrato do design para docstring, transcreva-o integralmente — inclua os qualificadores (ex.: truncamento) e desambigue campos homônimos — em vez de resumir.
+- **Evidência**: self-review T6; `audit/eventos.py` passou a citar `valor` truncado e `motivo` como código de falha.
+
 ## L-018 · 2026-09-23 · testes/organização
 - **Gatilho**: criar um arquivo de teste com o mesmo basename de um teste já existente em outro subdiretório de `tests/` (sem `__init__.py`).
 - **Erro**: criei `tests/correcoes/test_servico.py` clonando o nome de `tests/ingestion/test_servico.py`; a suíte completa falhou na coleta ("import file mismatch") porque o pytest importa ambos como o módulo `test_servico`.
