@@ -16,6 +16,7 @@ from gestlog.correcoes.erros import (
     CorrecaoNaoAprovavel,
     CorrecaoNaoEncontrada,
     ErroCorrecao,
+    JustificativaObrigatoria,
 )
 from gestlog.correcoes.servico import CorrectionService
 from gestlog.correcoes.sugestoes import Sugestao, sugerir
@@ -28,6 +29,7 @@ __all__ = [
     "CorrecaoNaoEncontrada",
     "CorrectionService",
     "ErroCorrecao",
+    "JustificativaObrigatoria",
     "Sugestao",
     "TipoCorrecaoInvalido",
     "campos_faltantes",

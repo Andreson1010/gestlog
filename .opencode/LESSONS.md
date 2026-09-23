@@ -3,6 +3,18 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-023 · 2026-09-23 · testes/terminalidade
+- **Gatilho**: testar guard que recusa decisão para um **conjunto** de estados terminais (`status != "pendente"`) exercitando só um estado.
+- **Erro**: o teste de rejeição da T8 só cobria `status="aplicado"`; os outros terminais (`rejeitado`, `falhou`) passariam mesmo se o guard regredisse, e o `motivo_rejeicao` de um item já rejeitado poderia ser sobrescrito em silêncio.
+- **Regra**: quando a guarda cobre um conjunto de estados, parametrize o teste por **cada** estado do conjunto e assevere a não-alteração (`status` inalterado + campo de decisão ainda `None`).
+- **Evidência**: self-review T8; `test_rejeitar_item_terminal_recusa` parametrizado em `["rejeitado","aplicado","falhou"]` (+2 testes; foco 71→73).
+
+## L-022 · 2026-09-23 · processo/ADRs
+- **Gatilho**: delegar a geração da ADR ao subagente `developer-self-reviewer` sem validar a saída.
+- **Erro**: instruí o subagente a aplicar `write-fluid-hybrid-adr`, mas as ADRs T1–T6 saíram com 4 seções — faltava **"O que vem a seguir (Roadmap Imediato)"** em todas e a seção **"Validação de Qualidade e Segurança"** na T3 — divergindo do template; eu não conferi.
+- **Regra**: carregue a skill e **gere/valide a ADR você mesmo** (checklist das 5 seções) antes de fechar a task; delegação não substitui a verificação.
+- **Evidência**: correção do usuário; PR #55 (`docs/f2-adr-fluido`) alinhou T1–T6.
+
 ## L-021 · 2026-09-23 · testes/cobertura
 - **Gatilho**: implementar aplicação genérica por `tipo` (mapeamento posicional `_CAMPOS_UPSERT` → assinatura de `upsert`) e testar só um dos tipos.
 - **Erro**: a suíte da T7 exercitava `aprovar` apenas em `estoque`; um desalinhamento de ordem em `fornecedores`/`transporte` passaria em silêncio (gravando valores trocados por posição) — o risco de ordem da L-013.

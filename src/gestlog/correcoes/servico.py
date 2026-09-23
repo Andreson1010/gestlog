@@ -13,6 +13,7 @@ from gestlog.audit import (
     EVENTO_CORRECAO_APLICADA,
     EVENTO_CORRECAO_APROVADA,
     EVENTO_CORRECAO_FALHOU,
+    EVENTO_CORRECAO_REJEITADA,
     registrar_evento,
 )
 from gestlog.correcoes.completude import (
@@ -26,6 +27,7 @@ from gestlog.correcoes.erros import (
     CorrecaoFalhaEscrita,
     CorrecaoNaoAprovavel,
     CorrecaoNaoEncontrada,
+    JustificativaObrigatoria,
 )
 from gestlog.correcoes.sugestoes import sugerir
 from gestlog.db.models import ItemCorrecao
@@ -83,6 +85,16 @@ def _valor_auditavel(valor: str | None) -> str | None:
     return valor[:_LIMITE_VALOR_AUDITORIA]
 
 
+def _detalhe_item(item: ItemCorrecao) -> dict[str, str]:
+    """Metadados operacionais do item para a auditoria, sem texto livre nem PII."""
+    return {
+        "item_id": str(item.id),
+        "tipo": item.tipo,
+        "alvo_chave": item.alvo_chave,
+        "campo": item.campo,
+    }
+
+
 @dataclass(frozen=True)
 class CorrectionService:
     """Materializa, lista e decide os itens de correção de uma empresa."""
@@ -138,10 +150,47 @@ class CorrectionService:
             raise CorrecaoAlvoInvalido(MOTIVO_CONFLITO)
         return self._aplicar(item, registro, user_id, papel, atual)
 
-    def _validar_pendente(self, item: ItemCorrecao) -> None:
-        """Recusa itens terminais ou sem sugestão, sem alterar o estado."""
+    def rejeitar(
+        self, item_id: UUID, user_id: UUID, papel: str, justificativa: str
+    ) -> ItemCorrecao:
+        """Rejeita um item pendente, exigindo justificativa, restrito ao tenant.
+
+        Recusa com ``CorrecaoNaoEncontrada`` (404 cross-tenant), com
+        ``CorrecaoNaoAprovavel`` (409 item terminal) ou com
+        ``JustificativaObrigatoria`` (422 justificativa vazia após ``strip()``).
+        Itens sem sugestão podem ser rejeitados; nenhuma escrita no catálogo
+        acontece. A decisão e a auditoria ocorrem na mesma transação.
+        """
+        item = CorrectionRepository(self.session).get(self.empresa_id, item_id)
+        if item is None:
+            raise CorrecaoNaoEncontrada()
+        self._exigir_pendente(item)
+        motivo = justificativa.strip()
+        if not motivo:
+            raise JustificativaObrigatoria()
+        item.status = "rejeitado"
+        item.motivo_rejeicao = motivo
+        item.decidido_por = user_id
+        item.papel_aprovador = papel
+        item.decidido_em = datetime.now(UTC)
+        registrar_evento(
+            self.session,
+            self.empresa_id,
+            EVENTO_CORRECAO_REJEITADA,
+            user_id,
+            detalhe=_detalhe_item(item),
+        )
+        self.session.commit()
+        return item
+
+    def _exigir_pendente(self, item: ItemCorrecao) -> None:
+        """Recusa itens já decididos, sem alterar o estado."""
         if item.status != "pendente":
             raise CorrecaoNaoAprovavel("item já decidido")
+
+    def _validar_pendente(self, item: ItemCorrecao) -> None:
+        """Recusa itens terminais ou sem sugestão, sem alterar o estado."""
+        self._exigir_pendente(item)
         if item.valor_sugerido is None:
             raise CorrecaoNaoAprovavel("item sem sugestão")
 
@@ -190,12 +239,7 @@ class CorrectionService:
         """Marca o item aplicado, audita e confirma a transação."""
         item.status = "aplicado"
         item.aplicado_em = datetime.now(UTC)
-        base = {
-            "item_id": str(item.id),
-            "tipo": item.tipo,
-            "alvo_chave": item.alvo_chave,
-            "campo": item.campo,
-        }
+        base = _detalhe_item(item)
         registrar_evento(
             self.session,
             self.empresa_id,
