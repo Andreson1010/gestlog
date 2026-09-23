@@ -80,6 +80,19 @@ def test_list_by_status_ordena_por_criacao(db_session: Session) -> None:
     assert [item.id for item in pendentes] == [primeiro.id, segundo.id]
 
 
+def test_list_by_status_respeita_limite(db_session: Session) -> None:
+    t1, _ = _empresas(db_session)
+    repo = CorrectionRepository(db_session)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
+    _item(db_session, t1, alvo_chave="SKU-1", created_at=base)
+    _item(db_session, t1, alvo_chave="SKU-2", created_at=base + timedelta(hours=1))
+    db_session.commit()
+
+    lista = repo.list_by_status(t1, "pendente", limite=1)
+
+    assert [item.alvo_chave for item in lista] == ["SKU-1"]
+
+
 def test_existe_para_considera_valor_no_pedido(db_session: Session) -> None:
     t1, _ = _empresas(db_session)
     repo = CorrectionRepository(db_session)

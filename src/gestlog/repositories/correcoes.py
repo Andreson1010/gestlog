@@ -20,8 +20,13 @@ class CorrectionRepository(EmpresaScopedRepository[ItemCorrecao]):
 
     model = ItemCorrecao
 
-    def list_by_status(self, empresa_id: UUID, status: str) -> list[ItemCorrecao]:
-        """Lista os itens da empresa com o status, em ordem de criação."""
+    def list_by_status(
+        self, empresa_id: UUID, status: str, limite: int | None = None
+    ) -> list[ItemCorrecao]:
+        """Lista os itens da empresa com o status, em ordem de criação.
+
+        ``limite`` restringe o volume retornado (paginação); sem ele, lista tudo.
+        """
         stmt = (
             select(ItemCorrecao)
             .where(
@@ -30,6 +35,8 @@ class CorrectionRepository(EmpresaScopedRepository[ItemCorrecao]):
             )
             .order_by(ItemCorrecao.created_at, ItemCorrecao.id)
         )
+        if limite is not None:
+            stmt = stmt.limit(limite)
         return list(self.session.execute(stmt).scalars().all())
 
     def existe_para(
