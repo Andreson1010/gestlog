@@ -20,7 +20,7 @@ quando o dado do cadastro realmente muda, o que exige comparar o snapshot guarda
 o valor atual; e (c) **fronteira AD-002** — a escrita/leitura da fila vive fora do
 grafo, de modo que nenhum caminho do LLM alcance o catálogo.
 
-## 2. Decisões Arquiteturais
+## 2. Decisões de Arquitetura
 
 **1. `gerar_fila()` é a unidade de trabalho da materialização: uma passada sobre os
 três catálogos, dedup por item e um único `commit` ao final.**
@@ -104,7 +104,7 @@ regra de que só `libs` fala SQL, e a T10 decide o tamanho de página. Isso tamb
 preserva o estado vazio (EDG-06/07): um tenant sem dados devolve `[]` sem erro, e a
 tela distingue "sem dados importados" de "fila vazia" no seu próprio contexto.
 
-## 3. Trade-offs e Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **`existe_para` considera qualquer status, não só terminais.** É a decisão herdada
   da T2 e só é segura *porque* `abertos_para` roda antes. Mantida em vez de criar uma
@@ -142,7 +142,7 @@ tela distingue "sem dados importados" de "fila vazia" no seu próprio contexto.
   alternativa (exercitar só o público) não detectaria um tipo de completude ausente do
   mapa.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **Duplicação sob concorrência.** Sem *constraint* de banco, duas gerações
   simultâneas do mesmo tenant podem materializar itens repetidos. A T7 re-lê o estado
@@ -160,6 +160,14 @@ tela distingue "sem dados importados" de "fila vazia" no seu próprio contexto.
   estática no gate (só `ruff`).
 - **`existe_para` não distingue aberto de terminal por status.** A regra 2 depende da
   precedência de `abertos_para`; documentado como trade-off.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T6 (Eventos de auditoria de correção):** fecha o vocabulário `correcao_*` que a
+  decisão humana emitirá, para que `aprovar`/`rejeitar` não inventem strings soltas.
+- **T7 (Aprovação):** consumirá a fila (`get`/`abertos_para`) e fará a escrita auditada
+  via o mesmo `upsert` dos catálogos; **T10 (Web)** exporá a fila materializada em
+  `GET /correcoes`, com `listar(status, limite)` alimentando a paginação.
 
 ## 5. Validação de Qualidade e Segurança
 

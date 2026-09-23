@@ -18,7 +18,7 @@ existentes** e mantendo o esquema portátil entre SQLite (testes/dev) e Postgres
 por campo, então serve a dez pares `(tipo, campo)` diferentes com as mesmas colunas
 — o que evita inflar o modelo a cada novo campo verificado.
 
-## 2. Decisões Arquiteturais
+## 2. Decisões de Arquitetura
 
 - **Tabela dedicada `item_correcao` em vez de reutilizar uma estrutura existente
   (`audit_log`, `import_job`) ou sobrecarregar um catálogo.**
@@ -84,7 +84,7 @@ por campo, então serve a dez pares `(tipo, campo)` diferentes com as mesmas col
     `base` afirma que a tabela some. São testes de integração reais (Alembic contra
     SQLite em arquivo temporário), sem tocar rede.
 
-## 3. Trade-offs & Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **`decidido_por` usa `sa.Uuid()` enquanto `user.id` é `GUID` (FastAPI Users): no
   SQLite os dois serializam diferente (`CHAR(32)` vs `CHAR(36)`), no Postgres ambos são
@@ -113,7 +113,7 @@ por campo, então serve a dez pares `(tipo, campo)` diferentes com as mesmas col
   o índice `(empresa_id, status)` deixa de bastar e isso vira uma migration de
   acompanhamento.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **Resolução do aprovador no SQLite esbarra em AD-027:** `decidido_por` (`CHAR(32)`) e
   `user.id` (`CHAR(36)`) não casam em *join* direto. A trilha que precisar do e-mail do
@@ -127,3 +127,27 @@ por campo, então serve a dez pares `(tipo, campo)` diferentes com as mesmas col
 - **Sem *relationship* ORM para `Empresa`/`User`:** o acesso a esses agregados é sempre
   explícito via repositório, coerente com `StockItem`, `AuditLog` e demais tabelas; a
   modelagem por *join* fica na camada de consulta, não no grafo de objetos.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T2 (`CorrectionRepository`):** dá ao modelo a única porta de SQL escopada por
+  empresa, servindo a dedup (`existe_para`/`abertos_para`), a trilha P2 e a purga — sem
+  a qual a fila não materializa nem respeita retenção.
+- **T5/T6 (Serviço e eventos):** a máquina de estados que o schema deixa em aberto
+  (validade de `status`, transição só a partir de `pendente`) nasce no serviço, apoiada
+  nas colunas de decisão/aplicação modeladas aqui.
+
+## 5. Validação de Qualidade e Segurança
+
+- **Garantias de negócio e isolamento:** `empresa_id` é sempre obrigatório e a nova
+  tabela não guarda o texto livre fora de `justificativa`/`motivo_*` (campos do próprio
+  item, não da auditoria); o schema é portátil entre SQLite e Postgres e o *downgrade*
+  volta a `base` limpo, coberto por teste.
+- **Cobertura e testes automatizados:** `tests/test_migrations.py` afirma o upgrade a
+  `head` (tabela `item_correcao`), os dois índices por nome
+  (`test_item_correcao_tem_indices`) e a remoção no downgrade — integração real do
+  Alembic contra SQLite em arquivo temporário, sem rede. Suíte completa no gate do PR:
+  **287 passed, 98,39%** (gate de 80% ok).
+- **Padrões de qualidade:** `uv run black` e `uv run ruff check` verdes;
+  `from __future__ import annotations` presente; docstrings em português; sem
+  comentários fora de docstring; migration no padrão da *revision* inicial.

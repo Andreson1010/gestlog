@@ -23,7 +23,7 @@ isso as duas funções públicas — `campos_faltantes(tipo, registro) -> list[s
 `valor_atual(tipo, registro, campo) -> str` — precisam ser determinísticas e
 rastreáveis.
 
-## 2. Decisões Arquiteturais
+## 2. Decisões de Arquitetura
 
 **1. Uma tabela allow-list por tipo é a única fonte de verdade, e não um espelho dos
 defaults do banco.**
@@ -103,7 +103,7 @@ anteriores os mantinham preenchidos (`sku="SKU-1"`, `fornecedor_id="F-1"`,
 `codigo_rastreio="BR-1"`), então a exclusão era implícita. A regra agora tem teste
 próprio, sem tocar a lógica de produção.
 
-## 3. Trade-offs & Compromissos
+## 3. Concessões e Escolhas Práticas (Trade-offs)
 
 - **Texto é serializado cru (`str()`), então um campo só-espaços não vira `""`.**
   `_ausente` normaliza com `strip()`, mas `_serializar` devolve o texto como está,
@@ -134,7 +134,7 @@ próprio, sem tocar a lógica de produção.
   vindo de dados persistidos, e uma divergência ali é um sinal de corrupção de
   estado que deve aparecer, não ser ignorada.
 
-## 4. Limitações Conhecidas
+### Limitações conhecidas
 
 - **O mapa `tipo -> modelo` e a validação de pareamento ficam para a T5.** Enquanto
   isso, um par `(tipo, registro)` trocado falha com `AttributeError`, não com um erro
@@ -152,3 +152,31 @@ próprio, sem tocar a lógica de produção.
 - **Cobertura de linha de `completude.py` é 100%**, mas os caminhos de `None` em
   `_ausente`/`_serializar` não são exercitados (colunas não-nuláveis); são defesa
   contra evolução futura do schema, não comportamento observado hoje.
+
+## 4. O que vem a seguir (Roadmap Imediato)
+
+- **T4 (Geração determinística de sugestões):** consumirá `campos_faltantes` e a
+  serialização canônica (`serializar`) para montar `Sugestao(valor, justificativa,
+  fonte)` sem criar uma segunda tabela de campos; a comparação de no-op/conflito da
+  aprovação depende de a sugestão falar o mesmo formato do valor atual.
+- **T5 (Serviço de fila):** materializará um item por campo faltante usando
+  `valor_atual` como snapshot de conflito (`valor_no_pedido`) e a sugestão da T4,
+  com a chave natural do registro como `alvo_chave`.
+
+## 5. Validação de Qualidade e Segurança
+
+- **Garantias de negócio:** a allow-list por tipo garante que valores legítimos
+  zerados (`quantidade=0`, `ativo=False`) **não** virem "ausentes", evitando alertas
+  falsos na fila (`test_zero_legitimo_e_booleano_nao_sao_ausentes`); a ordem estável
+  dos campos preserva a apresentação da listagem
+  (`test_estoque_lista_todos_os_campos_faltantes_na_ordem_do_design`); a exclusão
+  estrutural de identidade/contagem é fixada por
+  `test_campos_de_identidade_e_contagem_nao_entram_na_completude`.
+- **Cobertura e testes automatizados:** `tests/correcoes/test_completude.py` cobre os
+  três tipos, vazio/zero, zero legítimo, serialização canônica de ausente e a recusa
+  de tipo/campo desconhecidos. Gate focado
+  `uv run pytest tests/correcoes/test_completude.py --no-cov -v`: **11 passed**. Suíte
+  completa: **298 passed, 98,42%** (gate de 80% ok).
+- **Padrões de qualidade:** `uv run black` e `uv run ruff check` verdes;
+  `from __future__ import annotations` presente; docstrings em português; sem
+  comentários fora de docstring; domínio puro sem dependência de banco ou de `agents/`.
