@@ -3,6 +3,18 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-021 · 2026-09-23 · testes/cobertura
+- **Gatilho**: implementar aplicação genérica por `tipo` (mapeamento posicional `_CAMPOS_UPSERT` → assinatura de `upsert`) e testar só um dos tipos.
+- **Erro**: a suíte da T7 exercitava `aprovar` apenas em `estoque`; um desalinhamento de ordem em `fornecedores`/`transporte` passaria em silêncio (gravando valores trocados por posição) — o risco de ordem da L-013.
+- **Regra**: quando um mapa cobre vários tipos, cada tipo do mapa precisa do seu próprio teste de aplicação; cobertura de um ramo não valida os demais.
+- **Evidência**: self-review T7; acrescentados `test_aprovar_aplica_fornecedor` e `test_aprovar_aplica_transporte`.
+
+## L-020 · 2026-09-23 · auditoria/contrato
+- **Gatilho**: montar `detalhe` de evento cujo contrato (design/T6) prevê o `valor` truncado.
+- **Erro**: em `_finalizar` gravei `item.valor_sugerido` inteiro no `detalhe` de `correcao_aplicada`; no SQLite `String(255)` não é imposto, então um texto sem limite poderia ir ao `detalhe` — contrariando o contrato "valor truncado".
+- **Regra**: quando o design diz que um campo do `detalhe` é truncado, trunque explicitamente no call site, sem confiar em constraint de coluna do banco.
+- **Evidência**: self-review T7; `_valor_auditavel` com `_LIMITE_VALOR_AUDITORIA = 255` e `test_valor_de_auditoria_e_truncado`.
+
 ## L-019 · 2026-09-23 · documentação/auditoria
 - **Gatilho**: transcrever para o docstring de um módulo o contrato de um campo (`detalhe` de auditoria) já especificado no design.
 - **Erro**: copiei "nunca carrega justificativa/motivo_rejeicao nem PII", mas omiti o qualificador do design "o `valor` é dado operacional de catálogo, **truncado**"; o docstring virou contrato incompleto e deixava ambíguo que `motivo` (FALHOU) é código de falha, não texto livre.

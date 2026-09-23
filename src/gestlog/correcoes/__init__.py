@@ -10,12 +10,24 @@ from gestlog.correcoes.completude import (
     serializar,
     valor_atual,
 )
+from gestlog.correcoes.erros import (
+    CorrecaoAlvoInvalido,
+    CorrecaoFalhaEscrita,
+    CorrecaoNaoAprovavel,
+    CorrecaoNaoEncontrada,
+    ErroCorrecao,
+)
 from gestlog.correcoes.servico import CorrectionService
 from gestlog.correcoes.sugestoes import Sugestao, sugerir
 
 __all__ = [
     "CampoCorrecaoInvalido",
+    "CorrecaoAlvoInvalido",
+    "CorrecaoFalhaEscrita",
+    "CorrecaoNaoAprovavel",
+    "CorrecaoNaoEncontrada",
     "CorrectionService",
+    "ErroCorrecao",
     "Sugestao",
     "TipoCorrecaoInvalido",
     "campos_faltantes",

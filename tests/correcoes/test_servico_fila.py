@@ -56,8 +56,9 @@ def _item(
 
 def test_mapa_de_fontes_cobre_tipos_e_chaves_da_completude() -> None:
     assert set(_FONTES_CADASTRO) == set(_CAMPOS)
-    for fabrica, chave in _FONTES_CADASTRO.values():
+    for fabrica, chave, metodo in _FONTES_CADASTRO.values():
         assert chave in fabrica.model.__mapper__.columns
+        assert callable(getattr(fabrica, metodo))
 
 
 def test_gerar_fila_materializa_um_item_por_campo_faltante(db_session: Session) -> None:
