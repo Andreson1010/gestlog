@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-018 · 2026-09-23 · testes/organização
+- **Gatilho**: criar um arquivo de teste com o mesmo basename de um teste já existente em outro subdiretório de `tests/` (sem `__init__.py`).
+- **Erro**: criei `tests/correcoes/test_servico.py` clonando o nome de `tests/ingestion/test_servico.py`; a suíte completa falhou na coleta ("import file mismatch") porque o pytest importa ambos como o módulo `test_servico`.
+- **Regra**: em `tests/` sem pacotes, use basename único por arquivo (ex.: `test_servico_fila.py`); ao criar um `test_*.py`, confira se o nome já existe em outro diretório.
+- **Evidência**: T5; suíte coletava 1 erro e passou (335) após renomear para `tests/correcoes/test_servico_fila.py`.
+
 ## L-017 · 2026-09-23 · tipagem
 - **Gatilho**: anotar helper que devolve uma de duas formas de valor conforme um ramo (`moda` → textos; numérico → floats).
 - **Erro**: declarei `-> list`, apagando a união real; o chamador não enxerga que ora vêm `str`, ora `float`, e a checagem estática não distingue.
