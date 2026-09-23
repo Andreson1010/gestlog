@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from gestlog.audit.eventos import (
+    EVENTO_CORRECAO_APLICADA,
+    EVENTO_CORRECAO_APROVADA,
+    EVENTO_CORRECAO_FALHOU,
+    EVENTO_CORRECAO_REJEITADA,
     EVENTO_FEEDBACK,
     EVENTO_IMPORTACAO,
     EVENTO_PERGUNTA,
@@ -13,6 +17,10 @@ from gestlog.audit.eventos import (
 from gestlog.audit.retencao import purgar_expiradas, retencao_dias
 
 __all__ = [
+    "EVENTO_CORRECAO_APLICADA",
+    "EVENTO_CORRECAO_APROVADA",
+    "EVENTO_CORRECAO_FALHOU",
+    "EVENTO_CORRECAO_REJEITADA",
     "EVENTO_FEEDBACK",
     "EVENTO_IMPORTACAO",
     "EVENTO_PERGUNTA",
