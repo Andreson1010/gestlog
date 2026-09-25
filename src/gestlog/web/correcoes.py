@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Annotated, get_args
 from uuid import UUID
@@ -26,6 +27,8 @@ from gestlog.repositories.catalog import (
     SupplierRepository,
     TransportRepository,
 )
+from gestlog.repositories.correcoes import CorrectionRepository
+from gestlog.repositories.users import UserRepository
 from gestlog.web.ingestion_ui import get_sync_session
 from gestlog.web.schemas import DecisaoCorrecao
 
@@ -34,6 +37,16 @@ _DECISOES = get_args(DecisaoCorrecao)
 _LIMITE_PADRAO = 200
 _LIMITE_MAXIMO = 500
 _CATALOGOS = (StockRepository, SupplierRepository, TransportRepository)
+
+
+def _inicio(valor: date | None) -> datetime | None:
+    """Converte a data inicial no primeiro instante do dia (UTC)."""
+    return datetime.combine(valor, time.min, tzinfo=UTC) if valor else None
+
+
+def _fim(valor: date | None) -> datetime | None:
+    """Converte a data final no último instante do dia (UTC)."""
+    return datetime.combine(valor, time.max, tzinfo=UTC) if valor else None
 
 
 def _tem_dados(session: Session, empresa_id: UUID) -> bool:
@@ -94,6 +107,38 @@ def create_correcoes_router() -> APIRouter:
     ) -> Response:
         """Gera e lista os itens pendentes da empresa, agrupados por tipo."""
         return _render(request, session, vinculo, usuario, limite)
+
+    @router.get("/correcoes/historico", response_class=HTMLResponse)
+    def pagina_historico(
+        request: Request,
+        usuario: Annotated[User, Depends(get_current_user)],
+        vinculo: Annotated[Membership, Depends(exigir_papel(*PAPEIS_APROVADORES))],
+        session: Annotated[Session, Depends(get_sync_session)],
+        desde: date | None = None,
+        ate: date | None = None,
+        limite: Annotated[int, Query(ge=1, le=_LIMITE_MAXIMO)] = _LIMITE_PADRAO,
+    ) -> Response:
+        """Lista as correções aplicadas/falhas da empresa no período informado."""
+        trilha = CorrectionRepository(session).listar_trilha(
+            vinculo.empresa_id, _inicio(desde), _fim(ate), limite
+        )
+        autores = UserRepository(session).emails(
+            [item.decidido_por for item in trilha if item.decidido_por]
+        )
+        return _TEMPLATES.TemplateResponse(
+            request,
+            "correcoes_historico.html",
+            {
+                "titulo": "Histórico de correções · gestlog",
+                "trilha": trilha,
+                "autores": autores,
+                "desde": desde.isoformat() if desde else "",
+                "ate": ate.isoformat() if ate else "",
+                "email": usuario.email,
+                "admin": vinculo.papel == "admin",
+                "pode_aprovar": vinculo.papel in PAPEIS_APROVADORES,
+            },
+        )
 
     @router.post("/correcoes/{item_id}/decisao", response_class=HTMLResponse)
     def decidir_correcao(

@@ -3,6 +3,11 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-027 · 2026-09-25 · repositório/SQLAlchemy
+- **Gatilho/Erro**: para silenciar o `C416` do ruff, reescrevi um mapeamento de linhas SQLAlchemy como `dict(self.session.execute(stmt).tuples())`; passou no lint, mas quebrou em runtime (`TypeError: 'ChunkedIteratorResult' object is not subscriptable`) nos 4 testes de histórico.
+- **Regra**: sugestão de linter sobre iterável de `Row` não é autofix seguro — mantenha o mapeamento explícito (`{linha.id: linha.email for linha in ...}`) e só aplique o rewrite após rodar o teste.
+- **Evidência**: self-review T11 (`repositories/users.py::emails`; gate falhou e voltou a verde ao reverter).
+
 ## L-026 · 2026-09-25 · web/contexto de template
 - **Gatilho/Erro**: ao passar um flag de permissão ao template, hardcodei `pode_aprovar: True` numa rota admin em vez de derivar do conjunto canônico (`PAPEIS_APROVADORES`); o menu parecia certo, mas ignorava a fonte única.
 - **Regra**: todo flag de contexto derivado de um conjunto de papéis/estados deve ser calculado da constante canônica, mesmo quando o valor atual é sempre o mesmo.
