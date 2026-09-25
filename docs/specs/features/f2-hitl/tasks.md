@@ -3,7 +3,7 @@
 **Design**: `docs/specs/features/f2-hitl/design.md`
 **Spec**: `docs/specs/features/f2-hitl/spec.md`
 **Status**: In progress
-**Progresso**: T1 ✅ · T2 ✅ · T3 ✅ · T4 ✅ · T5 ✅ · T6 ✅ · T7 ✅ · T8 ✅ · T9 ✅ · T10 ✅ · T11–T12 pendentes
+**Progresso**: T1 ✅ · T2 ✅ · T3 ✅ · T4 ✅ · T5 ✅ · T6 ✅ · T7 ✅ · T8 ✅ · T9 ✅ · T10 ✅ · T11 ✅ · T12 pendente
 
 ---
 
@@ -237,7 +237,7 @@ parallel-safe** (TESTING.md); executar sequencialmente por fase.
 | T8 rejeitar | 1 fluxo | ✅ |
 | T9 retenção | 1 integração | ✅ |
 | T10 web fila/decisão | 1 router + UI | ✅ |
-| T11 web trilha | 1 página | ⏳ |
+| T11 web trilha | 1 página | ✅ |
 | T12 aceitação + ajustes | 1 arquivo + ajustes | ⏳ |
 
 ## Diagram-Definition Cross-Check
