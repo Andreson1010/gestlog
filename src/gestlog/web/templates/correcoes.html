@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="pagina">
+  <div class="hero">
+    <h1>Correções</h1>
+    <p>Revise as sugestões e aprove ou rejeite cada ajuste do cadastro.</p>
+  </div>
+  {% if erro %}
+  <div class="aviso erro" role="alert">{{ erro }}</div>
+  {% endif %}
+  {% if quantidade == 0 %}
+  <div class="aviso correcoes-vazio" role="status">
+    {% if tem_dados %}
+    <strong>Nenhuma correção pendente.</strong>
+    <span>Os cadastros da empresa estão completos.</span>
+    {% else %}
+    <strong>Sem dados importados.</strong>
+    <span><a href="/importar">Importe seus cadastros</a> para gerar sugestões de correção.</span>
+    {% endif %}
+  </div>
+  {% else %}
+  {% for tipo, itens in grupos.items() %}
+  <section class="grupo-correcoes" aria-label="Correções de {{ tipo }}">
+    <h2>{{ tipo }} <span class="contagem">{{ itens|length }}</span></h2>
+    <div class="painel-tabela">
+      <table class="tabela-historico">
+        <thead>
+          <tr>
+            <th>Registro</th>
+            <th>Campo</th>
+            <th>Valor atual</th>
+            <th>Valor sugerido</th>
+            <th>Justificativa</th>
+            <th class="col-acao" aria-label="Ações"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td>{{ item.alvo_chave }}</td>
+            <td>{{ item.campo }}</td>
+            <td>{{ item.valor_no_pedido if item.valor_no_pedido else "—" }}</td>
+            <td>
+              {% if item.valor_sugerido is not none %}{{ item.valor_sugerido }}{% else %}sem sugestão{% endif %}
+            </td>
+            <td>
+              {{ item.justificativa }}
+              {% if item.fonte %}<span class="fonte">{{ item.fonte }}</span>{% endif %}
+            </td>
+            <td class="col-acao">
+              {% if item.valor_sugerido is not none %}
+              <form method="post" action="/correcoes/{{ item.id }}/decisao?limite={{ limite }}">
+                <input type="hidden" name="decisao" value="aprovar" />
+                <button
+                  class="botao-mini"
+                  type="submit"
+                  aria-label="Aprovar {{ item.campo }} de {{ item.alvo_chave }}"
+                >
+                  Aprovar
+                </button>
+              </form>
+              {% endif %}
+              <form class="form-rejeitar" method="post" action="/correcoes/{{ item.id }}/decisao?limite={{ limite }}">
+                <input type="hidden" name="decisao" value="rejeitar" />
+                <input
+                  name="justificativa"
+                  type="text"
+                  required
+                  placeholder="Justificativa"
+                  aria-label="Justificativa para rejeitar {{ item.campo }} de {{ item.alvo_chave }}"
+                />
+                <button
+                  class="botao-remover"
+                  type="submit"
+                  aria-label="Rejeitar {{ item.campo }} de {{ item.alvo_chave }}"
+                >
+                  Rejeitar
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

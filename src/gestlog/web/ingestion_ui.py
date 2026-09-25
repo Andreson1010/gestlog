@@ -19,6 +19,7 @@ from gestlog.auth import (
     get_current_membership_optional,
 )
 from gestlog.config import get_settings
+from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Empresa, Membership, User
 from gestlog.db.session import build_engine, build_session_factory
 from gestlog.ingestion import ErroImportacao, historico, importar
@@ -68,6 +69,8 @@ def create_ingestion_router() -> APIRouter:
                 "tipos": _TIPOS,
                 "email": usuario.email,
                 "admin": membership is not None and membership.papel == "admin",
+                "pode_aprovar": membership is not None
+                and membership.papel in PAPEIS_APROVADORES,
             },
         )
 
@@ -116,6 +119,8 @@ def create_ingestion_router() -> APIRouter:
                 "jobs": historico(session, empresa.id),
                 "email": usuario.email if usuario else "",
                 "admin": membership is not None and membership.papel == "admin",
+                "pode_aprovar": membership is not None
+                and membership.papel in PAPEIS_APROVADORES,
             },
         )
 

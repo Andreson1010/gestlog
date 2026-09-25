@@ -3,6 +3,11 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-026 · 2026-09-25 · web/contexto de template
+- **Gatilho/Erro**: ao passar um flag de permissão ao template, hardcodei `pode_aprovar: True` numa rota admin em vez de derivar do conjunto canônico (`PAPEIS_APROVADORES`); o menu parecia certo, mas ignorava a fonte única.
+- **Regra**: todo flag de contexto derivado de um conjunto de papéis/estados deve ser calculado da constante canônica, mesmo quando o valor atual é sempre o mesmo.
+- **Evidência**: self-review T10 (`web/admin_ui.py`, corrigido para `admin.papel in PAPEIS_APROVADORES`).
+
 ## L-024 · 2026-09-23 · testes/conjunto (absorve L-021, L-023)
 - **Gatilho/Erro**: guard, mapa ou laço cobre um **conjunto** (tipos, estados, empresas), mas o teste exercita só um representante — os demais passariam numa regressão.
 - **Regra**: um teste por elemento do conjunto (tipo / estado terminal / empresa), asseverando a não-alteração; cobertura de um ramo não valida os demais.
