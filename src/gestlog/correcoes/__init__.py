@@ -21,7 +21,10 @@ from gestlog.correcoes.erros import (
 from gestlog.correcoes.servico import CorrectionService
 from gestlog.correcoes.sugestoes import Sugestao, sugerir
 
+PAPEIS_APROVADORES = ("admin", "gestor")
+
 __all__ = [
+    "PAPEIS_APROVADORES",
     "CampoCorrecaoInvalido",
     "CorrecaoAlvoInvalido",
     "CorrecaoFalhaEscrita",
