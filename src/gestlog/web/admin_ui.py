@@ -17,6 +17,7 @@ from gestlog.auth import (
     get_async_session,
     get_current_user,
 )
+from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
 from gestlog.web.schemas import Papel
 
@@ -48,6 +49,7 @@ async def _render(
             "erro": erro,
             "email": email,
             "admin": True,
+            "pode_aprovar": admin.papel in PAPEIS_APROVADORES,
         },
         status_code=status_code,
     )

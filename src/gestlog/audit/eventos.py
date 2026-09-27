@@ -1,4 +1,21 @@
-"""Catálogo de eventos de auditoria e registro por empresa."""
+"""Catálogo de eventos de auditoria e registro por empresa.
+
+Eventos de correção (F2/HITL) e seus call sites em ``correcoes.servico``:
+
+- ``EVENTO_CORRECAO_APROVADA`` (``aprovar``, após validar o item):
+  ``{item_id, tipo, alvo_chave, campo}``.
+- ``EVENTO_CORRECAO_REJEITADA`` (``rejeitar``):
+  ``{item_id, tipo, alvo_chave, campo}``.
+- ``EVENTO_CORRECAO_APLICADA`` (``aprovar``, após o ``upsert``):
+  ``{item_id, tipo, alvo_chave, campo, valor}``.
+- ``EVENTO_CORRECAO_FALHOU`` (``aprovar``, conflito/alvo/erro):
+  ``{item_id, motivo}``.
+
+O ``detalhe`` **nunca** carrega ``justificativa``/``motivo_rejeicao`` (texto livre do
+usuário) nem PII. O ``valor`` é dado operacional de catálogo, truncado, e o ``motivo``
+de ``EVENTO_CORRECAO_FALHOU`` é um código de falha, não texto livre do usuário. O valor
+aplicado completo fica no ``ItemCorrecao``, referenciável por ``item_id``.
+"""
 
 from __future__ import annotations
 
@@ -14,11 +31,20 @@ EVENTO_RECOMENDACAO = "recomendacao"
 EVENTO_FEEDBACK = "feedback"
 EVENTO_IMPORTACAO = "importacao"
 
+EVENTO_CORRECAO_APROVADA = "correcao_aprovada"
+EVENTO_CORRECAO_REJEITADA = "correcao_rejeitada"
+EVENTO_CORRECAO_APLICADA = "correcao_aplicada"
+EVENTO_CORRECAO_FALHOU = "correcao_falhou"
+
 EVENTOS: tuple[str, ...] = (
     EVENTO_PERGUNTA,
     EVENTO_RECOMENDACAO,
     EVENTO_FEEDBACK,
     EVENTO_IMPORTACAO,
+    EVENTO_CORRECAO_APROVADA,
+    EVENTO_CORRECAO_REJEITADA,
+    EVENTO_CORRECAO_APLICADA,
+    EVENTO_CORRECAO_FALHOU,
 )
 
 

@@ -22,11 +22,13 @@ from gestlog.auth import (
 )
 from gestlog.auth.accounts import criar_conta
 from gestlog.config import Settings, get_settings
+from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
 from gestlog.web.admin import create_admin_router
 from gestlog.web.admin_ui import create_admin_ui_router
 from gestlog.web.chat import create_chat_router
 from gestlog.web.chat_ui import create_chat_ui_router
+from gestlog.web.correcoes import create_correcoes_router
 from gestlog.web.feedback import create_feedback_router
 from gestlog.web.ingestion_ui import create_ingestion_router
 from gestlog.web.kpis import create_kpis_router
@@ -75,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     aplicacao.include_router(create_chat_ui_router())
     aplicacao.include_router(create_kpis_router())
     aplicacao.include_router(create_chat_router())
+    aplicacao.include_router(create_correcoes_router())
     aplicacao.include_router(create_feedback_router())
 
     @aplicacao.get("/", response_class=HTMLResponse)
@@ -95,6 +98,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "titulo": "gestlog",
                 "email": usuario.email,
                 "admin": membership is not None and membership.papel == "admin",
+                "pode_aprovar": membership is not None
+                and membership.papel in PAPEIS_APROVADORES,
             },
         )
 

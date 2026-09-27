@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from gestlog.auth import current_active_user_optional, exigir_papel
+from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
 from gestlog.repositories.kpis import KpiRepository
 from gestlog.web.ingestion_ui import get_sync_session
@@ -56,6 +57,7 @@ def create_kpis_router() -> APIRouter:
                 "ate": ate.isoformat() if ate else "",
                 "email": usuario.email if usuario else "",
                 "admin": vinculo.papel == "admin",
+                "pode_aprovar": vinculo.papel in PAPEIS_APROVADORES,
             },
         )
 

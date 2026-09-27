@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 Papel = Literal["admin", "operador", "gestor"]
 DecisaoFeedback = Literal["aceita", "descartada"]
+DecisaoCorrecao = Literal["aprovar", "rejeitar"]
 
 
 class ContaCreate(BaseModel):

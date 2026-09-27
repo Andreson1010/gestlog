@@ -1,46 +1,64 @@
 # Lições (memória de erros — projeto gestlog)
 
-> Só erro real, já corrigido e observado; teto ~40 linhas; mais recente no topo.
+> Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
-## L-013 · 2026-09-22 · web/schema
-- **Gatilho**: página HTML cujo `<select>`/validação usa um conjunto de valores que já existe como `Literal` no schema JSON.
-- **Erro**: redeclarei `_PAPEIS = ("admin", "gestor", "operador")` no router, duplicando a fonte de verdade; ao mudar o domínio, formulário e API divergem em silêncio.
-- **Regra**: derive opções e validação de uma única fonte (`get_args(Papel)`), nunca recopie o enum.
-- **Evidência**: self-review T6; `admin_ui.py` passou a usar `get_args(Papel)` em vez da tupla local.
+## L-029 · 2026-09-27 · testes/aceitação (asserção sem âncora)
+- **Gatilho/Erro**: no self-review da T12, achei asserções que passariam mesmo com regressão — `assert item_correcao(...)` (objeto ORM é sempre truthy; `scalar_one` já levanta se faltar) e `assert "—" in pagina.text` (símbolo solto presente em qualquer lugar do HTML).
+- **Regra**: ancore a asserção ao estado/célula que o critério exige (`terminal.decidido_por is not None`, `<td>—</td>`), não a um objeto truthy nem a um único caractere sem contexto.
+- **Evidência**: self-review T12 (`test_f2_hitl_decisao.py::test_apr_05`, `test_f2_hitl.py::test_sug_05`) e code review T12 (`test_f2_hitl_trilha.py::test_edg_02`).
 
-## L-012 · 2026-09-22 · html/js
-- **Gatilho**: botão com ícone SVG + texto que precisa mudar de rótulo temporariamente (ex.: "Copiar conversa" → "Copiado!").
-- **Erro**: usei `botao.textContent = "Copiado!"` e depois restaurei só o texto; `textContent` apaga TODOS os filhos, então o `<svg>` do botão foi destruído na primeira cópia (regressão visual silenciosa, sem teste).
-- **Regra**: ao trocar o rótulo de um controle que contém ícone, envolva o texto num `<span data-...>` e altere só o `textContent` desse span — nunca o do container.
-- **Evidência**: code review do pente geral; `chat.html` agora tem `[data-rotulo-copiar]` e o JS preserva o SVG.
+## L-028 · 2026-09-27 · testes/aceitação (critério vs. affordance)
+- **Gatilho/Erro**: no teste de aceitação da INC-02 ("indicar os campos faltantes"), asseverei pelo `aria-label="Aprovar <campo> de <alvo>"`; o gate quebrou porque o botão de aprovar só existe quando **há sugestão** — campos "sem sugestão" não o têm.
+- **Regra**: quando o critério pede apenas *indicar* o campo ausente, assevere a célula do dado (`<td>campo</td>`), não a affordance de ação (que depende de haver sugestão).
+- **Evidência**: `tests/acceptance/test_f2_hitl.py::test_inc_02` (falhou e voltou a verde ao trocar a asserção).
 
-## L-011 · 2026-09-21 · web/testes
-- **Gatilho**: remover da UI um controle/markup que outra camada consome (ex.: botões de feedback do chat).
-- **Erro**: rodei só `tests/web/` e esqueci que `tests/acceptance/test_f1_mvp.py` raspava o HTML do chat (`/recomendacoes/<id>/feedback`) para obter o id da recomendação — quebrou após a remoção.
-- **Regra**: ao remover/renomear markup, rode a suíte **completa** e prefira buscar ids no banco/repositório em vez de extraí-los do HTML renderizado.
-- **Evidência**: `test_cop_aceite_registra_decisao` — agora usa `_recomendacao_do_usuario(fabrica_sync, email)`.
+## L-027 · 2026-09-25 · repositório/SQLAlchemy
+- **Gatilho/Erro**: para silenciar o `C416` do ruff, reescrevi um mapeamento de linhas SQLAlchemy como `dict(self.session.execute(stmt).tuples())`; passou no lint, mas quebrou em runtime (`TypeError: 'ChunkedIteratorResult' object is not subscriptable`) nos 4 testes de histórico.
+- **Regra**: sugestão de linter sobre iterável de `Row` não é autofix seguro — mantenha o mapeamento explícito (`{linha.id: linha.email for linha in ...}`) e só aplique o rewrite após rodar o teste.
+- **Evidência**: self-review T11 (`repositories/users.py::emails`; gate falhou e voltou a verde ao reverter).
 
-## L-010 · 2026-09-21 · css/templates
-- **Gatilho**: reescrever um CSS global que ainda serve páginas não migradas / declarar asset externo por token.
-- **Erro**: (a) ao reescrever `app.css` removi `.form-importar select,input` (página `importar` sem estilo) e mantive `.form-chat button` legado que, por especificidade, sobrescreveu `.chat-enviar`; (b) `--font-sans: Inter` sem carregar a fonte.
-- **Regra**: ao reescrever CSS global, inventarie TODAS as regras legadas ainda referenciadas por templates e remova/escope as que colidem com os novos componentes; ao nomear um asset num token, carregue-o no `<head>`.
-- **Evidência**: code review do PR (HIGH `importar` sem estilo; MEDIUM `.form-chat button` > `.chat-enviar`); `base.html` ganhou Google Fonts (consolida L-008).
+## L-026 · 2026-09-25 · web/contexto de template
+- **Gatilho/Erro**: ao passar um flag de permissão ao template, hardcodei `pode_aprovar: True` numa rota admin em vez de derivar do conjunto canônico (`PAPEIS_APROVADORES`); o menu parecia certo, mas ignorava a fonte única.
+- **Regra**: todo flag de contexto derivado de um conjunto de papéis/estados deve ser calculado da constante canônica, mesmo quando o valor atual é sempre o mesmo.
+- **Evidência**: self-review T10 (`web/admin_ui.py`, corrigido para `admin.papel in PAPEIS_APROVADORES`).
 
-## L-009 · 2026-09-21 · web/form
-- **Gatilho**: rota web com `Form()` obrigatório que deve **reexibir o formulário** quando o input é inválido.
-- **Erro**: `Annotated[str, Form()]` com valor vazio vira `None` no FastAPI → responde **422 JSON** ("missing"), sem cair no handler que re-renderiza o HTML.
-- **Regra**: dê default `""` aos campos `Form()` e deixe o schema Pydantic rejeitar; assim todo input inválido passa pelo mesmo caminho de erro renderizado.
-- **Evidência**: `tests/web/test_cadastro.py::test_cadastro_nome_empresa_vazio_recusa` (422 antes, 400 após).
+## L-024 · 2026-09-23 · testes/conjunto (absorve L-021, L-023)
+- **Gatilho/Erro**: guard, mapa ou laço cobre um **conjunto** (tipos, estados, empresas), mas o teste exercita só um representante — os demais passariam numa regressão.
+- **Regra**: um teste por elemento do conjunto (tipo / estado terminal / empresa), asseverando a não-alteração; cobertura de um ramo não valida os demais.
+- **Evidência**: T7 (aplicar nos 3 tipos), T8 (3 estados terminais), T9 (2 empresas com prazos distintos).
 
-## L-007 · 2026-09-21 · grafo/testes
-- **Gatilho**: endurecer um fluxo (guarda anti-loop) e cobrir a correção com teste de regressão.
-- **Erro**: forçar `FINISH` em toda `AIMessage` quebrou o roteamento multi-especialista; o teste da guarda só afirmava `next == "FINISH"`, que passava mesmo sem ela.
-- **Regra**: modele o requisito real (rastrear `especialistas_visitados` e barrar só a **repetição**) e afirme o efeito **exclusivo** da correção; rode a suíte completa.
-- **Evidência**: `test_graph_encerra_sem_reencaminhar_apos_especialista` (passava sem a guarda); golden set quebrou com o forcing.
+## L-025 · 2026-09-23 · doc/contrato de auditoria (absorve L-019, L-020)
+- **Gatilho/Erro**: transcrever/resumir um contrato de design omitindo qualificadores (faltou "`valor` truncado", `motivo` = código, a coluna do corte `created_at` vs. `decidido_em`) — e confiar em constraint de coluna não imposta (SQLite `String(255)`).
+- **Regra**: transcreva o contrato **integralmente**, desambigue homônimos, **nomeie a coluna** do corte temporal e trunque explicitamente no call site.
+- **Evidência**: self-review T6/T7/T9 (`audit/eventos.py`, `_valor_auditavel`, `correcoes.py::purgar_expiradas`).
 
-## L-004 · 2026-09-21 · opencode (fluxo + plugin) — consolida L-002/L-003
-- **Gatilho**: tornar um artefato obrigatório num passo de fluxo multiarquivo; decidir gate vermelho→verde por regex no plugin `self-learning`.
-- **Erro**: (a) adicionei "Lesson Capture" ao `developer-self-reviewer`/skills mas não ao `feature-factory` (fase 5.5), então o Persistence Gate mutava arquivo "inesperado"; (b) `\b\d+\s+failed\b` casava "0 failed" e `\berror\b` texto benigno, e `failedBySession` crescia sem limite.
-- **Regra**: ao mudar o que um passo produz, atualize TODOS os lugares que o enumeram (skill, gate, agent); com exit code decida só por ele, senão exija `[1-9]\d*`; cape sessões/falhas com evict LRU.
-- **Evidência**: `feature-factory/SKILL.md` fase 5.5; `.opencode/plugin/self-learning.ts` (`FAIL`/`PASS`, `recordFailure`).
+## L-022 · 2026-09-23 · processo/ADRs
+- **Gatilho/Erro**: deleguei a ADR ao subagente sem validar a saída; T1–T6 saíram com 4 seções (faltava "Roadmap Imediato" e, na T3, "Validação").
+- **Regra**: carregue a skill `write-fluid-hybrid-adr` e **gere/valide a ADR você mesmo** (checklist das 5 seções) antes de fechar a task.
+- **Evidência**: correção do usuário; PR #55 (`docs/f2-adr-fluido`) alinhou T1–T6.
+
+## L-018 · 2026-09-23 · testes/coleta e suíte completa (absorve L-011)
+- **Gatilho/Erro**: criei `tests/correcoes/test_servico.py` com basename já usado em `tests/ingestion/` (sem `__init__.py`) → "import file mismatch"; e remover markup pode quebrar testes que raspa HTML.
+- **Regra**: basename **único** por arquivo de teste; ao remover/renomear markup, rode a suíte **completa** e busque ids no repositório, não no HTML.
+- **Evidência**: T5 (`test_servico_fila.py`); L-011 em `tests/acceptance/test_f1_mvp.py`.
+
+## L-016 · 2026-09-23 · domínio/tipagem (absorve L-017)
+- **Gatilho/Erro**: ao extrair helper, avaliei `getattr(...)` antes de validar o campo (`AttributeError` em vez de erro de domínio); e anotei `-> list` apagando a união real.
+- **Regra**: preserve a ordem de avaliação (valide **antes** do `getattr`) e anote a união real (`list[str] | list[float]`), não `list` cru.
+- **Evidência**: T4; `completude.valor_atual` e `sugestoes._valores`.
+
+## L-013 · 2026-09-23 · fonte única (absorve L-015)
+- **Gatilho/Erro**: redeclarei um conjunto já existente (papéis/status) e nomeei constantes pelo critério errado (`_STATUS_TERMINAIS` sem `rejeitado`).
+- **Regra**: derive de uma única fonte (`get_args(Papel)`, `_CAMPOS`) e nomeie cada conjunto pelo **critério real** (`_STATUS_TERMINAIS` × `_STATUS_TRILHA`).
+- **Evidência**: T6 UI (`admin_ui.py`); `repositories/correcoes.py` (T2).
+
+## L-014 · 2026-09-22 · git/PR
+- **Gatilho/Erro**: branch/PR de task a partir de integração criada nesta sessão sem upstream → `gh pr create --base` falhou e a task saiu sem a anterior.
+- **Regra**: antes de cortar a task e abrir o PR, sincronize a integração com o `origin` (`git push`/`git pull --ff-only`).
+- **Evidência**: PR #47 e branch da T2 refeitos.
+
+## L-009 · 2026-09-21 · web/form e html/js (absorve L-012)
+- **Gatilho/Erro**: `Annotated[str, Form()]` vazio vira `None` no FastAPI → 422 JSON em vez do HTML re-renderizado; trocar rótulo de botão com ícone via `textContent` do container apaga o `<svg>`.
+- **Regra**: default `""` em `Form()` (o Pydantic rejeita e o HTML re-renderiza); envolva o texto do ícone num `<span data-...>` e altere só o `textContent` dele.
+- **Evidência**: `tests/web/test_cadastro.py::...`; code review (`chat.html`).

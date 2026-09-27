@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="pagina">
+  <div class="hero">
+    <h1>Histórico de correções</h1>
+    <p>Trilha das correções aplicadas no período, com autor e data.</p>
+  </div>
+  <form class="form-periodo" method="get" action="/correcoes/historico">
+    <div>
+      <label for="desde">De</label>
+      <input id="desde" name="desde" type="date" value="{{ desde }}" />
+    </div>
+    <div>
+      <label for="ate">Até</label>
+      <input id="ate" name="ate" type="date" value="{{ ate }}" />
+    </div>
+    <button type="submit">Filtrar</button>
+  </form>
+  {% if not trilha %}
+  <div class="aviso correcoes-vazio" role="status">
+    <strong>Nenhuma correção aplicada no período.</strong>
+    <span><a href="/correcoes">Voltar à fila de correções</a>.</span>
+  </div>
+  {% else %}
+  <div class="painel-tabela">
+    <table class="tabela-historico">
+      <thead>
+        <tr>
+          <th>Registro</th>
+          <th>Campo</th>
+          <th>Valor</th>
+          <th>Autor</th>
+          <th>Data</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in trilha %}
+        <tr>
+          <td>{{ item.alvo_chave }}</td>
+          <td>{{ item.campo }}</td>
+          <td>{{ item.valor_sugerido if item.valor_sugerido is not none else "—" }}</td>
+          <td>{{ autores.get(item.decidido_por, "—") }}</td>
+          <td>
+            {% if item.decidido_em %}{{ item.decidido_em.strftime("%d/%m/%Y %H:%M") }}{% else %}—{% endif %}
+          </td>
+          <td>
+            {{ item.status }}
+            {% if item.motivo_falha %}<span class="fonte">{{ item.motivo_falha }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -27,7 +27,17 @@ def test_upgrade_head_cria_tabelas(alembic_config: tuple[Config, str]) -> None:
 
     tabelas = set(inspect(create_engine(db_url)).get_table_names())
     assert {"empresa", "user", "stock_item", "audit_log"} <= tabelas
+    assert "item_correcao" in tabelas
     assert "alembic_version" in tabelas
+
+
+def test_item_correcao_tem_indices(alembic_config: tuple[Config, str]) -> None:
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "head")
+
+    inspetor = inspect(create_engine(db_url))
+    indices = {indice["name"] for indice in inspetor.get_indexes("item_correcao")}
+    assert {"ix_item_correcao_empresa_status", "ix_item_correcao_alvo"} <= indices
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
@@ -37,3 +47,4 @@ def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> No
 
     tabelas = set(inspect(create_engine(db_url)).get_table_names())
     assert "empresa" not in tabelas
+    assert "item_correcao" not in tabelas

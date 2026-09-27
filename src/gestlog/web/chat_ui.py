@@ -17,6 +17,7 @@ from gestlog.auth import (
     get_current_membership_optional,
 )
 from gestlog.copilot import carregar_historico, texto_principal
+from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Empresa, Membership, User
 from gestlog.web.ingestion_ui import get_sync_session
 
@@ -54,6 +55,8 @@ def create_chat_ui_router() -> APIRouter:
                 "turnos": turnos,
                 "email": usuario.email,
                 "admin": membership is not None and membership.papel == "admin",
+                "pode_aprovar": membership is not None
+                and membership.papel in PAPEIS_APROVADORES,
             },
         )
 
