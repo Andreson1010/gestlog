@@ -3,6 +3,16 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-029 · 2026-09-27 · testes/aceitação (asserção sem âncora)
+- **Gatilho/Erro**: no self-review da T12, achei asserções que passariam mesmo com regressão — `assert item_correcao(...)` (objeto ORM é sempre truthy; `scalar_one` já levanta se faltar) e `assert "—" in pagina.text` (símbolo solto presente em qualquer lugar do HTML).
+- **Regra**: ancore a asserção ao estado/célula que o critério exige (`terminal.decidido_por is not None`, `<td>—</td>`), não a um objeto truthy nem a um único caractere sem contexto.
+- **Evidência**: self-review T12 (`test_f2_hitl_decisao.py::test_apr_05`, `test_f2_hitl.py::test_sug_05`) e code review T12 (`test_f2_hitl_trilha.py::test_edg_02`).
+
+## L-028 · 2026-09-27 · testes/aceitação (critério vs. affordance)
+- **Gatilho/Erro**: no teste de aceitação da INC-02 ("indicar os campos faltantes"), asseverei pelo `aria-label="Aprovar <campo> de <alvo>"`; o gate quebrou porque o botão de aprovar só existe quando **há sugestão** — campos "sem sugestão" não o têm.
+- **Regra**: quando o critério pede apenas *indicar* o campo ausente, assevere a célula do dado (`<td>campo</td>`), não a affordance de ação (que depende de haver sugestão).
+- **Evidência**: `tests/acceptance/test_f2_hitl.py::test_inc_02` (falhou e voltou a verde ao trocar a asserção).
+
 ## L-027 · 2026-09-25 · repositório/SQLAlchemy
 - **Gatilho/Erro**: para silenciar o `C416` do ruff, reescrevi um mapeamento de linhas SQLAlchemy como `dict(self.session.execute(stmt).tuples())`; passou no lint, mas quebrou em runtime (`TypeError: 'ChunkedIteratorResult' object is not subscriptable`) nos 4 testes de histórico.
 - **Regra**: sugestão de linter sobre iterável de `Row` não é autofix seguro — mantenha o mapeamento explícito (`{linha.id: linha.email for linha in ...}`) e só aplique o rewrite após rodar o teste.
