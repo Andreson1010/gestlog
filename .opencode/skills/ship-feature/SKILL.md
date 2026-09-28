@@ -103,7 +103,7 @@ Store the PR URL/number — needed for step 5.
 
 **Not skippable.** This is the step that has been missed before, causing findings to slip into merged code.
 
-Invoke the local **`code-reviewer`** skill against the opened PR diff (`git diff origin/main...HEAD`). Wait for the report before doing anything else. Don't invoke a plugin/cloud review variant (e.g. "ultra") automatically — that's billed and user-triggered only.
+Spawn the **`code-reviewer-agent` subagent** (Task tool) against the opened PR diff. It runs on an independent model (`opencode-go/glm-5.3-flash`), so it does not share the author's blind spots — this is the QA / Sênior / Tech Lead peer review, distinct from the author's self-review (phase 5.5 of `feature-factory`). Pass it the PR URL, the base branch, the `feature_slug` and the ADR path. It reports only (`edit: deny`); the builder fixes. Wait for the report before doing anything else. Don't invoke a plugin/cloud review variant (e.g. "ultra") automatically — that's billed and user-triggered only.
 
 Do not proceed to step 6/7 until the review has actually run and you have its findings in hand.
 
