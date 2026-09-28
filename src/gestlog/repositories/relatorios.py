@@ -190,12 +190,16 @@ class RelatorioRepository:
             prazo_medio=prazo_medio,
         )
 
-    def _listar(self, base: Select) -> list[CatalogoHistorico]:
+    def _listar(
+        self, base: Select[tuple[CatalogoHistorico]]
+    ) -> list[CatalogoHistorico]:
         """Materializa as linhas vigentes do histórico, ordenadas por chave."""
         stmt = base.order_by(CatalogoHistorico.chave)
         return list(self.session.execute(stmt).scalars().all())
 
-    def _contagens(self, base: Select, coluna: str) -> tuple[tuple[str, int], ...]:
+    def _contagens(
+        self, base: Select[tuple[CatalogoHistorico]], coluna: str
+    ) -> tuple[tuple[str, int], ...]:
         """Conta as linhas vigentes agrupadas por uma coluna (GROUP BY)."""
         sub = base.subquery()
         alvo = sub.c[coluna]
@@ -205,7 +209,9 @@ class RelatorioRepository:
             for valor, total in self.session.execute(stmt).all()
         )
 
-    def _peso_por_rota(self, base: Select) -> tuple[tuple[str, float], ...]:
+    def _peso_por_rota(
+        self, base: Select[tuple[CatalogoHistorico]]
+    ) -> tuple[tuple[str, float], ...]:
         """Soma o peso por rota (``origem``, ``destino``), incluindo zero."""
         sub = base.subquery()
         stmt = (
@@ -218,7 +224,7 @@ class RelatorioRepository:
             for origem, destino, total in self.session.execute(stmt).all()
         )
 
-    def _medias(self, base: Select) -> tuple[float, float]:
+    def _medias(self, base: Select[tuple[CatalogoHistorico]]) -> tuple[float, float]:
         """Calcula as médias de avaliação e prazo dos fornecedores vigentes."""
         sub = base.subquery()
         stmt = select(func.avg(sub.c.avaliacao), func.avg(sub.c.prazo_dias))

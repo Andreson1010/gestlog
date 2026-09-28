@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import Session
 
 from gestlog.db.models import CatalogoHistorico, ImportJob
@@ -72,9 +72,9 @@ class HistoricoRepository:
         dominio: str,
         desde: datetime | None,
         ate: datetime | None,
-    ) -> list:
+    ) -> list[ColumnElement[bool]]:
         """Monta os filtros de empresa, domínio e período inclusivo."""
-        condicoes: list = [
+        condicoes: list[ColumnElement[bool]] = [
             CatalogoHistorico.empresa_id == empresa_id,
             CatalogoHistorico.dominio == dominio,
         ]

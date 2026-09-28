@@ -15,13 +15,19 @@ from sqlalchemy.orm import Session
 from gestlog.auth import current_active_user_optional, exigir_papel
 from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
-from gestlog.repositories.relatorios import RelatorioRepository
+from gestlog.repositories.relatorios import (
+    RelatorioRepository,
+    ResumoEstoque,
+    ResumoFornecedores,
+    ResumoTransporte,
+)
 from gestlog.web.csv_relatorios import gerar_csv, nome_arquivo
 from gestlog.web.ingestion_ui import get_sync_session
 from gestlog.web.kpis import _fim, _inicio
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 _DOMINIOS = ("estoque", "transporte", "fornecedores")
+_Resumo = ResumoEstoque | ResumoTransporte | ResumoFornecedores
 
 _CABECALHOS: dict[str, tuple[str, ...]] = {
     "estoque": (
@@ -77,7 +83,7 @@ def _resumo(
     dominio: str,
     desde: date | None,
     ate: date | None,
-):
+) -> _Resumo:
     """Delega ao repositório do domínio, aplicando o período UTC inclusivo."""
     repo = RelatorioRepository(session)
     inicio, fim = _inicio(desde), _fim(ate)
@@ -93,7 +99,9 @@ def _data(valor: datetime | None) -> str:
     return valor.isoformat() if valor is not None else ""
 
 
-def _cabecalho_linhas(dominio: str, resumo) -> tuple[tuple[str, ...], list[tuple]]:
+def _cabecalho_linhas(
+    dominio: str, resumo: _Resumo
+) -> tuple[tuple[str, ...], list[tuple]]:
     """Monta o cabeçalho e as linhas da tabela principal de cada domínio."""
     if dominio == "estoque":
         linhas = [
@@ -162,6 +170,7 @@ def create_relatorios_router() -> APIRouter:
                 "titulo": "Relatórios · gestlog",
                 "dominio": dominio,
                 "resumo": resumo,
+                "cabecalhos": _CABECALHOS[dominio],
                 "desde": desde.isoformat() if desde else "",
                 "ate": ate.isoformat() if ate else "",
                 "email": usuario.email if usuario else "",

@@ -3,6 +3,16 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-033 · 2026-09-28 · web/formatação tela×CSV
+- **Gatilho/Erro**: no relatório de transporte a tela renderizava o datetime cru (`{{ registro.previsao_entrega }}` → `2026-06-10 00:00:00+00:00`) enquanto o CSV usava `.isoformat()` (`2026-06-10T00:00:00`); o requisito exige que as linhas do CSV correspondam exatamente à tabela exibida (REL-28/AC9).
+- **Regra**: quando tela e exportação compartilham a mesma tabela, formate o valor na tela com o **mesmo** formatador do CSV (aqui `isoformat()`), nunca deixe a conversão implícita de `str(datetime)` divergir; cubra com teste que compara o texto da página e a célula do CSV.
+- **Evidência**: self-review relatórios (`web/templates/relatorios.html`, `web/relatorios.py::_data`); `tests/web/test_relatorios.py::test_pagina_e_csv_transporte_exibem_mesma_data`.
+
+## L-032 · 2026-09-28 · tipagem/dispatcher
+- **Gatilho/Erro**: helpers que despacham por domínio (`_resumo`, `_cabecalho_linhas` em `web/relatorios.py`) e métodos que operam sobre `Select` do histórico ficaram sem anotação de retorno/parâmetro (`def _resumo(...):`, `base: Select`, `-> list`), apagando a união real de retorno e o tipo do alvo.
+- **Regra**: anote explicitamente o retorno de dispatchers (união dos dataclasses, ex. `_Resumo = ResumoEstoque | ResumoTransporte | ResumoFornecedores`) e os parâmetros genéricos (`Select[tuple[CatalogoHistorico]]`, `list[ColumnElement[bool]]`); não deixe o tipo inferido por omissão.
+- **Evidência**: self-review relatórios; `black`/`ruff`/`pytest` verdes após os ajustes.
+
 ## L-031 · 2026-09-28 · testes/timezone SQLite
 - **Gatilho/Erro**: comparei em teste `snapshot.importado_em == job.created_at` e `registro.previsao_entrega == previsao` (ambos `tzinfo=UTC`); o SQLite devolve o datetime lido **naive** (sem tz), então o gate ficou vermelho mesmo com o código de produção correto.
 - **Regra**: ao asseverar valor relido do SQLite contra datetime aware, normalize antes (`.replace(tzinfo=UTC)`); não "conserte" o código de produção nem passe `expire_on_commit`/`timezone` só para o teste.

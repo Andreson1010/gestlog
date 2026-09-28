@@ -334,6 +334,37 @@ async def test_pagina_transporte_renderiza_agregacoes(
     assert "SP → CWB" in resposta.text
 
 
+async def test_pagina_e_csv_transporte_exibem_mesma_data(
+    client: AsyncClient,
+    engines: tuple[AsyncEngine, Engine],
+    fabrica_sync: sessionmaker[Session],
+) -> None:
+    motor_async, _ = engines
+    empresa = await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    with fabrica_sync() as session:
+        _snap(
+            session,
+            empresa.id,
+            "transporte",
+            "R1",
+            origem="SP",
+            destino="CWB",
+            peso_kg=10.0,
+            status="entregue",
+            previsao_entrega=datetime(2026, 6, 10, tzinfo=UTC),
+            data_entrega=datetime(2026, 6, 15, tzinfo=UTC),
+        )
+        session.commit()
+
+    await _login(client, "a@empresa.com")
+    pagina = await client.get("/relatorios/transporte")
+    exportacao = await client.get("/relatorios/transporte/exportar")
+
+    assert pagina.status_code == 200
+    assert "2026-06-10T00:00:00" in pagina.text
+    assert _ler_csv(exportacao.content)[1][5] == "2026-06-10T00:00:00"
+
+
 async def test_pagina_fornecedores_renderiza_indicadores(
     client: AsyncClient,
     engines: tuple[AsyncEngine, Engine],

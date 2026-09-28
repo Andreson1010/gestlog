@@ -27,13 +27,9 @@
     <table class="tabela-relatorio">
       <thead>
         <tr>
-          <th>SKU</th>
-          <th>Nome</th>
-          <th>Categoria</th>
-          <th>Local</th>
-          <th>Quantidade</th>
-          <th>Mínimo</th>
-          <th>Situação</th>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
         </tr>
       </thead>
       <tbody>
@@ -81,14 +77,9 @@
     <table class="tabela-relatorio">
       <thead>
         <tr>
-          <th>Código de rastreio</th>
-          <th>Origem</th>
-          <th>Destino</th>
-          <th>Peso (kg)</th>
-          <th>Status</th>
-          <th>Previsão de entrega</th>
-          <th>Data de entrega</th>
-          <th>Situação</th>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
         </tr>
       </thead>
       <tbody>
@@ -99,8 +90,8 @@
           <td>{{ registro.destino }}</td>
           <td>{{ registro.peso_kg }}</td>
           <td>{{ registro.status }}</td>
-          <td>{{ registro.previsao_entrega or "" }}</td>
-          <td>{{ registro.data_entrega or "" }}</td>
+          <td>{{ registro.previsao_entrega.isoformat() if registro.previsao_entrega else "" }}</td>
+          <td>{{ registro.data_entrega.isoformat() if registro.data_entrega else "" }}</td>
           <td>
             <span class="chip{% if registro.situacao == "Atrasado" %} chip-alerta{% endif %}">{{ registro.situacao }}</span>
           </td>
@@ -137,12 +128,9 @@
     <table class="tabela-relatorio">
       <thead>
         <tr>
-          <th>Fornecedor</th>
-          <th>Nome</th>
-          <th>Categoria</th>
-          <th>Prazo (dias)</th>
-          <th>Avaliação</th>
-          <th>Status</th>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
         </tr>
       </thead>
       <tbody>
