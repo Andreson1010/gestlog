@@ -53,7 +53,7 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Code Quality (HIGH)
 
 - **Large functions** (>50 lines) — Split into smaller, focused functions
-- **Large files** (>600 lines) — Extract modules by responsibility
+- **Large files** (>800 lines) — Extract modules by responsibility
 - **Deep nesting** (>4 levels) — Use early returns, extract helpers
 - **Missing error handling** — Unhandled errors, empty catch/except blocks, swallowed exceptions
 - **Mutation patterns** — Prefer immutable operations over in-place mutation
@@ -169,7 +169,7 @@ Verdict: WARNING — 2 HIGH issues should be resolved before merge.
 
 Always check the project's own conventions from `AGENTS.md`, `CONTRIBUTING.md`, or equivalent:
 
-- File size limits (e.g. 200–400 lines typical, 600 max)
+- File size limits (e.g. 200–400 lines typical, 800 max)
 - Emoji policy (many projects prohibit emojis in code)
 - Immutability requirements
 - Database policies (RLS, migration patterns)
