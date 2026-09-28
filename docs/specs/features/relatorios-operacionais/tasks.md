@@ -2,7 +2,7 @@
 
 **Design:** `docs/specs/features/relatorios-operacionais/design.md`
 **Spec:** `docs/specs/features/relatorios-operacionais/spec.md`
-**Status:** Awaiting human approval
+**Status:** Approved (Checkpoint 2, 2026-09-28)
 **TLC scope:** complex
 
 > Notas de gate (de `docs/specs/codebase/TESTING.md` e `AGENTS.md`):

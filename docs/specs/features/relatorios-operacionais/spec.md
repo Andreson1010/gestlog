@@ -3,7 +3,7 @@
 **Path:** `docs/specs/features/relatorios-operacionais/spec.md`
 **TLC scope:** complex
 **Based on story:** gestor/admin vê relatórios tabulares (estoque, transporte, fornecedores) da própria empresa, recortados por período e exportáveis em CSV.
-**Status:** Awaiting human approval
+**Status:** Approved (Checkpoint 2, 2026-09-28)
 **Fonte de requisitos:** `docs/specs/features/relatorios-operacionais/story.md` (aprovada no Checkpoint 1; decisões Q1–Q12 vinculantes).
 
 ---
