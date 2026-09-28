@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% block estilos %}
+<link rel="stylesheet" href="{{ url_for('static', path='/relatorios.css') }}" />
+{% endblock %}
 {% block conteudo %}
-<div class="pagina">
+<div class="pagina pagina-relatorios">
   <h1>Relatórios · {{ dominio|capitalize }}</h1>
   <form class="form-periodo" method="get" action="/relatorios/{{ dominio }}">
     <div>
@@ -19,6 +22,7 @@
   </form>
 
   {% if dominio == "estoque" %}
+  {% if resumo.itens %}
   <div class="painel-tabela">
     <table class="tabela-relatorio">
       <thead>
@@ -41,7 +45,9 @@
           <td>{{ item.local }}</td>
           <td>{{ item.quantidade }}</td>
           <td>{{ item.minimo }}</td>
-          <td>{{ item.situacao }}</td>
+          <td>
+            <span class="chip{% if item.situacao == "Abaixo do mínimo" %} chip-alerta{% elif item.situacao == "Excedente" %} chip-excedente{% endif %}">{{ item.situacao }}</span>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -65,8 +71,12 @@
       </ul>
     </div>
   </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum item de estoque no período.</p>
+  {% endif %}
 
   {% elif dominio == "transporte" %}
+  {% if resumo.registros %}
   <div class="painel-tabela">
     <table class="tabela-relatorio">
       <thead>
@@ -91,7 +101,9 @@
           <td>{{ registro.status }}</td>
           <td>{{ registro.previsao_entrega or "" }}</td>
           <td>{{ registro.data_entrega or "" }}</td>
-          <td>{{ registro.situacao }}</td>
+          <td>
+            <span class="chip{% if registro.situacao == "Atrasado" %} chip-alerta{% endif %}">{{ registro.situacao }}</span>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -115,8 +127,12 @@
       </ul>
     </div>
   </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum registro de transporte no período.</p>
+  {% endif %}
 
   {% else %}
+  {% if resumo.fornecedores %}
   <div class="painel-tabela">
     <table class="tabela-relatorio">
       <thead>
@@ -137,7 +153,9 @@
           <td>{{ fornecedor.categoria }}</td>
           <td>{{ fornecedor.prazo_dias }}</td>
           <td>{{ fornecedor.avaliacao }}</td>
-          <td>{{ fornecedor.situacao }}</td>
+          <td>
+            <span class="chip{% if not fornecedor.ativo %} chip-neutro{% endif %}">{{ fornecedor.situacao }}</span>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -167,6 +185,9 @@
       </ul>
     </div>
   </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum fornecedor no período.</p>
+  {% endif %}
   {% endif %}
 </div>
 {% endblock %}

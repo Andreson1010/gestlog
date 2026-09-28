@@ -254,6 +254,55 @@ async def test_pagina_estoque_renderiza_tabelas_e_persiste_periodo(
     assert 'value="2026-06-30"' in resposta.text
 
 
+async def test_pagina_estoque_linka_css_e_nav_ativa(
+    client: AsyncClient,
+    engines: tuple[AsyncEngine, Engine],
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get("/relatorios/estoque")
+
+    assert resposta.status_code == 200
+    assert "/static/relatorios.css" in resposta.text
+    assert (
+        'href="/relatorios/estoque" class="ativo" aria-current="page"' in resposta.text
+    )
+
+
+async def test_pagina_estoque_export_preserva_periodo(
+    client: AsyncClient,
+    engines: tuple[AsyncEngine, Engine],
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get(
+        "/relatorios/estoque", params={"desde": "2026-06-01", "ate": "2026-06-30"}
+    )
+
+    assert (
+        "/relatorios/estoque/exportar?desde=2026-06-01&amp;ate=2026-06-30"
+        in resposta.text
+    )
+
+
+async def test_pagina_estoque_vazia_exibe_estado_claro(
+    client: AsyncClient,
+    engines: tuple[AsyncEngine, Engine],
+) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get("/relatorios/estoque")
+
+    assert resposta.status_code == 200
+    assert "Nenhum item de estoque no período." in resposta.text
+
+
 async def test_pagina_transporte_renderiza_agregacoes(
     client: AsyncClient,
     engines: tuple[AsyncEngine, Engine],

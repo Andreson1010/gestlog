@@ -1,0 +1,115 @@
+/* Relatórios operacionais por domínio (T9). Carregado só em relatorios.html. */
+
+.pagina-relatorios {
+  max-width: 72rem;
+}
+
+.pagina-relatorios .painel-tabela {
+  overflow-x: auto;
+}
+
+.tabela-relatorio {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.tabela-relatorio th,
+.tabela-relatorio td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabela-relatorio th {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.tabela-relatorio tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabela-relatorio tbody tr:hover {
+  background: var(--hover);
+}
+
+.chip-alerta {
+  color: var(--red);
+  background: var(--red-tint);
+}
+
+.chip-excedente {
+  color: var(--orange);
+  background: var(--orange-tint);
+}
+
+.chip-neutro {
+  color: var(--ink-2);
+  background: var(--field);
+}
+
+.agregacoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.agregacoes .bloco {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.agregacoes .bloco h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.agregacoes .bloco ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.relatorio-vazio {
+  padding: 1.5rem;
+  color: var(--ink-2);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.form-periodo .exportar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.1rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.form-periodo .exportar:hover {
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .pagina-relatorios .painel-tabela {
+    border-radius: var(--radius-card);
+  }
+}

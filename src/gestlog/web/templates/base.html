@@ -21,6 +21,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
     />
     <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}" />
+    {% block estilos %}{% endblock %}
     <script
       src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"
       integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
@@ -56,6 +57,10 @@
             Chat
           </a>
           {% if pode_aprovar %}
+          <a href="/relatorios/estoque" {% if caminho.startswith("/relatorios") %}class="ativo" aria-current="page"{% endif %}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 16v-4" /><path d="M12 16V8" /><path d="M17 16v-7" /></svg>
+            Relatórios
+          </a>
           <a href="/correcoes" {% if caminho.startswith("/correcoes") %}class="ativo" aria-current="page"{% endif %}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
             Correções
