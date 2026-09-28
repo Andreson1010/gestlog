@@ -117,6 +117,12 @@
         {% endfor %}
       </ul>
     </div>
+    <div class="bloco">
+      <h2>Atrasos no período</h2>
+      <ul>
+        <li>Registros atrasados: <span class="chip chip-alerta">{{ resumo.atrasos }}</span></li>
+      </ul>
+    </div>
   </section>
   {% else %}
   <p class="relatorio-vazio" role="status">Nenhum registro de transporte no período.</p>

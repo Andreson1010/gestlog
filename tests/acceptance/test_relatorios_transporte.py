@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -135,6 +136,47 @@ async def test_tr_04_classifica_atraso_apos_a_previsao(
     assert celulas_da_linha(pagina.text, "PRAZO")[-1] == "No prazo"
     assert celulas_da_linha(pagina.text, "SEM-DATA")[-1] == "No prazo"
     assert pagina.text.count("Atrasado") == 1
+
+
+def _contagem_atrasos(html: str) -> str:
+    """Extrai o texto do bloco de atrasos (rótulo + número) da página."""
+    bloco = re.search(
+        r'<div class="bloco">\s*<h2>Atrasos no período</h2>.*?</li>',
+        html,
+        flags=re.S,
+    )
+    assert bloco is not None, "bloco de atrasos ausente"
+    return " ".join(re.sub(r"<[^>]+>", " ", bloco.group(0)).split())
+
+
+async def test_tr_04b_mostra_contagem_agregada_de_atrasos(
+    client: AsyncClient,
+    fabrica_sync: sessionmaker[Session],
+) -> None:
+    """AC4: exibe o número agregado de atrasos, não só a situação por linha."""
+    dados = await criar_conta(client, "A", "a@tenant.com")
+    empresa_id = UUID(dados["empresa_id"])
+    _registro(
+        fabrica_sync,
+        empresa_id,
+        "ATRASADO",
+        previsao_entrega=datetime(2026, 6, 1, tzinfo=UTC),
+        data_entrega=datetime(2026, 6, 5, tzinfo=UTC),
+    )
+    _registro(
+        fabrica_sync,
+        empresa_id,
+        "PRAZO",
+        previsao_entrega=datetime(2026, 6, 5, tzinfo=UTC),
+        data_entrega=datetime(2026, 6, 5, tzinfo=UTC),
+    )
+    _registro(fabrica_sync, empresa_id, "SEM-DATA")
+    await login(client, "a@tenant.com")
+
+    pagina = await client.get(_TRANSPORTE)
+
+    assert pagina.status_code == 200
+    assert _contagem_atrasos(pagina.text) == "Atrasos no período Registros atrasados: 1"
 
 
 async def test_tr_05_recorte_de_periodo_inclusivo(
