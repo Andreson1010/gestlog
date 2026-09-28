@@ -45,25 +45,35 @@ class HistoricoRepository:
         desde: datetime | None = None,
         ate: datetime | None = None,
     ) -> Select[tuple[CatalogoHistorico]]:
-        """Seleciona o último snapshot de cada chave no período (inclusivo)."""
+        """Seleciona o último snapshot de cada chave no período (inclusivo).
+
+        Devolve **uma linha por ``chave``**. O vencedor é o snapshot mais
+        recente por ``importado_em``; empates de timestamp (duas linhas com a
+        mesma chave aceitas na mesma importação, que gravam o mesmo
+        ``job.created_at``) são desempatados pelo maior ``id``. Sem o desempate
+        o ``JOIN`` casaria as duas linhas e duplicaria a tabela e os agregados.
+        """
         condicoes = self._condicoes(empresa_id, dominio, desde, ate)
         recentes = (
             select(
-                CatalogoHistorico.chave,
-                func.max(CatalogoHistorico.importado_em).label("em"),
+                CatalogoHistorico.id.label("id"),
+                func.row_number()
+                .over(
+                    partition_by=CatalogoHistorico.chave,
+                    order_by=(
+                        CatalogoHistorico.importado_em.desc(),
+                        CatalogoHistorico.id.desc(),
+                    ),
+                )
+                .label("posicao"),
             )
             .where(*condicoes)
-            .group_by(CatalogoHistorico.chave)
             .subquery()
         )
         return (
             select(CatalogoHistorico)
-            .join(
-                recentes,
-                (recentes.c.chave == CatalogoHistorico.chave)
-                & (recentes.c.em == CatalogoHistorico.importado_em),
-            )
-            .where(*condicoes)
+            .join(recentes, recentes.c.id == CatalogoHistorico.id)
+            .where(recentes.c.posicao == 1)
         )
 
     @staticmethod

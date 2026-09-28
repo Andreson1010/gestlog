@@ -145,6 +145,41 @@ def _cabecalho_linhas(
     return _CABECALHOS[dominio], linhas
 
 
+def _contexto_pagina(
+    dominio: str,
+    resumo: _Resumo,
+    usuario: User | None,
+    vinculo: Membership,
+    desde: date | None,
+    ate: date | None,
+) -> dict[str, object]:
+    """Monta o contexto de template da página de relatório."""
+    return {
+        "titulo": "Relatórios · gestlog",
+        "dominio": dominio,
+        "resumo": resumo,
+        "cabecalhos": _CABECALHOS[dominio],
+        "desde": desde.isoformat() if desde else "",
+        "ate": ate.isoformat() if ate else "",
+        "email": usuario.email if usuario else "",
+        "admin": vinculo.papel == "admin",
+        "pode_aprovar": vinculo.papel in PAPEIS_APROVADORES,
+    }
+
+
+def _resposta_csv(
+    dominio: str, resumo: _Resumo, desde: date | None, ate: date | None
+) -> Response:
+    """Monta a resposta de exportação CSV da tabela principal do domínio."""
+    cabecalho, linhas = _cabecalho_linhas(dominio, resumo)
+    arquivo = nome_arquivo(dominio, desde, ate)
+    return Response(
+        content=gerar_csv(cabecalho, linhas),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{arquivo}"'},
+    )
+
+
 def create_relatorios_router() -> APIRouter:
     """Cria as rotas de página e exportação por domínio operacional."""
     router = APIRouter()
@@ -166,17 +201,7 @@ def create_relatorios_router() -> APIRouter:
         return _TEMPLATES.TemplateResponse(
             request,
             "relatorios.html",
-            {
-                "titulo": "Relatórios · gestlog",
-                "dominio": dominio,
-                "resumo": resumo,
-                "cabecalhos": _CABECALHOS[dominio],
-                "desde": desde.isoformat() if desde else "",
-                "ate": ate.isoformat() if ate else "",
-                "email": usuario.email if usuario else "",
-                "admin": vinculo.papel == "admin",
-                "pode_aprovar": vinculo.papel in PAPEIS_APROVADORES,
-            },
+            _contexto_pagina(dominio, resumo, usuario, vinculo, desde, ate),
         )
 
     @router.get("/relatorios/{dominio}/exportar")
@@ -191,12 +216,6 @@ def create_relatorios_router() -> APIRouter:
         _validar_dominio(dominio)
         _validar_periodo(desde, ate)
         resumo = _resumo(session, vinculo.empresa_id, dominio, desde, ate)
-        cabecalho, linhas = _cabecalho_linhas(dominio, resumo)
-        arquivo = nome_arquivo(dominio, desde, ate)
-        return Response(
-            content=gerar_csv(cabecalho, linhas),
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="{arquivo}"'},
-        )
+        return _resposta_csv(dominio, resumo, desde, ate)
 
     return router

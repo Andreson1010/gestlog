@@ -118,7 +118,7 @@ class StockItem(Base):
     quantidade: Mapped[int] = mapped_column(Integer, default=0)
     minimo: Mapped[int] = mapped_column(Integer, default=0)
     local: Mapped[str] = mapped_column(String(40), default="")
-    categoria: Mapped[str] = mapped_column(String(60), default="")
+    categoria: Mapped[str] = mapped_column(String(60), default="", server_default="")
 
 
 class Supplier(Base):

@@ -210,6 +210,157 @@ def test_estoque_recorte_apenas_um_limite(db_session: Session) -> None:
     assert [item.chave for item in so_ate.itens] == ["S1"]
 
 
+def test_estoque_dedup_mesma_chave_mesma_importacao(db_session: Session) -> None:
+    """Chave repetida na mesma importação vira uma linha e não dobra agregados."""
+    empresa = uuid4()
+    quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        quando,
+        id=UUID(int=1),
+        nome="A",
+        categoria="X",
+        local="L1",
+        quantidade=1,
+        minimo=5,
+    )
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        quando,
+        id=UUID(int=2),
+        nome="A",
+        categoria="X",
+        local="L1",
+        quantidade=2,
+        minimo=5,
+    )
+    db_session.commit()
+
+    resumo = RelatorioRepository(db_session).estoque(empresa)
+
+    assert [item.chave for item in resumo.itens] == ["S1"]
+    assert dict(resumo.por_local) == {"L1": 1}
+    assert dict(resumo.por_categoria) == {"X": 1}
+
+
+def test_estoque_dedup_vence_maior_id(db_session: Session) -> None:
+    """No empate de importado_em, vence o snapshot de maior id."""
+    empresa = uuid4()
+    quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        quando,
+        id=UUID(int=1),
+        nome="A",
+        quantidade=1,
+        minimo=5,
+    )
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        quando,
+        id=UUID(int=2),
+        nome="A",
+        quantidade=99,
+        minimo=5,
+    )
+    db_session.commit()
+
+    resumo = RelatorioRepository(db_session).estoque(empresa)
+
+    assert len(resumo.itens) == 1
+    assert resumo.itens[0].quantidade == 99
+
+
+def test_estoque_segundo_import_nao_duplica_chave(db_session: Session) -> None:
+    """Um segundo import com a mesma chave mantém uma linha, a mais recente."""
+    empresa = uuid4()
+    primeiro = datetime(2026, 6, 9, 12, tzinfo=UTC)
+    segundo = datetime(2026, 6, 10, 12, tzinfo=UTC)
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        primeiro,
+        id=UUID(int=1),
+        nome="A",
+        quantidade=1,
+        minimo=5,
+    )
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        segundo,
+        id=UUID(int=2),
+        nome="A",
+        quantidade=2,
+        minimo=5,
+    )
+    _snap(
+        db_session,
+        empresa,
+        "estoque",
+        "S1",
+        segundo,
+        id=UUID(int=3),
+        nome="A",
+        quantidade=30,
+        minimo=5,
+    )
+    db_session.commit()
+
+    resumo = RelatorioRepository(db_session).estoque(empresa)
+
+    assert [item.chave for item in resumo.itens] == ["S1"]
+    assert resumo.itens[0].quantidade == 30
+    assert dict(resumo.por_local) == {"": 1}
+
+
+def test_transporte_dedup_mesma_chave_nao_duplica_agregados(
+    db_session: Session,
+) -> None:
+    """Chave repetida na mesma importação não dobra peso, status nem atrasos."""
+    empresa = uuid4()
+    quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
+    for identificador in (UUID(int=1), UUID(int=2)):
+        _snap(
+            db_session,
+            empresa,
+            "transporte",
+            "R1",
+            quando,
+            id=identificador,
+            origem="SP",
+            destino="CWB",
+            peso_kg=10.0,
+            status="ok",
+            previsao_entrega=datetime(2026, 6, 10, tzinfo=UTC),
+            data_entrega=datetime(2026, 6, 15, tzinfo=UTC),
+        )
+    db_session.commit()
+
+    resumo = RelatorioRepository(db_session).transporte(empresa)
+
+    assert [registro.chave for registro in resumo.registros] == ["R1"]
+    assert resumo.atrasos == 1
+    assert dict(resumo.por_status) == {"ok": 1}
+    assert dict(resumo.peso_por_rota) == {"SP → CWB": 10.0}
+
+
 def test_transporte_agrega_status_peso_e_atrasos(db_session: Session) -> None:
     empresa = uuid4()
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
