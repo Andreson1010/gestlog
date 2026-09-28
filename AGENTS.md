@@ -172,11 +172,19 @@ task — nunca uma branch longa com force-push.
 - **PR**: um PR por task contra a branch de integração (não contra `main`), sempre
   com `tasks.md` e testes no mesmo PR. `main` nunca recebe push direto.
 - **Gate antes do merge**: CI verde (`black --check`, `ruff check`, `pytest`) +
-  self-review (com ADR) + code review com o skill **code-reviewer**. Squash-merge
-  e apaga a branch.
+  self-review (com ADR) + code review com o subagente **code-reviewer-agent**
+  (modelo independente). Squash-merge e apaga a branch.
 - **Sem reescrever branch compartilhada**: nada de `force-push` em `main` ou na
   integração; corrigir com commits novos.
 
 ## Fluxo de Code Review
 
-  Antes de abrir qualquer PR, executar code review com o skill **code-reviewer**.
+Dois momentos de revisão, em papéis distintos:
+
+1. **Self-review (antes do PR)** — fase 5.5 do `feature-factory`, subagente
+   `developer-self-reviewer` (mesmo modelo do autor). Conserta o que o autor deixou
+   passar e escreve a ADR. Não é revisão independente — é polimento + registro.
+2. **Code review (após o PR)** — passo 5 do `ship-feature`, subagente
+   **`code-reviewer-agent`**, em **modelo independente** (`opencode-go/glm-5.3-flash`),
+   como QA / Sênior / Tech Lead. Revisa o diff contra a branch base e **só reporta**
+   (`edit: deny`); o builder corrige. É a revisão por pares de verdade.

@@ -1,129 +1,107 @@
-# Contexto da Sessão — F2 (HITL) em execução; T1–T11 mergeadas
-
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-25.
-> Branch: `feat/f2-hitl` · HEAD: `8442d54` (T11 #59). Sessão anterior até `20d93b1`.
+# Contexto da Sessão — F2 (HITL) fechada, v0.3.0 + housekeeping
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-28.
+> Branch: `chore/housekeeping-pos-f2` (de `origin/main`) · HEAD: `ac63d8f` · PR **#63** aberto.
 
 ## Estado atual
-
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `83af7d9` (= `origin/main`) · tags `v0.1.0` = `1c0768c` e **`v0.2.0` = `586d2e8`**.
-  `pyproject` `0.2.0` **verificado** (`version = "0.2.0"`).
-- **Integração `feat/f2-hitl`** @ `8442d54` (pushada, com upstream): base do épico **F2**.
-  **T1–T11 mergeadas** (T1 #47, T2 #48, T3 #50, T4 #51, T5 #52, T6 #53, T7 #54, T8 #56, T9 #57,
-  T10 #58, T11 #59); alinhamento das ADRs #55. **Branch-feature `feat/ui-beautifului` @ `c25eda1`** (descartável).
-- **Gate verificado nesta sessão**: **392 passed, 99,06%** (`web/correcoes.py` e
-  `repositories/users.py` 100%); `black --check`/`ruff` verdes; CI dos PRs #58/#59 verde.
+- `main` @ `f0f6ddd` (= `origin/main`) · tags `v0.1.0` = `1c0768c`, `v0.2.0` = `586d2e8`,
+  **`v0.3.0` = `f0f6ddd`** (release do épico F2). `pyproject`/`uv.lock` **0.3.0** verificado.
+- **Épico F2**: **T1–T12 mergeadas** e **release v0.3.0** em `main` (#61).
+  Branch de integração `feat/f2-hitl` **apagada** (local+remote) nesta sessão.
+- **Housekeeping (2026-09-28)**: config de review commitada e `feat/ui-beautifului`
+  (`c25eda1`, release v0.2.0) **apagada** (local+remote). Handoff/config vão em `main`
+  pelo PR **#63** (`chore/housekeeping-pos-f2`); CI em andamento.
+- **Gate verificado nesta sessão**: **429 passed, 99,06%**; `black --check`/`ruff` verdes;
+  CI dos PRs #60 e #61 verde.
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
-  `serve_dev.py` fora do repo; **Ollama não verificado nesta sessão** (foco backend/docs).
+  `serve_dev.py` fora do repo; **Ollama não verificado** (sessão foi backend/testes/release).
 
 ## O que foi feito nesta sessão
-
-**F2 (HITL) — T3 a T11 CONCLUÍDAS e mergeadas** (fluxo por task: builder → self-review →
-code review → PR contra `feat/f2-hitl` → CI verde → squash-merge → branch apagada):
-- **T3** completude por tipo (`correcoes/completude.py`, `campos_faltantes`/`valor_atual`/
-  `natureza`/`serializar`) → #50.
-- **T4** sugestões determinísticas (`correcoes/sugestoes.py`) → #51.
-- **T5** serviço de fila (`correcoes/servico.py`, `gerar_fila` idempotente, `listar`) → #52.
-- **T6** eventos `correcao_{aprovada,rejeitada,aplicada,falhou}` (`audit/eventos.py`) → #53.
-- **T7** `CorrectionService.aprovar` + `correcoes/erros.py` (404/409, conflito, no-op,
-  `upsert`+auditoria na mesma transação, rollback→`falhou`) → #54.
-- **T8** `CorrectionService.rejeitar` (422 justificativa obrigatória, evento
-  `correcao_rejeitada`) → #56.
-- **T9** retenção inclui `item_correcao` (`audit/retencao.py`; `AuditLog` preservado) → #57.
-- **T10** fila web + decisão (`web/correcoes.py`, `DecisaoCorrecao`, `PAPEIS_APROVADORES`,
-  nav `pode_aprovar`, `GET /correcoes`, `POST /correcoes/{id}/decisao` PRG 303, 404/409/422) → #58.
-- **T11** trilha web (`GET /correcoes/historico`, `UserRepository.emails`, filtro `desde`/`ate`,
-  `templates/correcoes_historico.html`) → #59.
-- **#55** alinhou as ADRs T1–T6 ao template `write-fluid-hybrid-adr` (5 seções).
+- **T12 — testes de aceitação F2 — CONCLUÍDA e mergeada (#60)**:
+  `tests/acceptance/` modularizado (limite de 800 linhas): `conftest.py` (fixtures),
+  `f2_suporte.py` (helpers, não coletado), `test_f2_hitl.py` (INC/SUG),
+  `test_f2_hitl_decisao.py` (APR/ESC), `test_f2_hitl_trilha.py` (TRA/EDG),
+  `test_f2_hitl_chat.py` (read-only AD-002). 37 testes, 2 tenants, sem rede.
+  Fluxo completo da task: self-review (`developer-self-reviewer`) → ADR
+  `docs/adr/f2-t12-aceitacao-self-review.md` → code review → PR #60 → CI verde → squash → branch apagada.
+- **Release F2 — CONCLUÍDO (#61)**: sincronizei `feat/f2-hitl` com `origin/main` (PR #49, lock),
+  subi `pyproject`/`uv.lock` para **0.3.0**, PR `feat/f2-hitl → main` squash em `f0f6ddd`,
+  tag anotada **`v0.3.0`** pushada; `main` local sincronizado.
+- **Correção do usuário**: o teste de aceitação saiu com 1040 linhas (teto 800) — refatorado em
+  6 arquivos ≤487 linhas (lição L-030).
+- Docs: `tasks.md` T1–T12 ✅; `.opencode/LESSONS.md` consolidado (L-030 no topo); este handoff.
 
 ## Decisões e regras (não esquecer)
-
 **F2 (HITL)**
-- Aprovador: `admin` + `gestor` (fonte única `PAPEIS_APROVADORES` em `correcoes/__init__.py`,
-  usada no guard `exigir_papel(*PAPEIS_APROVADORES)` e na nav `pode_aprovar`); fila só em **web/API**.
+- Aprovador: `admin` + `gestor` (fonte única `PAPEIS_APROVADORES` em `correcoes/__init__.py`);
+  fila só em **web/API**.
 - "Incompleto" = vazio/zero/default por tipo (sem colunas anuláveis); `quantidade`/`ativo`/identidades fora.
 - Sugestão determinística (moda/mediana/média) só com dados do tenant; sem base = "sem sugestão" (só rejeita).
 - Escrita = `upsert` do catálogo, 1 transação com auditoria; item **terminal/imutável**; retenção segue a `Empresa`.
 - **AD-002 preservado**: nenhuma tool de escrita entra no grafo ReAct; escrita fora do loop do LLM.
-- Trilha P2 = status `(aplicado, falhou)`; purga remove `(rejeitado, aplicado, falhou)` (L-013/L-015).
+- Trilha P2 = status `(aplicado, falhou)`; purga remove `(rejeitado, aplicado, falhou)`.
 - Erros de domínio em `correcoes/erros.py` (404/409/422); o serviço **não** conhece FastAPI.
-- Fluxo por task: builder → self-review → code review (`code-reviewer`) → PR contra
-  `feat/f2-hitl` → squash-merge → apagar branch.
 
-**Processo/ADRs**
-- ADRs seguem o template do skill `write-fluid-hybrid-adr` (5 seções: Contexto, Decisões,
-  Trade-offs, **Roadmap Imediato**, Validação). **O agente carrega a skill e gera/valida a ADR
-  ele mesmo** (L-022). T1–T11 conformes.
+**Processo de review (atualizado — ver WIP)**
+- Dois momentos: **self-review** (`developer-self-reviewer`, mesmo modelo do autor, gera ADR) e
+  **code review independente** (`code-reviewer-agent`, modelo `opencode-go/glm-5.3-flash`,
+  `edit: deny` — só reporta; o builder corrige). Descrição em `AGENTS.md`/`ship-feature`.
 
 **Geral**
 - Supervisor anti-loop: repetir especialista → `FINISH`. Memória de erros em `.opencode/LESSONS.md`
-  (L-027 topo: rewrite de lint sobre iterável de `Row` do SQLAlchemy não é autofix seguro).
+  (consolidado, L-030 topo: dimensione arquivo/módulo antes de escrever).
 
 ## Próximos passos / bloqueios
-
-1. **PENDENTE — F2 T12** (última do épico):
-   - **T12**: `tests/acceptance/test_f2_hitl.py` ponta a ponta (2 tenants, modelo fake) cobrindo
-     INC/SUG/APR/ESC/TRA/EDG; ajustar suítes existentes (`test_migrations.py`,
-     `audit/test_auditoria.py`, `test_repositories.py`, `agents/test_specialists.py`,
-     `test_tools.py`, `copilot/test_service.py`, `acceptance/test_f1_mvp.py`). Gate: full.
-   - Depois: **PR de release** `feat/f2-hitl → main` + tag (versão a definir).
-2. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido do usuário).
-3. **Housekeeping**: descartar/alinhar `feat/ui-beautifului` (`c25eda1`).
-4. **Débitos**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting (AD-015),
+1. **CONCLUÍDO**: F2 T12 (#60) e release **v0.3.0** (#61). Épico F2 fechado ponta a ponta.
+2. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido do usuário) — próxima.
+3. **CONCLUÍDO — Housekeeping (2026-09-28)**: `feat/ui-beautifului` e `feat/f2-hitl`
+   apagadas (ambas já integradas por squash em `main`); config de review + handoff
+   commitados no PR **#63** → `main` (aguarda CI/merge).
+4. **PENDENTE/Branches órfãs**: avaliar `feat/f1-fase1`/`feat/f1-fase2` (mergeadas por
+   squash no F1) e `backup/f1-{mvp,fase2}` (só locais) — não mexidas nesta sessão.
+5. **Débitos**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting (AD-015),
    convite por token, empresa ativa, migração `String(4000)`/`Text`, alinhar `Membership.user_id`
    (`Uuid`) a `User.id` (`GUID`) — AD-027.
-5. **Bloqueio**: nenhum. (Ollama não verificado; T10–T12 são web/domínio, não exigem LLM real.)
+6. **Bloqueio**: nenhum.
 
 ## WIP local (não commitado)
-
-- ` M .opencode/CONTEXT.md` — este handoff (atualizado nesta sessão).
-- ` M opencode.json` — **não é meu**: MCPs `chrome-devtools` e `context7`.
-- ` M uv.lock` — drift pré-existente: `feat/f2-hitl` não contém o PR #49 (`83af7d9`, em `main`)
-  que sincroniza o lock para `0.2.0`; `uv run` regenera. **Housekeeping**.
+- **Árvore limpa** — o WIP da sessão anterior foi commitado no PR **#63**
+  (`AGENTS.md`, `ship-feature/SKILL.md`, `code-reviewer-agent.md`,
+  `code-reviewer/SKILL.md`, `opencode.json`, `CONTEXT.md`, `LESSONS.md`).
+- **Nota de divergência**: `.opencode/skills/code-reviewer/SKILL.md` passou o teto de
+  arquivo para **600** linhas, enquanto `AGENTS.md`/L-030 seguem em **800** — alinhar
+  a fonte única quando decidido.
 
 ## Artefatos do graphify
-
-- **graphify indisponível** nesta sessão (nenhuma tool `graphify_*`; servidores MCP acessíveis:
-  apenas `context7`). `GRAPH_REPORT.md` ausente no repo. Números **não verificados** — não inventar.
+- **graphify indisponível**: não há tool `graphify_*`; o servidor MCP não expõe resources e o
+  `opencode.json` aponta para `medasist/graphify-out/graph.json` (grafo de **outro** projeto).
+  Números **não verificados** — não inventar.
 
 ## Documentos de projeto relevantes
-
-- **ADRs F2 (T3–T11)**: `docs/adr/f2-t03-completude-self-review.md`,
-  `f2-t04-sugestoes-*`, `f2-t05-servico-fila-*`, `f2-t06-eventos-correcao-*`,
-  `f2-t07-aprovacao-*`, `f2-t08-rejeicao-*`, `f2-t09-retencao-self-review.md`,
-  `f2-t10-correcoes-web-self-review.md`, `f2-t11-trilha-self-review.md`.
-- **Alterados nesta sessão**: `docs/adr/f2-t01-*` e `f2-t02-*` (template),
-  `docs/specs/features/f2-hitl/tasks.md` (progresso T1–T11 ✅, T12 pendente),
-  `.opencode/LESSONS.md` (L-026, L-027), `.opencode/CONTEXT.md`.
 - **F2 (referência)**: `docs/specs/features/f2-hitl/{story,spec,design,tasks}.md`.
-- **Existentes**: `AGENTS.md`, `README.md`, `Makefile`, `opencode.json`,
-  `docs/business/PRD.md`, `docs/specs/project/{PROJECT,ROADMAP,STATE}.md`,
-  `docs/specs/features/f1-mvp/{spec,design,tasks}.md`, `docs/specs/codebase/TESTING.md`,
-  `docs/adr/*` (t13..t34, ui-beautifului-*, memoria-auto-melhoria, supervisor-loop-chat).
-- **Skills** `.opencode/skills/{build-with-tests,code-reviewer,feature-factory,git-workflow,ship-feature,write-fluid-hybrid-adr}`
-  (**inalterados**), `.opencode/agent/*`, `.opencode/plugin/self-learning.ts`.
-- **Código F2 (novo/alterado)**: `src/gestlog/correcoes/{__init__,completude,sugestoes,servico,erros}.py`,
-  `src/gestlog/audit/{eventos,retencao}.py`, `src/gestlog/repositories/correcoes.py`,
-  `tests/correcoes/*`, `tests/audit/test_auditoria.py`, `tests/test_repositories_correcoes.py`.
-  (T1/T2: `db/models.py::ItemCorrecao`, `alembic/versions/9c2f7a41b6d3_item_correcao.py`.)
-- **Web F2 (T10)**: `src/gestlog/web/correcoes.py`, `web/templates/correcoes.html`,
-  `web/templates/base.html` (nav `pode_aprovar`), `web/schemas.py` (`DecisaoCorrecao`),
-  `web/app.py` (+contextos `pode_aprovar` em `chat_ui/ingestion_ui/kpis/admin_ui`),
-  `web/static/app.css`, `tests/web/test_correcoes.py`.
-- **Web F2 (T11)**: `web/templates/correcoes_historico.html`, rota de histórico em
-  `web/correcoes.py`, `repositories/users.py` (`UserRepository.emails`) reexportado em
-  `repositories/__init__.py`.
+- **ADRs F2**: `docs/adr/f2-t01..t12-*-self-review.md` (T12: `f2-t12-aceitacao-self-review.md`, novo).
+- **Alterados nesta sessão**: `docs/adr/f2-t12-aceitacao-self-review.md`,
+  `docs/specs/features/f2-hitl/tasks.md`, `.opencode/LESSONS.md`, `.opencode/CONTEXT.md`.
+- **Existentes**: `AGENTS.md`, `README.md`, `Makefile`, `opencode.json`, `docs/business/PRD.md`,
+  `docs/specs/project/{PROJECT,ROADMAP,STATE}.md`, `docs/specs/codebase/TESTING.md`,
+  `docs/specs/features/f1-mvp/*`, `docs/adr/*` (t13..t34, ui-beautifului-*, memoria-auto-melhoria,
+  supervisor-loop-chat).
+- **Skills**: `.opencode/skills/{build-with-tests,code-reviewer,git-workflow,ship-feature,write-fluid-hybrid-adr}`.
+  **Agents**: `.opencode/agent/*` (incl. novo `code-reviewer-agent.md`). **Plugin**: `self-learning.ts`.
+- **Código/testes F2**: `src/gestlog/correcoes/*`, `audit/{eventos,retencao}.py`,
+  `repositories/correcoes.py`, `web/correcoes.py` + templates, `db/models.py::ItemCorrecao`,
+  `alembic/versions/9c2f7a41b6d3_item_correcao.py`; `tests/correcoes/*`,
+  `tests/acceptance/*` (novos), `tests/web/test_correcoes.py`, `tests/test_repositories_correcoes.py`.
 
 ---
-
 # Histórico (sessões anteriores, resumido)
-
-- **2026-09-25 (esta sessão)**: F2 T10 (web fila/decisão, #58) e T11 (trilha, #59) entregues e mergeadas.
-- **2026-09-23**: F2 T3–T9 entregues e mergeadas; ADRs alinhadas ao template (`#55`).
-- **2026-09-22**: UI beautifului entregue (T1–T7) + release `v0.2.0`; F2 planejada; F2 T1/T2 mergeadas.
-- **2026-09-21**: memória de auto-melhoria (PR #38); fix supervisor/SSE (PR #40); graphify (PR #41); UI T1–T3.
-- **2026-09-18**: F1 completa (34/34); release PR #35 + tag `v0.1.0`.
+- **2026-09-27 (esta sessão)**: F2 T12 (aceitação, #60) + release **v0.3.0** (#61); épico F2 fechado.
+- **2026-09-25**: F2 T10 (web fila/decisão, #58) e T11 (trilha, #59); ADRs (#55) em 23/09.
+- **2026-09-23**: F2 T3–T9 entregues e mergeadas.
+- **2026-09-22**: UI beautifului entregue + release `v0.2.0`; F2 planejada; T1/T2 mergeadas.
+- **2026-09-21**: memória de auto-melhoria (#38); fix supervisor/SSE (#40); graphify (#41); UI T1–T3.
+- **2026-09-18**: F1 completa (34/34); release `v0.1.0`.
 - **2026-09-15..17**: T14–T34; 109→157 testes.
 - **2026-09-11..14**: scaffold `.opencode/`, PRD/TLC, F1 planejada (T1–T13).
