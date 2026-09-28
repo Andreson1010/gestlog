@@ -53,13 +53,23 @@ cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
 ### Code Quality (HIGH)
 
 - **Large functions** (>50 lines) — Split into smaller, focused functions
-- **Large files** (>800 lines) — Extract modules by responsibility
+- **Large files** (>600 lines) — Extract modules by responsibility
 - **Deep nesting** (>4 levels) — Use early returns, extract helpers
 - **Missing error handling** — Unhandled errors, empty catch/except blocks, swallowed exceptions
 - **Mutation patterns** — Prefer immutable operations over in-place mutation
 - **Debug logging** — Remove debug prints / `console.log` before merge
 - **Missing tests** — New code paths without test coverage
 - **Dead code** — Commented-out code, unused imports, unreachable branches
+- **Long Method** - A function with dozens or hundreds of lines. If a method does too much, it violates the Single Responsibility Principle (SRP) of SOLID. Martin Fowler suggests raising a red flag if a function exceeds half a dozen lines.
+- **Simplicity** - Ask yourself, "If I look at this code in six months, will I understand what I did?" If the answer is no, refactor the variable names or simplify the logic before merging.
+- **Duplicated code**  - identical or very similar code exists in more than one place.
+- **Bloated class** -  a class that has become excessively large (God Object).
+- **Feature envy** - a class that makes excessive use of methods from another class.
+- **Inappropriate intimacy** -  a class that depends on the implementation details of another class.
+- **Refused bequest** -  a class that overrides a method from a base class in a way that violates the base class's contract.
+- **Lazy class** - a class that does very little.
+- **Artificial complexity**  -  the forced use of overly complicated design patterns where a simple design would suffice.
+- **Excessively long identifiers** -  specifically, the use of naming conventions to avoid ambiguities that should be implicit in the software architecture.
 
 ```
 // BAD: deep nesting + mutation
@@ -159,7 +169,7 @@ Verdict: WARNING — 2 HIGH issues should be resolved before merge.
 
 Always check the project's own conventions from `AGENTS.md`, `CONTRIBUTING.md`, or equivalent:
 
-- File size limits (e.g. 200–400 lines typical, 800 max)
+- File size limits (e.g. 200–400 lines typical, 600 max)
 - Emoji policy (many projects prohibit emojis in code)
 - Immutability requirements
 - Database policies (RLS, migration patterns)
