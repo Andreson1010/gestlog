@@ -1,17 +1,19 @@
 # Contexto da Sessão — F2 (HITL) fechada, v0.3.0 + housekeeping
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-28.
-> Branch: `chore/housekeeping-pos-f2` (de `origin/main`) · HEAD: `ac63d8f` · PR **#63** aberto.
+> Branch: `main` · HEAD: `be26082` · working tree limpo.
 
 ## Estado atual
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `f0f6ddd` (= `origin/main`) · tags `v0.1.0` = `1c0768c`, `v0.2.0` = `586d2e8`,
+- `main` @ `be26082` (= `origin/main`) · tags `v0.1.0` = `1c0768c`, `v0.2.0` = `586d2e8`,
   **`v0.3.0` = `f0f6ddd`** (release do épico F2). `pyproject`/`uv.lock` **0.3.0** verificado.
 - **Épico F2**: **T1–T12 mergeadas** e **release v0.3.0** em `main` (#61).
-  Branch de integração `feat/f2-hitl` **apagada** (local+remote) nesta sessão.
-- **Housekeeping (2026-09-28)**: config de review commitada e `feat/ui-beautifului`
-  (`c25eda1`, release v0.2.0) **apagada** (local+remote). Handoff/config vão em `main`
-  pelo PR **#63** (`chore/housekeeping-pos-f2`); CI em andamento.
+- **Housekeeping (2026-09-28)**: PR **#63** (config de review + handoff) e PR **#64**
+  (teto de arquivo do code review alinhado a **800**) squash-mergeados em `main`.
+  Apagadas (local+remote): `feat/f2-hitl`, `feat/ui-beautifului`; locais:
+  `backup/f1-mvp`, `backup/f1-fase2`. **Mantidas por decisão**: `feat/f1-fase1` e
+  `feat/f1-fase2` (PRs #1/#2 fechados sem merge, com conteúdo próprio — possível
+  referência futura de auth/onboarding).
 - **Gate verificado nesta sessão**: **429 passed, 99,06%**; `black --check`/`ruff` verdes;
   CI dos PRs #60 e #61 verde.
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
@@ -56,23 +58,20 @@
 ## Próximos passos / bloqueios
 1. **CONCLUÍDO**: F2 T12 (#60) e release **v0.3.0** (#61). Épico F2 fechado ponta a ponta.
 2. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido do usuário) — próxima.
-3. **CONCLUÍDO — Housekeeping (2026-09-28)**: `feat/ui-beautifului` e `feat/f2-hitl`
-   apagadas (ambas já integradas por squash em `main`); config de review + handoff
-   commitados no PR **#63** → `main` (aguarda CI/merge).
-4. **PENDENTE/Branches órfãs**: avaliar `feat/f1-fase1`/`feat/f1-fase2` (mergeadas por
-   squash no F1) e `backup/f1-{mvp,fase2}` (só locais) — não mexidas nesta sessão.
+3. **CONCLUÍDO — Housekeeping (2026-09-28)**: PR **#63** (config de review + handoff)
+   e PR **#64** (teto de arquivo do code review alinhado a **800**) mergeados em `main`.
+4. **CONCLUÍDO — Branches (2026-09-28)**: apagadas `feat/ui-beautifului`, `feat/f2-hitl`
+   e as locais `backup/f1-{mvp,fase2}`. Mantidas `feat/f1-fase1`/`feat/f1-fase2`
+   (PRs #1/#2 fechados sem merge; conteúdo próprio preservado por decisão).
 5. **Débitos**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting (AD-015),
    convite por token, empresa ativa, migração `String(4000)`/`Text`, alinhar `Membership.user_id`
    (`Uuid`) a `User.id` (`GUID`) — AD-027.
 6. **Bloqueio**: nenhum.
 
 ## WIP local (não commitado)
-- **Árvore limpa** — o WIP da sessão anterior foi commitado no PR **#63**
-  (`AGENTS.md`, `ship-feature/SKILL.md`, `code-reviewer-agent.md`,
-  `code-reviewer/SKILL.md`, `opencode.json`, `CONTEXT.md`, `LESSONS.md`).
-- **Nota de divergência**: `.opencode/skills/code-reviewer/SKILL.md` passou o teto de
-  arquivo para **600** linhas, enquanto `AGENTS.md`/L-030 seguem em **800** — alinhar
-  a fonte única quando decidido.
+- **Árvore limpa**. Commitado em `main`: PR **#63** (`AGENTS.md`, `ship-feature/SKILL.md`,
+  `code-reviewer-agent.md`, `code-reviewer/SKILL.md`, `opencode.json`, `CONTEXT.md`,
+  `LESSONS.md`) e PR **#64** (teto 600→800 no skill de code review).
 
 ## Artefatos do graphify
 - **graphify indisponível**: não há tool `graphify_*`; o servidor MCP não expõe resources e o
