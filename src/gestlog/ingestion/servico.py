@@ -19,6 +19,7 @@ from gestlog.repositories.catalog import (
     SupplierRepository,
     TransportRepository,
 )
+from gestlog.repositories.historico import HistoricoRepository
 from gestlog.repositories.imports import ImportJobRepository
 
 
@@ -37,7 +38,7 @@ def importar(
     resultado = analisar(tipo, conteudo, nome_arquivo)
     jobs = ImportJobRepository(session)
     job = jobs.create_job(empresa_id, tipo)
-    _aplicar_registros(session, empresa_id, resultado)
+    _aplicar_registros(session, job, resultado)
     _registrar_erros(jobs, job, resultado)
     return jobs.finish(job, aceitas=resultado.aceitas)
 
@@ -48,38 +49,56 @@ def historico(session: Session, empresa_id: UUID) -> list[ImportJob]:
 
 
 def _aplicar_registros(
-    session: Session, empresa_id: UUID, resultado: ResultadoImportacao
+    session: Session, job: ImportJob, resultado: ResultadoImportacao
 ) -> None:
     estoque = StockRepository(session)
     fornecedores = SupplierRepository(session)
     transporte = TransportRepository(session)
+    historico = HistoricoRepository(session)
     for registro in resultado.registros:
         if isinstance(registro, RegistroEstoque):
-            _aplicar_estoque(estoque, empresa_id, registro)
+            _aplicar_estoque(estoque, historico, job, registro)
         elif isinstance(registro, RegistroFornecedor):
-            _aplicar_fornecedor(fornecedores, empresa_id, registro)
+            _aplicar_fornecedor(fornecedores, historico, job, registro)
         elif isinstance(registro, RegistroTransporte):
-            _aplicar_transporte(transporte, empresa_id, registro)
+            _aplicar_transporte(transporte, historico, job, registro)
 
 
 def _aplicar_estoque(
-    repo: StockRepository, empresa_id: UUID, registro: RegistroEstoque
+    repo: StockRepository,
+    historico: HistoricoRepository,
+    job: ImportJob,
+    registro: RegistroEstoque,
 ) -> None:
     repo.upsert(
-        empresa_id,
+        job.empresa_id,
         registro.sku,
         registro.nome,
         registro.quantidade,
         registro.minimo,
         registro.local,
+        registro.categoria,
+    )
+    historico.registrar(
+        job,
+        "estoque",
+        registro.sku,
+        nome=registro.nome,
+        categoria=registro.categoria,
+        local=registro.local,
+        quantidade=registro.quantidade,
+        minimo=registro.minimo,
     )
 
 
 def _aplicar_fornecedor(
-    repo: SupplierRepository, empresa_id: UUID, registro: RegistroFornecedor
+    repo: SupplierRepository,
+    historico: HistoricoRepository,
+    job: ImportJob,
+    registro: RegistroFornecedor,
 ) -> None:
     repo.upsert(
-        empresa_id,
+        job.empresa_id,
         registro.fornecedor_id,
         registro.nome,
         registro.categoria,
@@ -87,18 +106,44 @@ def _aplicar_fornecedor(
         registro.avaliacao,
         registro.ativo,
     )
+    historico.registrar(
+        job,
+        "fornecedores",
+        registro.fornecedor_id,
+        nome=registro.nome,
+        categoria=registro.categoria,
+        prazo_dias=registro.prazo_dias,
+        avaliacao=registro.avaliacao,
+        ativo=registro.ativo,
+    )
 
 
 def _aplicar_transporte(
-    repo: TransportRepository, empresa_id: UUID, registro: RegistroTransporte
+    repo: TransportRepository,
+    historico: HistoricoRepository,
+    job: ImportJob,
+    registro: RegistroTransporte,
 ) -> None:
     repo.upsert(
-        empresa_id,
+        job.empresa_id,
         registro.codigo_rastreio,
         registro.origem,
         registro.destino,
         registro.peso_kg,
         registro.status,
+        registro.previsao_entrega,
+        registro.data_entrega,
+    )
+    historico.registrar(
+        job,
+        "transporte",
+        registro.codigo_rastreio,
+        origem=registro.origem,
+        destino=registro.destino,
+        peso_kg=registro.peso_kg,
+        status=registro.status,
+        previsao_entrega=registro.previsao_entrega,
+        data_entrega=registro.data_entrega,
     )
 
 

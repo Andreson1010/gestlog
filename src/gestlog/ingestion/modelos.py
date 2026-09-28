@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,7 @@ class RegistroEstoque:
     quantidade: int
     minimo: int
     local: str = ""
+    categoria: str = ""
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,8 @@ class RegistroTransporte:
     destino: str
     peso_kg: float
     status: str = ""
+    previsao_entrega: datetime | None = None
+    data_entrega: datetime | None = None
 
 
 Registro = RegistroEstoque | RegistroFornecedor | RegistroTransporte

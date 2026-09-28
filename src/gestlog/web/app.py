@@ -33,6 +33,7 @@ from gestlog.web.feedback import create_feedback_router
 from gestlog.web.ingestion_ui import create_ingestion_router
 from gestlog.web.kpis import create_kpis_router
 from gestlog.web.onboarding import create_onboarding_router
+from gestlog.web.relatorios import create_relatorios_router
 from gestlog.web.schemas import ContaCreate
 
 _BASE_DIR = Path(__file__).parent
@@ -76,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     aplicacao.include_router(create_ingestion_router())
     aplicacao.include_router(create_chat_ui_router())
     aplicacao.include_router(create_kpis_router())
+    aplicacao.include_router(create_relatorios_router())
     aplicacao.include_router(create_chat_router())
     aplicacao.include_router(create_correcoes_router())
     aplicacao.include_router(create_feedback_router())

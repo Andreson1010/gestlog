@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -31,6 +32,7 @@ class StockRepository(EmpresaScopedRepository[StockItem]):
         quantidade: int,
         minimo: int,
         local: str,
+        categoria: str = "",
     ) -> StockItem:
         """Insere ou atualiza um item de estoque do empresa."""
         item = self.get_by_sku(empresa_id, sku)
@@ -43,12 +45,14 @@ class StockRepository(EmpresaScopedRepository[StockItem]):
                     quantidade=quantidade,
                     minimo=minimo,
                     local=local,
+                    categoria=categoria,
                 )
             )
         item.nome = nome
         item.quantidade = quantidade
         item.minimo = minimo
         item.local = local
+        item.categoria = categoria
         self.session.flush()
         return item
 
@@ -122,6 +126,8 @@ class TransportRepository(EmpresaScopedRepository[TransportRecord]):
         destino: str,
         peso_kg: float,
         status: str,
+        previsao_entrega: datetime | None = None,
+        data_entrega: datetime | None = None,
     ) -> TransportRecord:
         """Insere ou atualiza um registro de transporte do empresa."""
         registro = self.get_by_codigo(empresa_id, codigo_rastreio)
@@ -134,11 +140,15 @@ class TransportRepository(EmpresaScopedRepository[TransportRecord]):
                     destino=destino,
                     peso_kg=peso_kg,
                     status=status,
+                    previsao_entrega=previsao_entrega,
+                    data_entrega=data_entrega,
                 )
             )
         registro.origem = origem
         registro.destino = destino
         registro.peso_kg = peso_kg
         registro.status = status
+        registro.previsao_entrega = previsao_entrega
+        registro.data_entrega = data_entrega
         self.session.flush()
         return registro

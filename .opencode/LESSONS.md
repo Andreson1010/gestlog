@@ -3,6 +3,11 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-031 · 2026-09-28 · testes/timezone SQLite
+- **Gatilho/Erro**: comparei em teste `snapshot.importado_em == job.created_at` e `registro.previsao_entrega == previsao` (ambos `tzinfo=UTC`); o SQLite devolve o datetime lido **naive** (sem tz), então o gate ficou vermelho mesmo com o código de produção correto.
+- **Regra**: ao asseverar valor relido do SQLite contra datetime aware, normalize antes (`.replace(tzinfo=UTC)`); não "conserte" o código de produção nem passe `expire_on_commit`/`timezone` só para o teste.
+- **Evidência**: T1–T3 da feature relatórios (`tests/ingestion/test_servico.py`, `tests/test_repositories.py`); gate `--no-cov` vermelho→verde.
+
 ## L-030 · 2026-09-27 · testes/tamanho de arquivo
 - **Gatilho/Erro**: entreguei `tests/acceptance/test_f2_hitl.py` com 1040 linhas e, de uma vez só, sentinela acidental (`dataclass_placeholder`) e helper indefinido (`_fabrica`); o usuário apontou o estouro do teto de 800 do `AGENTS.md`.
 - **Regra**: dimensione antes de escrever — se o estimado passar de 800 linhas, modularize desde o início (fixtures em `conftest.py`, helpers em módulo de apoio sem prefixo `test_`, arquivos por grupo de critério) e rode o gate por arquivo; não grave um arquivo inteiro sem revisar.
