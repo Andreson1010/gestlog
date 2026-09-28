@@ -14,6 +14,16 @@
         "C:\\Users\\ander\\8_projetos\\medasist\\graphify-out\\graph.json"
       ],
       "enabled": true
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "enabled": true
+    },
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp@latest"],
+      "enabled": true
     }
   }
 }
