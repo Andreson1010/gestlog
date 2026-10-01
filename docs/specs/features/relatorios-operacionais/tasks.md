@@ -2,7 +2,7 @@
 
 **Design:** `docs/specs/features/relatorios-operacionais/design.md`
 **Spec:** `docs/specs/features/relatorios-operacionais/spec.md`
-**Status:** Approved (Checkpoint 2, 2026-09-28)
+**Status:** Implemented (T1–T11) · code review PR #66 ✅ (0 Critical/0 Important, 5 Minor) — 2026-09-30
 **TLC scope:** complex
 
 > Notas de gate (de `docs/specs/codebase/TESTING.md` e `AGENTS.md`):
@@ -58,13 +58,13 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] Modelos com as colunas novas (`categoria` default `""`; datas `DateTime(timezone=True)` nullable).
-- [ ] Nova revision Alembic (`down_revision = '9c2f7a41b6d3'`) com `add_column` (e `downgrade` correspondente).
-- [ ] `RegistroEstoque.categoria`, `RegistroTransporte.previsao_entrega`/`data_entrega`; parser aceita ISO e `DD/MM/YYYY`, vazio → default.
-- [ ] `StockRepository.upsert`/`TransportRepository.upsert` gravam os campos novos; `servico` repassa.
-- [ ] Gate check passa: `uv run pytest tests/ingestion tests/test_migrations.py --no-cov -q`
-- [ ] Gate check passa: `uv run ruff check src/ tests/` e `uv run black --check src/ tests/`
-- [ ] Test count: nenhum teste removido; novos testes de parser + migração passam
+- [x] Modelos com as colunas novas (`categoria` default `""`; datas `DateTime(timezone=True)` nullable).
+- [x] Nova revision Alembic (`down_revision = '9c2f7a41b6d3'`) com `add_column` (e `downgrade` correspondente).
+- [x] `RegistroEstoque.categoria`, `RegistroTransporte.previsao_entrega`/`data_entrega`; parser aceita ISO e `DD/MM/YYYY`, vazio → default.
+- [x] `StockRepository.upsert`/`TransportRepository.upsert` gravam os campos novos; `servico` repassa.
+- [x] Gate check passa: `uv run pytest tests/ingestion tests/test_migrations.py --no-cov -q`
+- [x] Gate check passa: `uv run ruff check src/ tests/` e `uv run black --check src/ tests/`
+- [x] Test count: nenhum teste removido; novos testes de parser + migração passam
 
 **Tests**: integration + unit
 **Gate**: quick
@@ -88,11 +88,11 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] Modelo `CatalogoHistorico` com os campos e os dois índices (`..._em`, `..._chave`).
-- [ ] Migração cria a tabela e os índices; backfill insere 1 snapshot por linha existente, `import_job_id=NULL`, `importado_em=now`.
-- [ ] `downgrade` remove índices, tabela e (se aplicável) reverte o backfill.
-- [ ] Gate check passa: `uv run pytest tests/test_migrations.py --no-cov -q`
-- [ ] Test count: testes de migração (head, colunas/índices, downgrade) passam
+- [x] Modelo `CatalogoHistorico` com os campos e os dois índices (`..._em`, `..._chave`).
+- [x] Migração cria a tabela e os índices; backfill insere 1 snapshot por linha existente, `import_job_id=NULL`, `importado_em=now`.
+- [x] `downgrade` remove índices, tabela e (se aplicável) reverte o backfill.
+- [x] Gate check passa: `uv run pytest tests/test_migrations.py --no-cov -q`
+- [x] Test count: testes de migração (head, colunas/índices, downgrade) passam
 
 **Tests**: integration
 **Gate**: quick
@@ -117,11 +117,11 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] `HistoricoRepository.registrar(job, dominio, chave, **payload)` insere 1 snapshot.
-- [ ] `importar` grava snapshot só para registros aceitos (rejeitados não geram).
-- [ ] `importado_em == job.created_at`; demais campos do domínio preenchidos, resto nulo.
-- [ ] Gate check passa: `uv run pytest tests/ingestion/test_servico.py --no-cov -q`
-- [ ] Test count: teste de snapshot (aceito/rejeitado) passa
+- [x] `HistoricoRepository.registrar(job, dominio, chave, **payload)` insere 1 snapshot.
+- [x] `importar` grava snapshot só para registros aceitos (rejeitados não geram).
+- [x] `importado_em == job.created_at`; demais campos do domínio preenchidos, resto nulo.
+- [x] Gate check passa: `uv run pytest tests/ingestion/test_servico.py --no-cov -q`
+- [x] Test count: teste de snapshot (aceito/rejeitado) passa
 
 **Tests**: integration
 **Gate**: quick
@@ -145,13 +145,13 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] `estoque(empresa_id, desde, ate) -> ResumoEstoque` com itens, `abaixo_minimo`,
+- [x] `estoque(empresa_id, desde, ate) -> ResumoEstoque` com itens, `abaixo_minimo`,
       `excedentes`, `por_local`, `por_categoria`.
-- [ ] Excedente = `minimo > 0 and quantidade > minimo * 2`.
-- [ ] Consultas com `GROUP BY`; sem N+1; filtro por `empresa_id`.
-- [ ] Empresa sem dados → resumo vazio.
-- [ ] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
-- [ ] Test count: testes de agregação, período inclusivo, isolamento e excedente passam
+- [x] Excedente = `minimo > 0 and quantidade > minimo * 2`.
+- [x] Consultas com `GROUP BY`; sem N+1; filtro por `empresa_id`.
+- [x] Empresa sem dados → resumo vazio.
+- [x] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
+- [x] Test count: testes de agregação, período inclusivo, isolamento e excedente passam
 
 **Tests**: integration
 **Gate**: quick
@@ -175,11 +175,11 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] `transporte(...) -> ResumoTransporte` com registros, `por_status`, `peso_por_rota`, `atrasos`.
-- [ ] Peso agrupado por `(origem, destino)`; rota com `peso_kg == 0` não é omitida.
-- [ ] Atraso = `data_entrega > previsao_entrega` (ambos preenchidos).
-- [ ] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
-- [ ] Test count: testes de status, rota (incl. zero), atraso e período passam
+- [x] `transporte(...) -> ResumoTransporte` com registros, `por_status`, `peso_por_rota`, `atrasos`.
+- [x] Peso agrupado por `(origem, destino)`; rota com `peso_kg == 0` não é omitida.
+- [x] Atraso = `data_entrega > previsao_entrega` (ambos preenchidos).
+- [x] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
+- [x] Test count: testes de status, rota (incl. zero), atraso e período passam
 
 **Tests**: integration
 **Gate**: quick
@@ -203,12 +203,12 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] `fornecedores(...) -> ResumoFornecedores` com `fornecedores`, `ativos`, `inativos`,
+- [x] `fornecedores(...) -> ResumoFornecedores` com `fornecedores`, `ativos`, `inativos`,
       `avaliacao_media`, `prazo_medio`, `por_categoria`.
-- [ ] `avaliacao 0.0` e `prazo_dias 0` contam nos indicadores como valores reais.
-- [ ] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
-- [ ] Test count: testes de distribuição, indicadores, por categoria e período passam
-- [ ] Arquivo `relatorios.py` ≤ 800 linhas (senão extrair módulo por domínio)
+- [x] `avaliacao 0.0` e `prazo_dias 0` contam nos indicadores como valores reais.
+- [x] Gate check passa: `uv run pytest tests/test_repositories_relatorios.py --no-cov -q`
+- [x] Test count: testes de distribuição, indicadores, por categoria e período passam
+- [x] Arquivo `relatorios.py` ≤ 800 linhas (senão extrair módulo por domínio)
 
 **Tests**: integration
 **Gate**: quick
@@ -232,12 +232,12 @@ revision `9c2f7a41b6d3`
 
 **Done when**:
 
-- [ ] `gerar_csv(cabecalho, linhas) -> bytes` usa `;`, `csv.writer`, codifica `utf-8-sig`.
-- [ ] `neutralizar` prefixa `'` para valores iniciados por `= + - @` (e tab/CR); numéricos intactos.
-- [ ] `nome_arquivo(dominio, desde, ate)` = `relatorio-{dominio}[-{de}][_{ate}].csv` com datas ausentes omitidas.
-- [ ] Cabeçalho + zero linhas → bytes só com cabeçalho.
-- [ ] Gate check passa: `uv run pytest tests/test_csv_relatorios.py --no-cov -q`
-- [ ] Test count: testes de formato, escape, neutralização, nome e header-only passam
+- [x] `gerar_csv(cabecalho, linhas) -> bytes` usa `;`, `csv.writer`, codifica `utf-8-sig`.
+- [x] `neutralizar` prefixa `'` para valores iniciados por `= + - @` (e tab/CR); numéricos intactos.
+- [x] `nome_arquivo(dominio, desde, ate)` = `relatorio-{dominio}[-{de}][_{ate}].csv` com datas ausentes omitidas.
+- [x] Cabeçalho + zero linhas → bytes só com cabeçalho.
+- [x] Gate check passa: `uv run pytest tests/test_csv_relatorios.py --no-cov -q`
+- [x] Test count: testes de formato, escape, neutralização, nome e header-only passam
 
 **Tests**: unit
 **Gate**: quick
@@ -263,12 +263,12 @@ validação de período e render de `relatorios.html`.
 
 **Done when**:
 
-- [ ] Router registrado no `create_app` e reexportado em `web/__init__.py`.
-- [ ] `{dominio}` inválido → 404; `de > ate` → 422; data inválida → 422 (framework).
-- [ ] Empresa sempre de `exigir_papel(*PAPEIS_APROVADORES)` (401 sem sessão; 403 operador).
-- [ ] Template com `.form-periodo` (persistindo `desde`/`ate`) e tabela principal + agregações por domínio.
-- [ ] Gate check passa: `uv run pytest tests/web/test_relatorios.py --no-cov -q`
-- [ ] Test count: testes de 401/403/200, render, período e validação passam
+- [x] Router registrado no `create_app` e reexportado em `web/__init__.py`.
+- [x] `{dominio}` inválido → 404; `de > ate` → 422; data inválida → 422 (framework).
+- [x] Empresa sempre de `exigir_papel(*PAPEIS_APROVADORES)` (401 sem sessão; 403 operador).
+- [x] Template com `.form-periodo` (persistindo `desde`/`ate`) e tabela principal + agregações por domínio.
+- [x] Gate check passa: `uv run pytest tests/web/test_relatorios.py --no-cov -q`
+- [x] Test count: testes de 401/403/200, render, período e validação passam
 
 **Tests**: integration
 **Gate**: quick
@@ -293,10 +293,10 @@ validação de período e render de `relatorios.html`.
 
 **Done when**:
 
-- [ ] `relatorios.css` linkado no template; `app.css` intocado (teto de linhas).
-- [ ] Link "Relatórios" visível só com `pode_aprovar`, apontando para `/relatorios/estoque`.
-- [ ] Gate check passa: `uv run pytest tests/web/test_shell.py tests/web/test_app.py tests/web/test_relatorios.py --no-cov -q`
-- [ ] Test count: testes de shell/app inalterados e verdes (nenhuma remoção)
+- [x] `relatorios.css` linkado no template; `app.css` intocado (teto de linhas).
+- [x] Link "Relatórios" visível só com `pode_aprovar`, apontando para `/relatorios/estoque`.
+- [x] Gate check passa: `uv run pytest tests/web/test_shell.py tests/web/test_app.py tests/web/test_relatorios.py --no-cov -q`
+- [x] Test count: testes de shell/app inalterados e verdes (nenhuma remoção)
 
 **Tests**: integration
 **Gate**: quick
@@ -320,12 +320,12 @@ validação de período e render de `relatorios.html`.
 
 **Done when**:
 
-- [ ] Resposta `text/csv; charset=utf-8` com `Content-Disposition: attachment; filename="..."`.
-- [ ] Linhas exportadas == tabela principal da tela; BOM presente; escape/neutralização aplicados.
-- [ ] Empresa sem registros → CSV header-only 200; isolamento entre tenants mantido.
-- [ ] Gate check passa: `uv run pytest tests/web/test_relatorios.py --no-cov -q`
-- [ ] Gate check passa: `uv run ruff check src/ tests/` e `uv run black --check src/ tests/`
-- [ ] Test count: testes de export (nome, BOM, escape, injeção, vazio, 401/403) passam
+- [x] Resposta `text/csv; charset=utf-8` com `Content-Disposition: attachment; filename="..."`.
+- [x] Linhas exportadas == tabela principal da tela; BOM presente; escape/neutralização aplicados.
+- [x] Empresa sem registros → CSV header-only 200; isolamento entre tenants mantido.
+- [x] Gate check passa: `uv run pytest tests/web/test_relatorios.py --no-cov -q`
+- [x] Gate check passa: `uv run ruff check src/ tests/` e `uv run black --check src/ tests/`
+- [x] Test count: testes de export (nome, BOM, escape, injeção, vazio, 401/403) passam
 
 **Tests**: integration
 **Gate**: quick
@@ -349,10 +349,10 @@ validação de período e render de `relatorios.html`.
 
 **Done when**:
 
-- [ ] Um teste por critério nomeado (estoque, transporte, fornecedores, recorte, guard, export, enablers).
-- [ ] Fluxo HTTP real; dois tenants para isolamento; CSV verificado byte a byte (BOM/`;`).
-- [ ] Gate check passa: `uv run pytest` (full, cobertura ≥ 80%)
-- [ ] Test count: suíte completa verde, sem regressões
+- [x] Um teste por critério nomeado (estoque, transporte, fornecedores, recorte, guard, export, enablers).
+- [x] Fluxo HTTP real; dois tenants para isolamento; CSV verificado byte a byte (BOM/`;`).
+- [x] Gate check passa: `uv run pytest` (full, cobertura ≥ 80%)
+- [x] Test count: suíte completa verde, sem regressões
 
 **Tests**: e2e
 **Gate**: full
@@ -435,3 +435,21 @@ compartilha estado com T4–T6. T4–T6 editam o mesmo arquivo e não são paral
 | T11 | fluxos de aceitação | e2e | e2e | ✅ OK |
 
 Nenhum `Tests: none`; nenhuma task deixa camada sem verificação.
+
+---
+
+## Follow-ups do code review (PR #66) — 2026-09-30
+
+Veredito: **pode mergear** (0 Critical, 0 Important). Minors não bloqueantes registrados
+para uma task de folga futura:
+
+- **FU-1** `web/relatorios.py:26` — `_inicio`/`_fim` importados (privados) de `web/kpis.py`,
+  criando a 3ª cópia do recorte UTC (`web/correcoes.py` tem o par). Extrair para `web/periodo.py`.
+- **FU-2** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:88,94,102` — backfill usa
+  `CURRENT_TIMESTAMP` (naive/segundos) vs. linhas vivas `_agora` (aware/microssegundos); alinhar
+  com bind param `datetime.now(UTC)`.
+- **FU-3** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:27-79` — `upgrade()` ~53 linhas
+  (teto 50); extrair o bloco `create_table`/índices.
+- **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.
+- **FU-5** `tests/web/test_relatorios.py` — cobrir 422 de data mal-formada também na rota de export
+  (`REL-35`).
