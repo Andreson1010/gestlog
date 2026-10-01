@@ -1,20 +1,21 @@
 # Contexto da Sessão — Feature relatórios operacionais (PR #66 aberto)
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-30.
-> Branch: `feat/relatorios-operacionais` · HEAD: `07faf7b` · working tree limpo.
-> Base: `origin/main` @ `72226a2` (handoff anterior / housekeeping #65).
+> Branch: `feat/release-v0.4.0` · base `main` @ `d0f14c0` · WIP: bump `0.3.0→0.4.0` +
+> este `CONTEXT.md` (a commit no PR de release) + 1 PDF não rastreado em `docs/business/`.
+> Feature relatórios mergeada via PR #66 (squash); branch apagada (local+remote).
 
 ## Estado atual
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
 - **`main` @ `72226a2`** (= `origin/main`) · tags `v0.1.0`, `v0.2.0`, `v0.3.0` (release F2).
-  `pyproject`/`uv.lock` ainda em **0.3.0** (feature relatórios **não** bumpou versão).
+  `pyproject`/`uv.lock` em **0.4.0** (release da feature relatórios, branch `feat/release-v0.4.0`).
 - **Épico F2**: fechado, release v0.3.0 em `main`.
 - **Feature relatórios operacionais**: T1–T11 implementadas na branch de integração
   `feat/relatorios-operacionais`; self-review + ADR; aceitação P1; 2 correções pós-review.
-- **PR #66** (`feat/relatorios-operacionais → main`): **OPEN**, `mergeable`, **CI verde**.
-  **Code review independente feito** (`code-reviewer-agent`, `opencode-go/glm-5.3-flash`):
-  **0 Critical / 0 Important**, 5 Minor → veredito **pode mergear**. Minors registrados como
-  FU-1..FU-5 em `tasks.md`.
+- **PR #66** (`feat/relatorios-operacionais → main`): **MERGED** (squash `d0f14c0`), CI verde.
+  **Code review independente** (`code-reviewer-agent`, `opencode-go/glm-5.3-flash`):
+  **0 Critical / 0 Important**, 5 Minor → veredito **pode mergear**. Minors = FU-1..FU-5 em
+  `tasks.md` (não bloqueantes). Branch `feat/relatorios-operacionais` apagada.
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
   `serve_dev.py` fora do repo.
@@ -62,9 +63,12 @@
    `uv run python -m black --check` passa (136 arquivos). CI do PR #66 está **verde**.
 2. **CONCLUÍDO — code review (2026-09-30)**: `code-reviewer-agent` → 0 Critical/0 Important,
    5 Minor (FU-1..FU-5 em `tasks.md`), veredito **pode mergear**.
-3. **EM ANDAMENTO — fechar a feature**: squash-merge do PR #66 → `main`, sincronizar `main`,
-   apagar a branch. Avaliar se vira release (`v0.4.0`): `pyproject`/`uv.lock` ainda 0.3.0.
-4. **CONCLUÍDO — docs**: `tasks.md` T1–T11 marcadas + follow-ups; este handoff atualizado.
+3. **EM ANDAMENTO — release `v0.4.0`**: branch `feat/release-v0.4.0`, bump `pyproject`/`uv.lock`
+   para 0.4.0; abrir PR → `main`, CI verde, squash, tag anotada `v0.4.0` e push.
+4. **CONCLUÍDO — docs**: `tasks.md` T1–T11 marcadas + follow-ups FU-1..FU-5; este handoff atualizado.
+5. **PENDENTE — follow-ups de qualidade** (FU-1..FU-5 em `tasks.md`): consolidar `_inicio`/`_fim`
+   em `web/periodo.py`, alinhar timestamp do backfill, extrair `upgrade()` >50 linhas, anotar
+   `quando: datetime` nos testes e cobrir 422 de data mal-formada no export.
 5. **Débitos herdados**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting
    (AD-015), convite por token, empresa ativa, migração `String(4000)`/`Text`, alinhar
    `Membership.user_id` (`Uuid`) a `User.id` (`GUID`) — AD-027.
