@@ -23,7 +23,7 @@ from gestlog.repositories.relatorios import (
 )
 from gestlog.web.csv_relatorios import gerar_csv, nome_arquivo
 from gestlog.web.ingestion_ui import get_sync_session
-from gestlog.web.kpis import _fim, _inicio
+from gestlog.web.periodo import fim_do_dia, inicio_do_dia
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 _DOMINIOS = ("estoque", "transporte", "fornecedores")
@@ -86,7 +86,7 @@ def _resumo(
 ) -> _Resumo:
     """Delega ao repositório do domínio, aplicando o período UTC inclusivo."""
     repo = RelatorioRepository(session)
-    inicio, fim = _inicio(desde), _fim(ate)
+    inicio, fim = inicio_do_dia(desde), fim_do_dia(ate)
     if dominio == "estoque":
         return repo.estoque(empresa_id, inicio, fim)
     if dominio == "transporte":

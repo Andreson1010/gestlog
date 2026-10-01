@@ -445,6 +445,8 @@ para uma task de folga futura:
 
 - **FU-1** `web/relatorios.py:26` — `_inicio`/`_fim` importados (privados) de `web/kpis.py`,
   criando a 3ª cópia do recorte UTC (`web/correcoes.py` tem o par). Extrair para `web/periodo.py`.
+  ✅ **Resolvido** em `web/periodo.py` (`inicio_do_dia`/`fim_do_dia`), reusado por
+  `kpis.py`/`correcoes.py`/`relatorios.py`; testes em `tests/web/test_periodo.py`.
 - **FU-2** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:88,94,102` — backfill usa
   `CURRENT_TIMESTAMP` (naive/segundos) vs. linhas vivas `_agora` (aware/microssegundos); alinhar
   com bind param `datetime.now(UTC)`.
