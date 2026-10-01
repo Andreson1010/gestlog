@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time
+from datetime import date
 from pathlib import Path
 from typing import Annotated, get_args
 from uuid import UUID
@@ -30,6 +30,7 @@ from gestlog.repositories.catalog import (
 from gestlog.repositories.correcoes import CorrectionRepository
 from gestlog.repositories.users import UserRepository
 from gestlog.web.ingestion_ui import get_sync_session
+from gestlog.web.periodo import fim_do_dia, inicio_do_dia
 from gestlog.web.schemas import DecisaoCorrecao
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -37,16 +38,6 @@ _DECISOES = get_args(DecisaoCorrecao)
 _LIMITE_PADRAO = 200
 _LIMITE_MAXIMO = 500
 _CATALOGOS = (StockRepository, SupplierRepository, TransportRepository)
-
-
-def _inicio(valor: date | None) -> datetime | None:
-    """Converte a data inicial no primeiro instante do dia (UTC)."""
-    return datetime.combine(valor, time.min, tzinfo=UTC) if valor else None
-
-
-def _fim(valor: date | None) -> datetime | None:
-    """Converte a data final no último instante do dia (UTC)."""
-    return datetime.combine(valor, time.max, tzinfo=UTC) if valor else None
 
 
 def _tem_dados(session: Session, empresa_id: UUID) -> bool:
@@ -120,7 +111,7 @@ def create_correcoes_router() -> APIRouter:
     ) -> Response:
         """Lista as correções aplicadas/falhas da empresa no período informado."""
         trilha = CorrectionRepository(session).listar_trilha(
-            vinculo.empresa_id, _inicio(desde), _fim(ate), limite
+            vinculo.empresa_id, inicio_do_dia(desde), fim_do_dia(ate), limite
         )
         autores = UserRepository(session).emails(
             [item.decidido_por for item in trilha if item.decidido_por]

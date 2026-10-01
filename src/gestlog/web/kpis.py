@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -16,18 +16,9 @@ from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
 from gestlog.repositories.kpis import KpiRepository
 from gestlog.web.ingestion_ui import get_sync_session
+from gestlog.web.periodo import fim_do_dia, inicio_do_dia
 
 _TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
-
-
-def _inicio(valor: date | None) -> datetime | None:
-    """Converte a data inicial no primeiro instante do dia (UTC)."""
-    return datetime.combine(valor, time.min, tzinfo=UTC) if valor else None
-
-
-def _fim(valor: date | None) -> datetime | None:
-    """Converte a data final no último instante do dia (UTC)."""
-    return datetime.combine(valor, time.max, tzinfo=UTC) if valor else None
 
 
 def create_kpis_router() -> APIRouter:
@@ -45,7 +36,7 @@ def create_kpis_router() -> APIRouter:
     ) -> Response:
         """Exibe os KPIs da empresa no período informado (ou de todo o histórico)."""
         resumo = KpiRepository(session).resumo(
-            vinculo.empresa_id, _inicio(desde), _fim(ate)
+            vinculo.empresa_id, inicio_do_dia(desde), fim_do_dia(ate)
         )
         return _TEMPLATES.TemplateResponse(
             request,

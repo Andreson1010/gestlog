@@ -103,9 +103,10 @@ elas validam domínio e período, resolvem a empresa via
 `_validar_dominio` responde **404** para domínio fora de
 `{estoque, transporte, fornecedores}` e `_validar_periodo` responde **422** quando
 `de > ate` (Q9); datas malformadas já são 422 do próprio FastAPI. O recorte de
-data vira instantes UTC inclusivos reutilizando `_inicio`/`_fim` de `web/kpis.py`
-(`time.min`/`time.max` com `tzinfo=UTC`), o que mantém o comportamento consistente
-com o dashboard já existente.
+data vira instantes UTC inclusivos reutilizando `inicio_do_dia`/`fim_do_dia` de
+`web/periodo.py` (`time.min`/`time.max` com `tzinfo=UTC`), fonte única também
+consumida por `web/kpis.py` e `web/correcoes.py` (FU-1), o que mantém o
+comportamento consistente entre os routers.
 
 ## 3. Concessões e Escolhas Práticas (Trade-offs)
 
