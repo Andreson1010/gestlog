@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -72,6 +73,28 @@ def test_transport_upsert_e_busca(db_session: Session) -> None:
 
     assert repo.get_by_codigo(t1, "gl-1") is not None
     assert repo.get_by_codigo(t2, "GL-1") is None
+
+
+def test_stock_upsert_grava_categoria(db_session: Session) -> None:
+    t1, _ = _dois_empresas(db_session)
+    repo = StockRepository(db_session)
+    repo.upsert(t1, "SKU-1", "Caixa", 10, 5, "A1", "Embalagem")
+    db_session.commit()
+
+    assert repo.get_by_sku(t1, "SKU-1").categoria == "Embalagem"
+
+
+def test_transport_upsert_grava_datas(db_session: Session) -> None:
+    t1, _ = _dois_empresas(db_session)
+    repo = TransportRepository(db_session)
+    previsao = datetime(2026, 9, 1, tzinfo=UTC)
+    entrega = datetime(2026, 9, 15, tzinfo=UTC)
+    repo.upsert(t1, "GL-1", "SP", "CWB", 10.0, "entregue", previsao, entrega)
+    db_session.commit()
+
+    registro = repo.get_by_codigo(t1, "GL-1")
+    assert registro.previsao_entrega.replace(tzinfo=UTC) == previsao
+    assert registro.data_entrega.replace(tzinfo=UTC) == entrega
 
 
 def test_import_job_com_erros(db_session: Session) -> None:

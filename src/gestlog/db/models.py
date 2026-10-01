@@ -118,6 +118,7 @@ class StockItem(Base):
     quantidade: Mapped[int] = mapped_column(Integer, default=0)
     minimo: Mapped[int] = mapped_column(Integer, default=0)
     local: Mapped[str] = mapped_column(String(40), default="")
+    categoria: Mapped[str] = mapped_column(String(60), default="", server_default="")
 
 
 class Supplier(Base):
@@ -153,6 +154,67 @@ class TransportRecord(Base):
     destino: Mapped[str] = mapped_column(String(80), default="")
     peso_kg: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(String(120), default="")
+    previsao_entrega: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    data_entrega: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class CatalogoHistorico(Base):
+    """Snapshot versionado de um registro de catálogo por importação.
+
+    Cada importação aceita grava um snapshot por registro; o relatório lê o
+    último snapshot de cada ``chave`` dentro do período. O histórico é
+    *append-only* e ``import_job_id`` é nulo nas linhas do backfill.
+    """
+
+    __tablename__ = "catalogo_historico"
+    __table_args__ = (
+        Index(
+            "ix_catalogo_historico_empresa_dominio_em",
+            "empresa_id",
+            "dominio",
+            "importado_em",
+        ),
+        Index(
+            "ix_catalogo_historico_empresa_dominio_chave",
+            "empresa_id",
+            "dominio",
+            "chave",
+            "importado_em",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
+    dominio: Mapped[str] = mapped_column(String(20))
+    chave: Mapped[str] = mapped_column(String(80))
+    import_job_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("import_job.id"), nullable=True
+    )
+    importado_em: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_agora
+    )
+    nome: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    categoria: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    local: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    quantidade: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    minimo: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    prazo_dias: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avaliacao: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ativo: Mapped[bool | None] = mapped_column(nullable=True)
+    origem: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    destino: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    peso_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    previsao_entrega: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    data_entrega: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class Conversation(Base):

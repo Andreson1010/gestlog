@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block estilos %}
+<link rel="stylesheet" href="{{ url_for('static', path='/relatorios.css') }}" />
+{% endblock %}
+{% block conteudo %}
+<div class="pagina pagina-relatorios">
+  <h1>Relatórios · {{ dominio|capitalize }}</h1>
+  <form class="form-periodo" method="get" action="/relatorios/{{ dominio }}">
+    <div>
+      <label for="desde">De</label>
+      <input id="desde" name="desde" type="date" value="{{ desde }}" />
+    </div>
+    <div>
+      <label for="ate">Até</label>
+      <input id="ate" name="ate" type="date" value="{{ ate }}" />
+    </div>
+    <button type="submit">Filtrar</button>
+    <a
+      class="exportar"
+      href="/relatorios/{{ dominio }}/exportar{% if desde or ate %}?{% endif %}{% if desde %}desde={{ desde }}{% endif %}{% if desde and ate %}&amp;{% endif %}{% if ate %}ate={{ ate }}{% endif %}"
+    >Exportar CSV</a>
+  </form>
+
+  {% if dominio == "estoque" %}
+  {% if resumo.itens %}
+  <div class="painel-tabela">
+    <table class="tabela-relatorio">
+      <thead>
+        <tr>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in resumo.itens %}
+        <tr>
+          <td>{{ item.chave }}</td>
+          <td>{{ item.nome }}</td>
+          <td>{{ item.categoria }}</td>
+          <td>{{ item.local }}</td>
+          <td>{{ item.quantidade }}</td>
+          <td>{{ item.minimo }}</td>
+          <td>
+            <span class="chip{% if item.situacao == "Abaixo do mínimo" %} chip-alerta{% elif item.situacao == "Excedente" %} chip-excedente{% endif %}">{{ item.situacao }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <section class="agregacoes" aria-label="Agregações de estoque">
+    <div class="bloco">
+      <h2>Itens por local</h2>
+      <ul>
+        {% for local, total in resumo.por_local %}
+        <li>{{ local }}: {{ total }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="bloco">
+      <h2>Itens por categoria</h2>
+      <ul>
+        {% for categoria, total in resumo.por_categoria %}
+        <li>{{ categoria }}: {{ total }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum item de estoque no período.</p>
+  {% endif %}
+
+  {% elif dominio == "transporte" %}
+  {% if resumo.registros %}
+  <div class="painel-tabela">
+    <table class="tabela-relatorio">
+      <thead>
+        <tr>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for registro in resumo.registros %}
+        <tr>
+          <td>{{ registro.chave }}</td>
+          <td>{{ registro.origem }}</td>
+          <td>{{ registro.destino }}</td>
+          <td>{{ registro.peso_kg }}</td>
+          <td>{{ registro.status }}</td>
+          <td>{{ registro.previsao_entrega.isoformat() if registro.previsao_entrega else "" }}</td>
+          <td>{{ registro.data_entrega.isoformat() if registro.data_entrega else "" }}</td>
+          <td>
+            <span class="chip{% if registro.situacao == "Atrasado" %} chip-alerta{% endif %}">{{ registro.situacao }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <section class="agregacoes" aria-label="Agregações de transporte">
+    <div class="bloco">
+      <h2>Registros por status</h2>
+      <ul>
+        {% for status, total in resumo.por_status %}
+        <li>{{ status }}: {{ total }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="bloco">
+      <h2>Peso por rota</h2>
+      <ul>
+        {% for rota, peso in resumo.peso_por_rota %}
+        <li>{{ rota }}: {{ peso }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="bloco">
+      <h2>Atrasos no período</h2>
+      <ul>
+        <li>Registros atrasados: <span class="chip chip-alerta">{{ resumo.atrasos }}</span></li>
+      </ul>
+    </div>
+  </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum registro de transporte no período.</p>
+  {% endif %}
+
+  {% else %}
+  {% if resumo.fornecedores %}
+  <div class="painel-tabela">
+    <table class="tabela-relatorio">
+      <thead>
+        <tr>
+          {% for cabecalho in cabecalhos %}
+          <th>{{ cabecalho }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for fornecedor in resumo.fornecedores %}
+        <tr>
+          <td>{{ fornecedor.chave }}</td>
+          <td>{{ fornecedor.nome }}</td>
+          <td>{{ fornecedor.categoria }}</td>
+          <td>{{ fornecedor.prazo_dias }}</td>
+          <td>{{ fornecedor.avaliacao }}</td>
+          <td>
+            <span class="chip{% if not fornecedor.ativo %} chip-neutro{% endif %}">{{ fornecedor.situacao }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <section class="agregacoes" aria-label="Agregações de fornecedores">
+    <div class="bloco">
+      <h2>Distribuição por situação</h2>
+      <ul>
+        <li>Ativos: {{ resumo.ativos }}</li>
+        <li>Inativos: {{ resumo.inativos }}</li>
+      </ul>
+    </div>
+    <div class="bloco">
+      <h2>Indicadores</h2>
+      <ul>
+        <li>Avaliação média: {{ resumo.avaliacao_media }}</li>
+        <li>Prazo médio: {{ resumo.prazo_medio }}</li>
+      </ul>
+    </div>
+    <div class="bloco">
+      <h2>Fornecedores por categoria</h2>
+      <ul>
+        {% for categoria, total in resumo.por_categoria %}
+        <li>{{ categoria }}: {{ total }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% else %}
+  <p class="relatorio-vazio" role="status">Nenhum fornecedor no período.</p>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

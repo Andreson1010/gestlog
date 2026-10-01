@@ -16,8 +16,18 @@ from gestlog.repositories.conversations import (
 )
 from gestlog.repositories.correcoes import CorrectionRepository
 from gestlog.repositories.empresas import EmpresaRepository, MembershipRepository
+from gestlog.repositories.historico import HistoricoRepository
 from gestlog.repositories.imports import ImportJobRepository
 from gestlog.repositories.kpis import KpiRepository, ResumoKpis
+from gestlog.repositories.relatorios import (
+    Fornecedor,
+    ItemEstoque,
+    RegistroTransporte,
+    RelatorioRepository,
+    ResumoEstoque,
+    ResumoFornecedores,
+    ResumoTransporte,
+)
 from gestlog.repositories.telemetry import AuditRepository, UsageRepository
 from gestlog.repositories.users import UserRepository
 
@@ -31,9 +41,17 @@ __all__ = [
     "MessageRepository",
     "RecommendationRepository",
     "CorrectionRepository",
+    "HistoricoRepository",
     "ImportJobRepository",
     "KpiRepository",
     "ResumoKpis",
+    "RelatorioRepository",
+    "ItemEstoque",
+    "ResumoEstoque",
+    "RegistroTransporte",
+    "ResumoTransporte",
+    "Fornecedor",
+    "ResumoFornecedores",
     "AuditRepository",
     "UsageRepository",
     "MembershipRepository",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from gestlog.ingestion.erros import (
@@ -59,6 +60,7 @@ def _estoque(linha: int, bruto: dict[str, str]) -> RegistroEstoque | ErroLinha:
             quantidade=_inteiro(bruto, "quantidade"),
             minimo=_inteiro(bruto, "minimo"),
             local=_texto(bruto, "local"),
+            categoria=_texto(bruto, "categoria"),
         )
     except ValueError as exc:
         return ErroLinha(linha, str(exc))
@@ -86,6 +88,8 @@ def _transporte(linha: int, bruto: dict[str, str]) -> RegistroTransporte | ErroL
             destino=_texto_obrigatorio(bruto, "destino"),
             peso_kg=_decimal(bruto, "peso_kg"),
             status=_texto(bruto, "status"),
+            previsao_entrega=_data(bruto, "previsao_entrega"),
+            data_entrega=_data(bruto, "data_entrega"),
         )
     except ValueError as exc:
         return ErroLinha(linha, str(exc))
@@ -134,6 +138,20 @@ def _decimal(bruto: dict[str, str], campo: str, default: float | None = None) ->
     if numero < 0:
         raise ValueError(f"'{campo}' deve ser >= 0 (valor: {valor!r})")
     return float(numero)
+
+
+def _data(bruto: dict[str, str], campo: str) -> datetime | None:
+    valor = _texto(bruto, campo)
+    if not valor:
+        return None
+    try:
+        return datetime.fromisoformat(valor)
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(valor, "%d/%m/%Y")
+    except ValueError as exc:
+        raise ValueError(f"'{campo}' deve ser data (valor: {valor!r})") from exc
 
 
 def _booleano(bruto: dict[str, str], campo: str, default: bool = True) -> bool:

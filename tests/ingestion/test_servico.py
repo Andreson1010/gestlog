@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from uuid import UUID
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from gestlog.db.models import CatalogoHistorico
 from gestlog.ingestion import ArquivoVazio, TipoImportacaoInvalido, historico, importar
 from gestlog.repositories.catalog import (
     StockRepository,
@@ -122,3 +125,51 @@ def test_arquivo_invalido_nao_grava(db_session: Session) -> None:
 
     assert historico(db_session, empresa_id) == []
     assert StockRepository(db_session).list(empresa_id) == []
+
+
+def _snapshots(session: Session, empresa_id: UUID) -> list[CatalogoHistorico]:
+    stmt = select(CatalogoHistorico).where(CatalogoHistorico.empresa_id == empresa_id)
+    return list(session.execute(stmt).scalars().all())
+
+
+def test_importar_grava_snapshot_so_dos_aceitos(db_session: Session) -> None:
+    empresa_id, _ = _empresas(db_session)
+    conteudo = _csv(
+        "sku,nome,quantidade,minimo,categoria\n"
+        "SKU-1,Caixa,10,2,Embalagem\n"
+        ",Caixa,3,1,\n"
+    )
+
+    job = importar(db_session, empresa_id, "estoque", conteudo)
+    db_session.commit()
+
+    snapshots = _snapshots(db_session, empresa_id)
+    assert len(snapshots) == 1
+    assert snapshots[0].dominio == "estoque"
+    assert snapshots[0].chave == "SKU-1"
+    assert snapshots[0].categoria == "Embalagem"
+    assert snapshots[0].quantidade == 10
+    assert snapshots[0].importado_em.replace(tzinfo=UTC) == job.created_at
+    item = StockRepository(db_session).get_by_sku(empresa_id, "SKU-1")
+    assert item.categoria == "Embalagem"
+
+
+def test_importar_transporte_grava_snapshot_com_datas(db_session: Session) -> None:
+    empresa_id, _ = _empresas(db_session)
+    conteudo = _csv(
+        "codigo_rastreio,origem,destino,peso_kg,status,previsao_entrega,data_entrega\n"
+        "GL-1,SP,CWB,12.5,entregue,2026-09-01,15/09/2026\n"
+    )
+
+    importar(db_session, empresa_id, "transporte", conteudo)
+    db_session.commit()
+
+    registro = TransportRepository(db_session).get_by_codigo(empresa_id, "GL-1")
+    assert registro.previsao_entrega is not None
+    assert registro.data_entrega is not None
+
+    snapshot = _snapshots(db_session, empresa_id)[0]
+    assert snapshot.dominio == "transporte"
+    assert snapshot.status == "entregue"
+    assert snapshot.previsao_entrega == registro.previsao_entrega
+    assert snapshot.data_entrega == registro.data_entrega

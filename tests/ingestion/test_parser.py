@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from io import BytesIO
 
 import pytest
@@ -99,6 +100,47 @@ def test_transporte_normaliza() -> None:
             status="em trânsito",
         ),
     )
+
+
+def test_estoque_le_categoria_com_default_vazio() -> None:
+    conteudo = _csv(
+        "sku,nome,quantidade,minimo,categoria\n"
+        "SKU-1,Caixa,10,2,Embalagem\n"
+        "SKU-2,Pallet,1,0,\n"
+    )
+
+    resultado = analisar("estoque", conteudo, "estoque.csv")
+
+    assert resultado.registros[0].categoria == "Embalagem"
+    assert resultado.registros[1].categoria == ""
+
+
+def test_transporte_le_datas_iso_e_brasileira() -> None:
+    conteudo = _csv(
+        "codigo_rastreio,origem,destino,peso_kg,previsao_entrega,data_entrega\n"
+        "GL-1,SP,CWB,10,2026-09-01,15/09/2026\n"
+        "GL-2,SP,CWB,10,,\n"
+    )
+
+    resultado = analisar("transporte", conteudo, "transporte.csv")
+
+    assert resultado.registros[0].previsao_entrega == datetime(2026, 9, 1)
+    assert resultado.registros[0].data_entrega == datetime(2026, 9, 15)
+    assert resultado.registros[1].previsao_entrega is None
+    assert resultado.registros[1].data_entrega is None
+
+
+def test_transporte_data_invalida_gera_erro() -> None:
+    conteudo = _csv(
+        "codigo_rastreio,origem,destino,peso_kg,previsao_entrega\n"
+        "GL-1,SP,CWB,10,31/31/2026\n"
+    )
+
+    resultado = analisar("transporte", conteudo, "transporte.csv")
+
+    assert resultado.aceitas == 0
+    assert resultado.rejeitadas == 1
+    assert "previsao_entrega" in resultado.erros[0].motivo
 
 
 def test_csv_com_ponto_e_virgula_e_lido() -> None:

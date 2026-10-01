@@ -27,3 +27,10 @@ def test_assets_estaticos_servidos() -> None:
 
     assert resposta.status_code == 200
     assert resposta.headers["content-type"].startswith("text/css")
+
+
+def test_relatorios_css_servido() -> None:
+    resposta = _client().get("/static/relatorios.css")
+
+    assert resposta.status_code == 200
+    assert resposta.headers["content-type"].startswith("text/css")

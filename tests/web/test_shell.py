@@ -62,7 +62,9 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
         yield cliente
 
 
-async def _criar_usuario_com_empresa(engine: AsyncEngine, email: str) -> Empresa:
+async def _criar_usuario_com_empresa(
+    engine: AsyncEngine, email: str, papel: str = "admin"
+) -> Empresa:
     factory = build_async_session_factory(engine)
     async with factory() as session:
         empresa = Empresa(nome="Empresa A")
@@ -74,9 +76,7 @@ async def _criar_usuario_com_empresa(engine: AsyncEngine, email: str) -> Empresa
         )
         session.add_all([empresa, usuario])
         await session.flush()
-        session.add(
-            Membership(user_id=usuario.id, empresa_id=empresa.id, papel="admin")
-        )
+        session.add(Membership(user_id=usuario.id, empresa_id=empresa.id, papel=papel))
         await session.commit()
         return empresa
 
@@ -99,6 +99,29 @@ async def test_nav_nao_exibe_indicadores(
 
     assert resposta.status_code == 200
     assert 'href="/kpis"' not in resposta.text
+
+
+async def test_nav_exibe_relatorios_para_admin(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    await _criar_usuario_com_empresa(engine, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get("/")
+
+    assert 'href="/relatorios/estoque"' in resposta.text
+
+
+async def test_nav_oculta_relatorios_para_operador(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    await _criar_usuario_com_empresa(engine, "op@empresa.com", papel="operador")
+    await _login(client, "op@empresa.com")
+
+    resposta = await client.get("/")
+
+    assert resposta.status_code == 200
+    assert 'href="/relatorios/estoque"' not in resposta.text
 
 
 async def test_nav_marca_pagina_ativa(client: AsyncClient, engine: AsyncEngine) -> None:

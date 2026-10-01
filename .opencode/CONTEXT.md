@@ -1,77 +1,77 @@
-# Contexto da Sessão — F2 (HITL) fechada, v0.3.0 + housekeeping
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-28.
-> Branch: `main` · HEAD: `be26082` · working tree limpo.
+# Contexto da Sessão — Feature relatórios operacionais (PR #66 aberto)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-09-30.
+> Branch: `feat/relatorios-operacionais` · HEAD: `07faf7b` · working tree limpo.
+> Base: `origin/main` @ `72226a2` (handoff anterior / housekeeping #65).
 
 ## Estado atual
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `be26082` (= `origin/main`) · tags `v0.1.0` = `1c0768c`, `v0.2.0` = `586d2e8`,
-  **`v0.3.0` = `f0f6ddd`** (release do épico F2). `pyproject`/`uv.lock` **0.3.0** verificado.
-- **Épico F2**: **T1–T12 mergeadas** e **release v0.3.0** em `main` (#61).
-- **Housekeeping (2026-09-28)**: PR **#63** (config de review + handoff) e PR **#64**
-  (teto de arquivo do code review alinhado a **800**) squash-mergeados em `main`.
-  Apagadas (local+remote): `feat/f2-hitl`, `feat/ui-beautifului`; locais:
-  `backup/f1-mvp`, `backup/f1-fase2`. **Mantidas por decisão**: `feat/f1-fase1` e
-  `feat/f1-fase2` (PRs #1/#2 fechados sem merge, com conteúdo próprio — possível
-  referência futura de auth/onboarding).
-- **Gate verificado nesta sessão**: **429 passed, 99,06%**; `black --check`/`ruff` verdes;
-  CI dos PRs #60 e #61 verde.
+- **`main` @ `72226a2`** (= `origin/main`) · tags `v0.1.0`, `v0.2.0`, `v0.3.0` (release F2).
+  `pyproject`/`uv.lock` ainda em **0.3.0** (feature relatórios **não** bumpou versão).
+- **Épico F2**: fechado, release v0.3.0 em `main`.
+- **Feature relatórios operacionais**: T1–T11 implementadas na branch de integração
+  `feat/relatorios-operacionais`; self-review + ADR; aceitação P1; 2 correções pós-review.
+- **PR #66** (`feat/relatorios-operacionais → main`): **OPEN**, `mergeable`, **CI verde**.
+  **Code review independente feito** (`code-reviewer-agent`, `opencode-go/glm-5.3-flash`):
+  **0 Critical / 0 Important**, 5 Minor → veredito **pode mergear**. Minors registrados como
+  FU-1..FU-5 em `tasks.md`.
 - Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
 - **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
-  `serve_dev.py` fora do repo; **Ollama não verificado** (sessão foi backend/testes/release).
+  `serve_dev.py` fora do repo.
 
-## O que foi feito nesta sessão
-- **T12 — testes de aceitação F2 — CONCLUÍDA e mergeada (#60)**:
-  `tests/acceptance/` modularizado (limite de 800 linhas): `conftest.py` (fixtures),
-  `f2_suporte.py` (helpers, não coletado), `test_f2_hitl.py` (INC/SUG),
-  `test_f2_hitl_decisao.py` (APR/ESC), `test_f2_hitl_trilha.py` (TRA/EDG),
-  `test_f2_hitl_chat.py` (read-only AD-002). 37 testes, 2 tenants, sem rede.
-  Fluxo completo da task: self-review (`developer-self-reviewer`) → ADR
-  `docs/adr/f2-t12-aceitacao-self-review.md` → code review → PR #60 → CI verde → squash → branch apagada.
-- **Release F2 — CONCLUÍDO (#61)**: sincronizei `feat/f2-hitl` com `origin/main` (PR #49, lock),
-  subi `pyproject`/`uv.lock` para **0.3.0**, PR `feat/f2-hitl → main` squash em `f0f6ddd`,
-  tag anotada **`v0.3.0`** pushada; `main` local sincronizado.
-- **Correção do usuário**: o teste de aceitação saiu com 1040 linhas (teto 800) — refatorado em
-  6 arquivos ≤487 linhas (lição L-030).
-- Docs: `tasks.md` T1–T12 ✅; `.opencode/LESSONS.md` consolidado (L-030 no topo); este handoff.
+## O que foi feito nesta feature (branch, não mergeada)
+- **T1–T8 + T10** (backend/rotas/CSV): `7201501` — migração
+  `alembic/versions/c4a81f0d9e2b_relatorios_historico.py`, `db/models.py::CatalogoHistorico`,
+  `ingestion/*` (categoria + datas), `repositories/{historico,relatorios}.py`,
+  `web/{relatorios,csv_relatorios}.py` + `templates/relatorios.html`.
+- **T9** (estilos/navegação): `177483c` — `web/static/relatorios.css`, link no `base.html`.
+- **Self-review + ADR**: `1b185f9` — `docs/adr/relatorios-operacionais-self-review.md`;
+  corrigiu divergência tela×CSV (L-033), cabeçalhos triplicados e tipagem (L-032).
+- **T11** (aceitação P1): `5a0b4ea` — `tests/acceptance/test_relatorios_{enablers,estoque,
+  transporte,fornecedores,recorte,guard,export}.py` + `relatorios_suporte.py` (7 grupos).
+- **Pós-review**: `3b793a3` (contagem agregada de atrasos no transporte) e `07faf7b`
+  (**IMP-01**: deduplica chaves por importação no histórico).
+- Docs: `docs/specs/features/relatorios-operacionais/{story,spec,design,tasks}.md` (Checkpoint 2).
 
 ## Decisões e regras (não esquecer)
-**F2 (HITL)**
-- Aprovador: `admin` + `gestor` (fonte única `PAPEIS_APROVADORES` em `correcoes/__init__.py`);
-  fila só em **web/API**.
-- "Incompleto" = vazio/zero/default por tipo (sem colunas anuláveis); `quantidade`/`ativo`/identidades fora.
-- Sugestão determinística (moda/mediana/média) só com dados do tenant; sem base = "sem sugestão" (só rejeita).
-- Escrita = `upsert` do catálogo, 1 transação com auditoria; item **terminal/imutável**; retenção segue a `Empresa`.
-- **AD-002 preservado**: nenhuma tool de escrita entra no grafo ReAct; escrita fora do loop do LLM.
-- Trilha P2 = status `(aplicado, falhou)`; purga remove `(rejeitado, aplicado, falhou)`.
-- Erros de domínio em `correcoes/erros.py` (404/409/422); o serviço **não** conhece FastAPI.
+**Relatórios**
+- Empresa sempre derivada de `exigir_papel(*PAPEIS_APROVADORES)` (nunca da URL/query);
+  sem sessão → 401, `operador` → 403, `admin`/`gestor` → 200.
+- Leitura a partir de `catalogo_historico` (último snapshot por chave no período); recorte UTC,
+  inclusivo (`de == ate` conta).
+- CSV: `;`, `utf-8-sig` (BOM), RFC 4180, neutralização anti-injeção (`= + - @`); linhas do CSV
+  == tabela da tela (mesmo formatador de data — ver L-033).
+- `de > ate` → 422 explícito; domínio inválido → 404; datas inválidas → 422 do framework.
+- Excedente = `minimo > 0 and quantidade > minimo * 2`; rota com `peso_kg == 0` não é omitida.
 
-**Processo de review (atualizado — ver WIP)**
-- Dois momentos: **self-review** (`developer-self-reviewer`, mesmo modelo do autor, gera ADR) e
-  **code review independente** (`code-reviewer-agent`, modelo `opencode-go/glm-5.3-flash`,
-  `edit: deny` — só reporta; o builder corrige). Descrição em `AGENTS.md`/`ship-feature`.
+**Processo de review**
+- Dois momentos: **self-review** (`developer-self-reviewer`, mesmo modelo, gera ADR) e
+  **code review independente** (`code-reviewer-agent`, `opencode-go/glm-5.3-flash`, `edit: deny`).
+- **Code review (2026-09-30)**: etapa 5 do `ship-feature` executada via `code-reviewer-agent`
+  (sessão `ses_f078e807cffe5D1ZjegmW10EPl`), modelo `opencode-go/glm-5.3-flash` (confirmado no
+  log). Veredito **pode mergear**; 5 Minors viram follow-up (FU-1..FU-5 em `tasks.md`).
 
 **Geral**
 - Supervisor anti-loop: repetir especialista → `FINISH`. Memória de erros em `.opencode/LESSONS.md`
-  (consolidado, L-030 topo: dimensione arquivo/módulo antes de escrever).
+  (topo L-033/L-032/L-031 desta feature).
 
 ## Próximos passos / bloqueios
-1. **CONCLUÍDO**: F2 T12 (#60) e release **v0.3.0** (#61). Épico F2 fechado ponta a ponta.
-2. **PENDENTE**: feature de **relatórios/gráficos/tabelas** (pedido do usuário) — próxima.
-3. **CONCLUÍDO — Housekeeping (2026-09-28)**: PR **#63** (config de review + handoff)
-   e PR **#64** (teto de arquivo do code review alinhado a **800**) mergeados em `main`.
-4. **CONCLUÍDO — Branches (2026-09-28)**: apagadas `feat/ui-beautifului`, `feat/f2-hitl`
-   e as locais `backup/f1-{mvp,fase2}`. Mantidas `feat/f1-fase1`/`feat/f1-fase2`
-   (PRs #1/#2 fechados sem merge; conteúdo próprio preservado por decisão).
-5. **Débitos**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting (AD-015),
-   convite por token, empresa ativa, migração `String(4000)`/`Text`, alinhar `Membership.user_id`
-   (`Uuid`) a `User.id` (`GUID`) — AD-027.
-6. **Bloqueio**: nenhum.
+1. **PENDENTE — gate local bloqueado por ambiente**: política **App Control** do Windows bloqueia
+   a DLL `_tiktoken` (import de `langchain_openai`) e o spawn de `black.exe`. `uv run pytest`
+   (full) e `uv run black` **não rodam localmente**; `uv run ruff check` passa e
+   `uv run python -m black --check` passa (136 arquivos). CI do PR #66 está **verde**.
+2. **CONCLUÍDO — code review (2026-09-30)**: `code-reviewer-agent` → 0 Critical/0 Important,
+   5 Minor (FU-1..FU-5 em `tasks.md`), veredito **pode mergear**.
+3. **EM ANDAMENTO — fechar a feature**: squash-merge do PR #66 → `main`, sincronizar `main`,
+   apagar a branch. Avaliar se vira release (`v0.4.0`): `pyproject`/`uv.lock` ainda 0.3.0.
+4. **CONCLUÍDO — docs**: `tasks.md` T1–T11 marcadas + follow-ups; este handoff atualizado.
+5. **Débitos herdados**: T23 (feedback órfão no chat), T20/T31, CI sem `evals/`, rate limiting
+   (AD-015), convite por token, empresa ativa, migração `String(4000)`/`Text`, alinhar
+   `Membership.user_id` (`Uuid`) a `User.id` (`GUID`) — AD-027.
+6. **Bloqueio**: ambiente local (item 1) impede o gate `full`; CI supre a verificação.
 
 ## WIP local (não commitado)
-- **Árvore limpa**. Commitado em `main`: PR **#63** (`AGENTS.md`, `ship-feature/SKILL.md`,
-  `code-reviewer-agent.md`, `code-reviewer/SKILL.md`, `opencode.json`, `CONTEXT.md`,
-  `LESSONS.md`) e PR **#64** (teto 600→800 no skill de code review).
+- Árvore limpa. Alterações não commitadas nesta sessão: apenas este `CONTEXT.md`.
 
 ## Artefatos do graphify
 - **graphify indisponível**: não há tool `graphify_*`; o servidor MCP não expõe resources e o
@@ -79,27 +79,27 @@
   Números **não verificados** — não inventar.
 
 ## Documentos de projeto relevantes
-- **F2 (referência)**: `docs/specs/features/f2-hitl/{story,spec,design,tasks}.md`.
-- **ADRs F2**: `docs/adr/f2-t01..t12-*-self-review.md` (T12: `f2-t12-aceitacao-self-review.md`, novo).
-- **Alterados nesta sessão**: `docs/adr/f2-t12-aceitacao-self-review.md`,
-  `docs/specs/features/f2-hitl/tasks.md`, `.opencode/LESSONS.md`, `.opencode/CONTEXT.md`.
+- **Feature relatórios**: `docs/specs/features/relatorios-operacionais/{story,spec,design,tasks}.md`;
+  ADR `docs/adr/relatorios-operacionais-self-review.md`.
+- **F2 (referência)**: `docs/specs/features/f2-hitl/{story,spec,design,tasks}.md`; ADRs `f2-t01..t12-*`.
+- **Código/testes relatórios**: `src/gestlog/repositories/{historico,relatorios}.py`,
+  `web/{relatorios,csv_relatorios}.py`, `web/static/relatorios.css`,
+  `db/models.py::CatalogoHistorico`, `ingestion/{parser,servico,modelos}.py`,
+  `alembic/versions/c4a81f0d9e2b_relatorios_historico.py`; `tests/test_repositories_relatorios.py`,
+  `tests/web/test_relatorios.py`, `tests/test_csv_relatorios.py`, `tests/acceptance/test_relatorios_*.py`.
 - **Existentes**: `AGENTS.md`, `README.md`, `Makefile`, `opencode.json`, `docs/business/PRD.md`,
-  `docs/specs/project/{PROJECT,ROADMAP,STATE}.md`, `docs/specs/codebase/TESTING.md`,
-  `docs/specs/features/f1-mvp/*`, `docs/adr/*` (t13..t34, ui-beautifului-*, memoria-auto-melhoria,
-  supervisor-loop-chat).
+  `docs/specs/project/{PROJECT,ROADMAP,STATE}.md`, `docs/specs/codebase/TESTING.md`.
 - **Skills**: `.opencode/skills/{build-with-tests,code-reviewer,git-workflow,ship-feature,write-fluid-hybrid-adr}`.
-  **Agents**: `.opencode/agent/*` (incl. novo `code-reviewer-agent.md`). **Plugin**: `self-learning.ts`.
-- **Código/testes F2**: `src/gestlog/correcoes/*`, `audit/{eventos,retencao}.py`,
-  `repositories/correcoes.py`, `web/correcoes.py` + templates, `db/models.py::ItemCorrecao`,
-  `alembic/versions/9c2f7a41b6d3_item_correcao.py`; `tests/correcoes/*`,
-  `tests/acceptance/*` (novos), `tests/web/test_correcoes.py`, `tests/test_repositories_correcoes.py`.
+  **Agents**: `.opencode/agent/*` (incl. `code-reviewer-agent.md`). **Plugin**: `self-learning.ts`.
 
 ---
 # Histórico (sessões anteriores, resumido)
-- **2026-09-27 (esta sessão)**: F2 T12 (aceitação, #60) + release **v0.3.0** (#61); épico F2 fechado.
-- **2026-09-25**: F2 T10 (web fila/decisão, #58) e T11 (trilha, #59); ADRs (#55) em 23/09.
+- **2026-09-28**: feature relatórios operacionais (T1–T11 + self-review + aceitação + fixes);
+  PR #66 aberto. Handoff anterior (F2/housekeeping) era o `be26082`/`72226a2`.
+- **2026-09-27**: F2 T12 (aceitação, #60) + release **v0.3.0** (#61); épico F2 fechado.
+- **2026-09-25**: F2 T10 (#58) e T11 (#59); ADRs (#55).
 - **2026-09-23**: F2 T3–T9 entregues e mergeadas.
-- **2026-09-22**: UI beautifului entregue + release `v0.2.0`; F2 planejada; T1/T2 mergeadas.
+- **2026-09-22**: UI beautifului + release `v0.2.0`; F2 planejada; T1/T2 mergeadas.
 - **2026-09-21**: memória de auto-melhoria (#38); fix supervisor/SSE (#40); graphify (#41); UI T1–T3.
 - **2026-09-18**: F1 completa (34/34); release `v0.1.0`.
 - **2026-09-15..17**: T14–T34; 109→157 testes.
