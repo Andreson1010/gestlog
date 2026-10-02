@@ -454,4 +454,8 @@ para uma task de folga futura:
   (teto 50); extrair o bloco `create_table`/índices.
 - **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.
 - **FU-5** `tests/web/test_relatorios.py` — cobrir 422 de data mal-formada também na rota de export
-  (`REL-35`).
+  (`REL-35`). ✅ **Resolvido** com `test_export_data_invalida_422` (2026-10-02).
+- **FU-6** `src/gestlog/web/relatorios.py:217` / `tests/web/test_relatorios.py` — o
+  `_validar_periodo(desde, ate)` da rota de exportação não é exercitado (`test_periodo_invalido_422`
+  cobre só a página); se a linha fosse removida, nenhum teste falharia. Registrar 422 `de > ate`
+  no export (`REL-34`). Achado LOW do code review do PR #69 (2026-10-02).
