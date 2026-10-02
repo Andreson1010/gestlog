@@ -454,4 +454,4 @@ para uma task de folga futura:
   (teto 50); extrair o bloco `create_table`/índices.
 - **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.
 - **FU-5** `tests/web/test_relatorios.py` — cobrir 422 de data mal-formada também na rota de export
-  (`REL-35`).
+  (`REL-35`). ✅ **Resolvido** com `test_export_data_invalida_422` (2026-10-02).
