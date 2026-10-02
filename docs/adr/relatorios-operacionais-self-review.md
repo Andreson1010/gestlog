@@ -87,7 +87,9 @@ Se a migração criasse a tabela mas não populasse nada, todo o dato importado 
 da feature sumiria dos relatórios. A revisão `c4a81f0d9e2b` (com
 `down_revision = '9c2f7a41b6d3'`) faz `INSERT ... SELECT` por domínio em
 `_backfill()`, gravando um snapshot por linha existente com `import_job_id = NULL`
-e `importado_em = CURRENT_TIMESTAMP` — ou seja, o dado antigo aparece como a
+e `importado_em` via bind param `:agora = datetime.now(UTC)` — aware e com
+microssegundos, no mesmo formato das linhas vivas (`job.created_at`), capturado uma
+única vez para os três domínios — ou seja, o dado antigo aparece como a
 versão mais recente sem poluir o histórico ligado a importações reais. O `id` do
 snapshot é gerado por `_uuid_sql()`, que checa `op.get_bind().dialect.name` e usa
 `gen_random_uuid()` no Postgres e `lower(hex(randomblob(16)))` no SQLite,
@@ -205,5 +207,6 @@ comportamento consistente entre os routers.
   injeção de prompt), de vazamento entre empresas, de `print`, de função > 50
   linhas ou arquivo > 800 linhas.
 * **Limitação aceita, não bloqueante:** o desempate por `(importado_em, id)` em
-  empates de snapshot fica documentado; o backfill usa `CURRENT_TIMESTAMP` (o
-  dado pré-feature aparece como versão corrente), coerente com REL-04.
+  empates de snapshot fica documentado; o backfill grava `importado_em` com
+  `datetime.now(UTC)` aware/microssegundos (bind param `:agora`), alinhado ao dado
+  pré-feature, que aparece como versão corrente — coerente com REL-04.

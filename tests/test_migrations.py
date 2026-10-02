@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -139,9 +140,18 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
                 "SELECT COUNT(*) FROM catalogo_historico " "WHERE import_job_id IS NULL"
             )
         ).scalar_one()
+        importados_em = (
+            conn.execute(text("SELECT importado_em FROM catalogo_historico"))
+            .scalars()
+            .all()
+        )
     assert total == 3
     assert dominios == {"estoque", "fornecedores", "transporte"}
     assert jobs_nulos == 3
+    assert all(
+        re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}", valor)
+        for valor in importados_em
+    )
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
