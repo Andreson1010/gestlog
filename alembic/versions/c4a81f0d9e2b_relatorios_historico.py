@@ -5,10 +5,13 @@ Revises: 9c2f7a41b6d3
 Create Date: 2026-09-28 10:00:00.000000
 
 """
+from __future__ import annotations
+
+from datetime import UTC, datetime
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 revision: str = 'c4a81f0d9e2b'
@@ -82,26 +85,33 @@ def upgrade() -> None:
 def _backfill() -> None:
     """Insere um snapshot por linha existente dos catálogos (job nulo)."""
     uid = _uuid_sql()
+    agora = datetime.now(UTC)
     op.execute(
-        f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
-        f"import_job_id, importado_em, nome, categoria, local, quantidade, minimo) "
-        f"SELECT {uid}, empresa_id, 'estoque', upper(sku), NULL, CURRENT_TIMESTAMP, "
-        f"nome, categoria, local, quantidade, minimo FROM stock_item"
+        sa.text(
+            f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
+            f"import_job_id, importado_em, nome, categoria, local, quantidade, minimo) "
+            f"SELECT {uid}, empresa_id, 'estoque', upper(sku), NULL, :agora, "
+            f"nome, categoria, local, quantidade, minimo FROM stock_item"
+        ).bindparams(agora=agora)
     )
     op.execute(
-        f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
-        f"import_job_id, importado_em, nome, categoria, prazo_dias, avaliacao, ativo) "
-        f"SELECT {uid}, empresa_id, 'fornecedores', upper(fornecedor_id), NULL, "
-        f"CURRENT_TIMESTAMP, nome, categoria, prazo_dias, avaliacao, ativo "
-        f"FROM supplier"
+        sa.text(
+            f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
+            f"import_job_id, importado_em, nome, categoria, prazo_dias, "
+            f"avaliacao, ativo) "
+            f"SELECT {uid}, empresa_id, 'fornecedores', upper(fornecedor_id), NULL, "
+            f":agora, nome, categoria, prazo_dias, avaliacao, ativo FROM supplier"
+        ).bindparams(agora=agora)
     )
     op.execute(
-        f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
-        f"import_job_id, importado_em, origem, destino, peso_kg, status, "
-        f"previsao_entrega, data_entrega) "
-        f"SELECT {uid}, empresa_id, 'transporte', upper(codigo_rastreio), NULL, "
-        f"CURRENT_TIMESTAMP, origem, destino, peso_kg, status, previsao_entrega, "
-        f"data_entrega FROM transport_record"
+        sa.text(
+            f"INSERT INTO catalogo_historico (id, empresa_id, dominio, chave, "
+            f"import_job_id, importado_em, origem, destino, peso_kg, status, "
+            f"previsao_entrega, data_entrega) "
+            f"SELECT {uid}, empresa_id, 'transporte', upper(codigo_rastreio), NULL, "
+            f":agora, origem, destino, peso_kg, status, previsao_entrega, "
+            f"data_entrega FROM transport_record"
+        ).bindparams(agora=agora)
     )
 
 

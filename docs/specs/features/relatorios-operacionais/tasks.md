@@ -449,7 +449,8 @@ para uma task de folga futura:
   `kpis.py`/`correcoes.py`/`relatorios.py`; testes em `tests/web/test_periodo.py`.
 - **FU-2** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:88,94,102` — backfill usa
   `CURRENT_TIMESTAMP` (naive/segundos) vs. linhas vivas `_agora` (aware/microssegundos); alinhar
-  com bind param `datetime.now(UTC)`.
+  com bind param `datetime.now(UTC)`. ✅ **Resolvido**: `_backfill` usa `:agora` =
+  `datetime.now(UTC)`; teste `test_backfill_importado_em_preserva_microssegundos` (2026-10-02).
 - **FU-3** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:27-79` — `upgrade()` ~53 linhas
   (teto 50); extrair o bloco `create_table`/índices.
 - **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -142,6 +143,39 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
     assert total == 3
     assert dominios == {"estoque", "fornecedores", "transporte"}
     assert jobs_nulos == 3
+
+
+def test_backfill_importado_em_preserva_microssegundos(
+    alembic_config: tuple[Config, str],
+) -> None:
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "9c2f7a41b6d3")
+    engine = create_engine(db_url)
+    empresa_id = uuid4().hex
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, retention_days, created_at) "
+                "VALUES (:id, 'A', NULL, CURRENT_TIMESTAMP)"
+            ),
+            {"id": empresa_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO stock_item "
+                "(id, empresa_id, sku, nome, quantidade, minimo, local) "
+                "VALUES (:id, :empresa, 'SKU-1', 'Caixa', 5, 1, 'A1')"
+            ),
+            {"id": uuid4().hex, "empresa": empresa_id},
+        )
+
+    command.upgrade(cfg, "head")
+
+    with engine.connect() as conn:
+        importado_em = conn.execute(
+            text("SELECT importado_em FROM catalogo_historico")
+        ).scalar_one()
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}", importado_em)
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
