@@ -150,6 +150,9 @@ Procedimento:
 - `get_settings()` é memoizado com `lru_cache`; testes que mudam env precisam
   `get_settings.cache_clear()` ou instanciar `Settings(_env_file=None)` direto.
 - `uv sync` pode selecionar um CPython mais novo que o local; o suporte é `>=3.11`.
+- Migrações: o CI/`make lint` cobrem `alembic/`. `alembic revision --autogenerate` gera
+  código no estilo do template (aspas simples, imports fora de ordem), então rode
+  `make format` no arquivo gerado antes do gate.
 
 ## Git
 

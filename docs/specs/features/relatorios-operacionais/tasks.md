@@ -464,3 +464,8 @@ para uma task de folga futura:
   `_validar_periodo(desde, ate)` da rota de exportação não é exercitado (`test_periodo_invalido_422`
   cobre só a página); se a linha fosse removida, nenhum teste falharia. Registrar 422 `de > ate`
   no export (`REL-34`). ✅ **Resolvido** com `test_export_periodo_invalido_422` (2026-10-06).
+- **FU-7** `alembic/script.py.mako` — o template de autogeração emite código fora do padrão
+  (aspas simples via `repr`, linha `${imports}` em branco, `typing` antigo), então toda migração
+  nova nasce violando o gate recém-incluído. Alternativa mínima já documentada (`make format` após
+  `alembic revision`, em `AGENTS.md` Gotchas). Alinhar o template é opcional. LOW do review do
+  PR #71 (2026-10-06).
