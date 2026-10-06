@@ -466,6 +466,7 @@ para uma task de folga futura:
   no export (`REL-34`). ✅ **Resolvido** com `test_export_periodo_invalido_422` (2026-10-06).
 - **FU-7** `alembic/script.py.mako` — o template de autogeração emite código fora do padrão
   (aspas simples via `repr`, linha `${imports}` em branco, `typing` antigo), então toda migração
-  nova nasce violando o gate recém-incluído. Alternativa mínima já documentada (`make format` após
-  `alembic revision`, em `AGENTS.md` Gotchas). Alinhar o template é opcional. LOW do review do
-  PR #71 (2026-10-06).
+  nova nasceria violando o gate recém-incluído. ✅ **Resolvido**: `alembic.ini` ganhou
+  `[post_write_hooks]` (ruff --fix + black) e o `.mako` passou a emitir
+  `from __future__ import annotations` + typing moderno; migração gerada sai conforme ao gate
+  (2026-10-06). LOW do review do PR #71.
