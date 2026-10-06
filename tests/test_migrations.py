@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -125,7 +126,9 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
             {"id": uuid4().hex, "empresa": empresa_id},
         )
 
+    antes = datetime.now(UTC)
     command.upgrade(cfg, "head")
+    depois = datetime.now(UTC)
 
     with engine.connect() as conn:
         total = conn.execute(
@@ -139,9 +142,19 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
                 "SELECT COUNT(*) FROM catalogo_historico " "WHERE import_job_id IS NULL"
             )
         ).scalar_one()
+        importados_em = (
+            conn.execute(text("SELECT importado_em FROM catalogo_historico"))
+            .scalars()
+            .all()
+        )
     assert total == 3
     assert dominios == {"estoque", "fornecedores", "transporte"}
     assert jobs_nulos == 3
+    assert len(set(importados_em)) == 1
+    gravado = datetime.strptime(importados_em[0], "%Y-%m-%d %H:%M:%S.%f").replace(
+        tzinfo=UTC
+    )
+    assert antes <= gravado <= depois
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
