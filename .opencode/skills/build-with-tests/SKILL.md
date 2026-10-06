@@ -62,10 +62,10 @@ The exact commands live in `AGENTS.md` / the `Makefile` — read them, don't gue
 uv run pytest
 
 # Format
-uv run black src/ tests/
+uv run black src/ tests/ alembic/
 
 # Lint
-uv run ruff check src/ tests/
+uv run ruff check src/ tests/ alembic/
 ```
 
 Coverage is a gate, not a suggestion. If it drops, write more tests — not fewer assertions.

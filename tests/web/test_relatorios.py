@@ -238,6 +238,19 @@ async def test_export_data_invalida_422(client: AsyncClient, engines) -> None:
     assert resposta.status_code == 422
 
 
+async def test_export_periodo_invalido_422(client: AsyncClient, engines) -> None:
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get(
+        "/relatorios/estoque/exportar",
+        params={"desde": "2026-09-30", "ate": "2026-09-01"},
+    )
+
+    assert resposta.status_code == 422
+
+
 async def test_pagina_estoque_renderiza_tabelas_e_persiste_periodo(
     client: AsyncClient,
     engines: tuple[AsyncEngine, Engine],

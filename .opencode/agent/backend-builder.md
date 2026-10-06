@@ -121,10 +121,10 @@ Before declaring done, run the project's gate checks in order — read the exact
 uv run pytest
 
 # 2. Format check
-uv run black --check src/ tests/
+uv run black --check src/ tests/ alembic/
 
 # 3. Lint
-uv run ruff check src/ tests/
+uv run ruff check src/ tests/ alembic/
 ```
 
 If tests fail: fix the implementation, not the test. If lint fails: fix the code. If coverage drops below the project threshold: write more tests before finishing.

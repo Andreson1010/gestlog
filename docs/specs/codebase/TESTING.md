@@ -9,8 +9,8 @@
 | --- | --- |
 | quick | `uv run pytest tests/<caminho> --no-cov -q` |
 | full | `uv run pytest` (gate de cobertura 80% via `addopts`) |
-| lint | `uv run ruff check src/ tests/` |
-| format | `uv run black --check src/ tests/` |
+| lint | `uv run ruff check src/ tests/ alembic/` |
+| format | `uv run black --check src/ tests/ alembic/` |
 
 ## Test Coverage Matrix
 

@@ -5,13 +5,13 @@ repos:
     hooks:
       - id: black
         name: black (formatação)
-        entry: black --check src/ tests/
+        entry: black --check src/ tests/ alembic/
         language: system
         types: [python]
 
       - id: ruff
         name: ruff (lint)
-        entry: ruff check src/ tests/
+        entry: ruff check src/ tests/ alembic/
         language: system
         types: [python]
 

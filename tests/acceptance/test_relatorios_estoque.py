@@ -6,6 +6,7 @@ semeado por empresa.
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from httpx import AsyncClient
@@ -32,7 +33,7 @@ def _item(
     local: str = "",
     quantidade: int = 1,
     minimo: int = 5,
-    quando=QUANDO,
+    quando: datetime = QUANDO,
 ) -> None:
     """Semeia um item de estoque no histórico da empresa."""
     semear(

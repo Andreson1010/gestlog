@@ -18,8 +18,8 @@ apenas espelho de conveniência; não edite um sem o outro.
 ```bash
 uv sync --extra dev                 # cria/atualiza .venv a partir do pyproject
 uv run pytest                        # suíte completa + gate de cobertura (80%)
-uv run ruff check src/ tests/        # lint
-uv run black src/ tests/             # formatação
+uv run ruff check src/ tests/ alembic/  # lint
+uv run black src/ tests/ alembic/       # formatação
 uv run gestlog                       # REPL (requer Ollama acessível)
 
 # Um único arquivo/teste — obrigatório --no-cov, senão o gate de 80% derruba
@@ -150,6 +150,9 @@ Procedimento:
 - `get_settings()` é memoizado com `lru_cache`; testes que mudam env precisam
   `get_settings.cache_clear()` ou instanciar `Settings(_env_file=None)` direto.
 - `uv sync` pode selecionar um CPython mais novo que o local; o suporte é `>=3.11`.
+- Migrações: o CI/`make lint` cobrem `alembic/`. `alembic revision --autogenerate` gera
+  código no estilo do template (aspas simples, imports fora de ordem), então rode
+  `make format` no arquivo gerado antes do gate.
 
 ## Git
 
