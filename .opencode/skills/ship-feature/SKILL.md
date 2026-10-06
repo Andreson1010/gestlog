@@ -54,8 +54,8 @@ Gate check — must pass before opening a PR. Use the commands from `AGENTS.md` 
 
 ```bash
 uv run pytest          # full suite + coverage gate
-uv run ruff check src/ tests/
-uv run black src/ tests/
+uv run ruff check src/ tests/ alembic/
+uv run black src/ tests/ alembic/
 ```
 
 - All tests pass.

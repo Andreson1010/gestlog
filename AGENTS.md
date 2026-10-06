@@ -18,8 +18,8 @@ apenas espelho de conveniência; não edite um sem o outro.
 ```bash
 uv sync --extra dev                 # cria/atualiza .venv a partir do pyproject
 uv run pytest                        # suíte completa + gate de cobertura (80%)
-uv run ruff check src/ tests/        # lint
-uv run black src/ tests/             # formatação
+uv run ruff check src/ tests/ alembic/  # lint
+uv run black src/ tests/ alembic/       # formatação
 uv run gestlog                       # REPL (requer Ollama acessível)
 
 # Um único arquivo/teste — obrigatório --no-cov, senão o gate de 80% derruba

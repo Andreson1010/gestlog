@@ -31,10 +31,10 @@ jobs:
         run: uv sync --extra dev
 
       - name: Check formatting
-        run: uv run black --check src/ tests/
+        run: uv run black --check src/ tests/ alembic/
 
       - name: Lint
-        run: uv run ruff check src/ tests/
+        run: uv run ruff check src/ tests/ alembic/
 
       - name: Tests
         run: uv run pytest

@@ -6,11 +6,11 @@ install:
 
 ## Qualidade
 format:
-	uv run black src/ tests/
-	uv run ruff check --fix src/ tests/
+	uv run black src/ tests/ alembic/
+	uv run ruff check --fix src/ tests/ alembic/
 
 lint:
-	uv run ruff check src/ tests/
+	uv run ruff check src/ tests/ alembic/
 
 test:
 	uv run pytest

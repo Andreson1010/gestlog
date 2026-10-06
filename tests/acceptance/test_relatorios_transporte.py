@@ -31,7 +31,7 @@ def _registro(
     status: str = "entregue",
     previsao_entrega: datetime | None = None,
     data_entrega: datetime | None = None,
-    quando=QUANDO,
+    quando: datetime = QUANDO,
 ) -> None:
     """Semeia um registro de transporte no histórico da empresa."""
     semear(

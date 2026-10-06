@@ -7,8 +7,8 @@
 
 > Notas de gate (de `docs/specs/codebase/TESTING.md` e `AGENTS.md`):
 > `quick` = `uv run pytest <caminho> --no-cov -q`; `full` = `uv run pytest` (gate de
-> cobertura 80%); `lint` = `uv run ruff check src/ tests/`; `format` =
-> `uv run black --check src/ tests/`. Execuções focadas exigem `--no-cov`.
+> cobertura 80%); `lint` = `uv run ruff check src/ tests/ alembic/`; `format` =
+> `uv run black --check src/ tests/ alembic/`. Execuções focadas exigem `--no-cov`.
 > Um PR por task contra a branch de integração `feat/relatorios-operacionais`.
 
 ---
@@ -453,12 +453,14 @@ para uma task de folga futura:
   `datetime.now(UTC)`; teste `test_backfill_historico_dos_catalogos` valida os 3 domínios
   com `.ffffff` e janela temporal (2026-10-02).
 - **FU-3** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:27-79` — `upgrade()` ~53 linhas
-  (teto 50); extrair o bloco `create_table`/índices. Aproveitar para deixar o arquivo conforme
-  ao ruff/black e avaliar incluir `alembic/` no gate de CI (LOW do review do PR #70).
+  (teto 50); extrair o bloco `create_table`/índices. ✅ **Resolvido**: extraído para
+  `_criar_tabela_historico()`; `alembic/` formatado (black/ruff) e incluído no gate
+  (CI, Makefile, pre-commit) — 2026-10-06.
 - **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.
+  ✅ **Resolvido** nos dois arquivos (2026-10-06).
 - **FU-5** `tests/web/test_relatorios.py` — cobrir 422 de data mal-formada também na rota de export
   (`REL-35`). ✅ **Resolvido** com `test_export_data_invalida_422` (2026-10-02).
 - **FU-6** `src/gestlog/web/relatorios.py:217` / `tests/web/test_relatorios.py` — o
   `_validar_periodo(desde, ate)` da rota de exportação não é exercitado (`test_periodo_invalido_422`
   cobre só a página); se a linha fosse removida, nenhum teste falharia. Registrar 422 `de > ate`
-  no export (`REL-34`). Achado LOW do code review do PR #69 (2026-10-02).
+  no export (`REL-34`). ✅ **Resolvido** com `test_export_periodo_invalido_422` (2026-10-06).

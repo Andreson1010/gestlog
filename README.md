@@ -35,8 +35,8 @@ gestlog> Frete São Paulo -> Curitiba | 10.0 kg | distância 408 km | R$ 1038.00
 ## Qualidade
 
 ```bash
-uv run ruff check src/ tests/
-uv run black src/ tests/
+uv run ruff check src/ tests/ alembic/
+uv run black src/ tests/ alembic/
 uv run pytest
 ```
 

@@ -7,8 +7,10 @@ from logging.config import fileConfig
 from alembic import context
 
 from gestlog.config import Settings
-from gestlog.db import build_engine
-from gestlog.db import models  # noqa: F401
+from gestlog.db import (
+    build_engine,
+    models,  # noqa: F401
+)
 from gestlog.db.base import Base
 
 config = context.config
