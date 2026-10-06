@@ -450,9 +450,11 @@ para uma task de folga futura:
 - **FU-2** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:88,94,102` — backfill usa
   `CURRENT_TIMESTAMP` (naive/segundos) vs. linhas vivas `_agora` (aware/microssegundos); alinhar
   com bind param `datetime.now(UTC)`. ✅ **Resolvido**: `_backfill` usa `:agora` =
-  `datetime.now(UTC)`; teste `test_backfill_importado_em_preserva_microssegundos` (2026-10-02).
+  `datetime.now(UTC)`; teste `test_backfill_historico_dos_catalogos` valida os 3 domínios
+  com `.ffffff` e janela temporal (2026-10-02).
 - **FU-3** `alembic/versions/c4a81f0d9e2b_relatorios_historico.py:27-79` — `upgrade()` ~53 linhas
-  (teto 50); extrair o bloco `create_table`/índices.
+  (teto 50); extrair o bloco `create_table`/índices. Aproveitar para deixar o arquivo conforme
+  ao ruff/black e avaliar incluir `alembic/` no gate de CI (LOW do review do PR #70).
 - **FU-4** `tests/acceptance/test_relatorios_{estoque,transporte}.py` — anotar `quando: datetime`.
 - **FU-5** `tests/web/test_relatorios.py` — cobrir 422 de data mal-formada também na rota de export
   (`REL-35`). ✅ **Resolvido** com `test_export_data_invalida_422` (2026-10-02).

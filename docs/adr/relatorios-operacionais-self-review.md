@@ -210,3 +210,7 @@ comportamento consistente entre os routers.
   empates de snapshot fica documentado; o backfill grava `importado_em` com
   `datetime.now(UTC)` aware/microssegundos (bind param `:agora`), alinhado ao dado
   pré-feature, que aparece como versão corrente — coerente com REL-04.
+* **Limitação operacional aceita:** bancos que já aplicaram `c4a81f0d9e2b` (release
+  v0.4.0) mantêm o backfill legado (naive/segundos), pois editar uma revisão já
+  aplicada não a re-executa. Para re-backfill, `downgrade` até `9c2f7a41b6d3` e
+  `upgrade` novamente — seguro, pois o snapshot é derivado dos catálogos.

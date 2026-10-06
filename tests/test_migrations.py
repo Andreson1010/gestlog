@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import re
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -126,7 +126,9 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
             {"id": uuid4().hex, "empresa": empresa_id},
         )
 
+    antes = datetime.now(UTC)
     command.upgrade(cfg, "head")
+    depois = datetime.now(UTC)
 
     with engine.connect() as conn:
         total = conn.execute(
@@ -148,10 +150,11 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
     assert total == 3
     assert dominios == {"estoque", "fornecedores", "transporte"}
     assert jobs_nulos == 3
-    assert all(
-        re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}", valor)
-        for valor in importados_em
+    assert len(set(importados_em)) == 1
+    gravado = datetime.strptime(importados_em[0], "%Y-%m-%d %H:%M:%S.%f").replace(
+        tzinfo=UTC
     )
+    assert antes <= gravado <= depois
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
