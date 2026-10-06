@@ -153,6 +153,8 @@ Procedimento:
 - Migrações: o CI/`make lint` cobrem `alembic/`. O `alembic.ini` já traz
   `[post_write_hooks]` (ruff --fix + black), então `alembic revision`/`--autogenerate`
   formata o arquivo gerado automaticamente; se editar à mão, rode `make format` antes do gate.
+  Atenção: migração gerada **vazia** nasce sem `sa`/`op` (o ruff remove imports não usados) —
+  reimporte antes de preencher `upgrade()`.
 
 ## Git
 
