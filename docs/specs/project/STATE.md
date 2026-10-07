@@ -435,7 +435,8 @@ da empresa é bloqueado com **409**. A remoção apaga o `Membership`, então
 evita deixar a empresa órfã de quem gerencie usuários.
 **Trade-off:** `Membership.user_id` (`Uuid`) e `User.id` (`GUID` do FastAPI Users)
 serializam diferente no SQLite, então o `JOIN` direto retorna vazio; `listar_usuarios`
-contorna com `User.id.in_(ids)` (débito: alinhar os tipos exige migration). Os
+contorna com `User.id.in_(ids)` (débito: alinhar os tipos exige migration — resolvido
+na AD-030). Os
 eventos de gestão ainda não chamam a auditoria da T26 (fora do escopo).
 **Impact:** `auth/accounts.py`, `web/admin.py`, `web/schemas.py` (`PapelAtualizar`),
 `web/app.py`, `tests/auth/test_admin.py`; ADR `docs/adr/t31-admin-papeis-self-review.md`.
@@ -480,6 +481,24 @@ testes unitários. O gate completo passa a ter 248 testes (98,26%).
 **Impact:** `tests/acceptance/test_f1_mvp.py`; ADR `docs/adr/t33-aceitacao-p1-self-review.md`.
 Com a T33, a F1 fica completa. O release foi feito no PR #35 (`feat/f1-mvp → main`,
 squash `1c0768c`) com a tag `v0.1.0` publicada.
+
+### AD-030: FKs de `user.id` alinhadas ao GUID do FastAPI Users (2026-10-07)
+
+**Decision:** as cinco colunas que referenciam `user.id` (`membership.user_id`,
+`conversation.user_id`, `feedback.user_id`, `audit_log.user_id` e
+`item_correcao.decidido_por`) passam a usar `GUID` do FastAPI Users, o mesmo tipo de
+`User.id`, e `listar_usuarios` resolve o usuário por `JOIN` direto. Uma migração
+(`b7d2e9a4f108`) normaliza os valores legados gravados no SQLite (32 chars sem hífen
+→ 36 chars com hífen); em Postgres as duas representações já são `UUID` nativo e a
+migração é no-op.
+**Reason:** `Uuid` gravava `value.hex` (32 chars) e `GUID` grava `str(value)` (36),
+então no SQLite o `JOIN` por `user_id` retornava vazio — o débito da AD-027, que
+obrigava o workaround `User.id.in_(ids)`.
+**Trade-off:** exige migração e alinha todas as FKs (não só `Membership`); o tipo
+declarado no SQLite segue `CHAR` (afinidade TEXT), sem efeito funcional; o caminho
+Postgres da migração não é coberto pelo CI (só SQLite).
+**Impact:** `db/models.py`, `auth/accounts.py`, `alembic/versions/b7d2e9a4f108_*`,
+`tests/test_migrations.py`; ADR `docs/adr/ad027-alinha-fk-user-guid-self-review.md`.
 
 ---
 
@@ -566,6 +585,4 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
       `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
       para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco,
-      alinhar `Membership.user_id` (`Uuid`) a `User.id` (`GUID`) para permitir JOIN
-      (AD-027),
       botões no turno ao vivo (SSE) e ordenação monotônica de mensagens (AD-019).

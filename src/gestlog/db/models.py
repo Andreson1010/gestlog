@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
+from fastapi_users_db_sqlalchemy.generics import GUID
 from sqlalchemy import (
     JSON,
     DateTime,
@@ -60,7 +61,7 @@ class Membership(Base):
     __table_args__ = (UniqueConstraint("user_id", "empresa_id", name="uq_membership"),)
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("user.id"))
+    user_id: Mapped[UUID] = mapped_column(GUID, ForeignKey("user.id"))
     empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     papel: Mapped[str] = mapped_column(String(20), default="operador")
     created_at: Mapped[datetime] = mapped_column(
@@ -224,7 +225,7 @@ class Conversation(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
-    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("user.id"))
+    user_id: Mapped[UUID] = mapped_column(GUID, ForeignKey("user.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
@@ -270,7 +271,7 @@ class Feedback(Base):
         Uuid, ForeignKey("recommendation.id")
     )
     decisao: Mapped[str] = mapped_column(String(20))
-    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("user.id"))
+    user_id: Mapped[UUID] = mapped_column(GUID, ForeignKey("user.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
@@ -298,7 +299,7 @@ class AuditLog(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
     user_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("user.id"), nullable=True
+        GUID, ForeignKey("user.id"), nullable=True
     )
     evento: Mapped[str] = mapped_column(String(60))
     detalhe: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -328,7 +329,7 @@ class ItemCorrecao(Base):
     status: Mapped[str] = mapped_column(String(20), default="pendente")
     motivo_rejeicao: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     decidido_por: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("user.id"), nullable=True
+        GUID, ForeignKey("user.id"), nullable=True
     )
     papel_aprovador: Mapped[str | None] = mapped_column(String(20), nullable=True)
     decidido_em: Mapped[datetime | None] = mapped_column(

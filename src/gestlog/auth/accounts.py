@@ -80,26 +80,18 @@ async def listar_usuarios(
 ) -> list[tuple[Membership, User]]:
     """Lista os vínculos da empresa com o usuário correspondente.
 
-    A busca dos usuários é feita por ``IN`` (não por JOIN): ``Membership.user_id``
-    usa ``Uuid`` e ``User.id`` usa o ``GUID`` do FastAPI Users, que serializam de
-    formas diferentes no SQLite e quebrariam a junção direta.
+    A junção é feita por ``JOIN`` direto entre ``Membership.user_id`` e
+    ``User.id``: as duas colunas usam o tipo ``GUID`` do FastAPI Users, então
+    serializam de forma idêntica e a junção resolve em qualquer dialeto.
     """
     stmt = (
-        select(Membership)
+        select(Membership, User)
+        .join(User, Membership.user_id == User.id)
         .where(Membership.empresa_id == empresa_id)
         .order_by(Membership.created_at, Membership.id)
     )
-    vinculos = list((await session.execute(stmt)).scalars().all())
-    if not vinculos:
-        return []
-    ids = [vinculo.user_id for vinculo in vinculos]
-    usuarios = (await session.execute(select(User).where(User.id.in_(ids)))).scalars()
-    por_id = {usuario.id: usuario for usuario in usuarios.all()}
-    return [
-        (vinculo, por_id[vinculo.user_id])
-        for vinculo in vinculos
-        if vinculo.user_id in por_id
-    ]
+    linhas = (await session.execute(stmt)).all()
+    return [(vinculo, usuario) for vinculo, usuario in linhas]
 
 
 async def _vinculo_do_usuario(

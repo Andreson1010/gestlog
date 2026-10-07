@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import Engine, create_engine, inspect, text
 
 
 @pytest.fixture
@@ -155,6 +155,124 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
         tzinfo=UTC
     )
     assert antes <= gravado <= depois
+
+
+_FKS_USER = (
+    ("membership", "user_id"),
+    ("conversation", "user_id"),
+    ("feedback", "user_id"),
+    ("audit_log", "user_id"),
+    ("item_correcao", "decidido_por"),
+)
+
+
+def _linhas_fk_legadas(
+    empresa_id: str, legado: str, conversa_id: str, recomendacao_id: str
+) -> list[tuple[str, dict[str, str]]]:
+    """SQL e bind de uma linha legada por tabela que referencia ``user.id``."""
+    return [
+        (
+            "INSERT INTO membership (id, user_id, empresa_id, papel, created_at) "
+            "VALUES (:id, :user, :empresa, 'admin', CURRENT_TIMESTAMP)",
+            {"id": uuid4().hex, "user": legado, "empresa": empresa_id},
+        ),
+        (
+            "INSERT INTO conversation (id, empresa_id, user_id, created_at) "
+            "VALUES (:id, :empresa, :user, CURRENT_TIMESTAMP)",
+            {"id": conversa_id, "empresa": empresa_id, "user": legado},
+        ),
+        (
+            "INSERT INTO recommendation "
+            "(id, conversation_id, dominio, texto, justificativa, fontes, created_at) "
+            "VALUES (:id, :conversa, 'transporte', 't', 'j', NULL, CURRENT_TIMESTAMP)",
+            {"id": recomendacao_id, "conversa": conversa_id},
+        ),
+        (
+            "INSERT INTO feedback "
+            "(id, recommendation_id, decisao, user_id, created_at) "
+            "VALUES (:id, :rec, 'aceito', :user, CURRENT_TIMESTAMP)",
+            {"id": uuid4().hex, "rec": recomendacao_id, "user": legado},
+        ),
+        (
+            "INSERT INTO audit_log "
+            "(id, empresa_id, user_id, evento, detalhe, created_at) "
+            "VALUES (:id, :empresa, :user, 'evt', NULL, CURRENT_TIMESTAMP)",
+            {"id": uuid4().hex, "empresa": empresa_id, "user": legado},
+        ),
+        (
+            "INSERT INTO item_correcao "
+            "(id, empresa_id, tipo, alvo_chave, campo, valor_no_pedido, justificativa, "
+            "fonte, status, decidido_por, created_at) "
+            "VALUES (:id, :empresa, 'estoque', 'SKU-1', 'nome', 'A', 'j', 'manual', "
+            "'aprovado', :user, CURRENT_TIMESTAMP)",
+            {"id": uuid4().hex, "empresa": empresa_id, "user": legado},
+        ),
+    ]
+
+
+def _semear_fk_legadas(engine: Engine, empresa_id: str, usuario_id: str) -> None:
+    """Grava empresa, usuário (GUID de 36) e uma FK legada (32) por tabela."""
+    legado = usuario_id.replace("-", "")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, retention_days, created_at) "
+                "VALUES (:id, 'A', NULL, CURRENT_TIMESTAMP)"
+            ),
+            {"id": empresa_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO user (id, email, hashed_password, is_active, "
+                "is_superuser, is_verified) "
+                "VALUES (:id, 'u@a.com', 'x', 1, 0, 1)"
+            ),
+            {"id": usuario_id},
+        )
+        linhas = _linhas_fk_legadas(empresa_id, legado, uuid4().hex, uuid4().hex)
+        for sql, params in linhas:
+            conn.execute(text(sql), params)
+
+
+def _valor_fk(engine: Engine, tabela: str, coluna: str) -> str:
+    """Lê o valor da coluna FK da única linha semeada na tabela."""
+    with engine.connect() as conn:
+        return conn.execute(text(f"SELECT {coluna} FROM {tabela}")).scalar_one()
+
+
+def _contagem_join(engine: Engine, tabela: str, coluna: str) -> int:
+    """Conta quantas linhas da tabela casam com ``user.id`` por JOIN direto."""
+    with engine.connect() as conn:
+        return conn.execute(
+            text(f"SELECT COUNT(*) FROM {tabela} t JOIN user u ON t.{coluna} = u.id")
+        ).scalar_one()
+
+
+def test_migracao_normaliza_fk_user_para_guid(
+    alembic_config: tuple[Config, str],
+) -> None:
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "c4a81f0d9e2b")
+    engine = create_engine(db_url)
+    empresa_id = uuid4().hex
+    usuario_id = str(uuid4())
+    _semear_fk_legadas(engine, empresa_id, usuario_id)
+    legado = usuario_id.replace("-", "")
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [legado] * len(_FKS_USER)
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [0] * len(_FKS_USER)
+
+    command.upgrade(cfg, "head")
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [usuario_id] * len(
+        _FKS_USER
+    )
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
+
+    command.downgrade(cfg, "c4a81f0d9e2b")
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [legado] * len(_FKS_USER)
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [0] * len(_FKS_USER)
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
