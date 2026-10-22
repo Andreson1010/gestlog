@@ -15,8 +15,10 @@
 
 Com `GESTLOG_TEST_DATABASE_URL` definida, os testes de banco (`db_session` e
 `tests/test_migrations.py`) rodam no Postgres da matriz de dialetos — é o que o job
-`postgres` do CI faz (`postgres:16`; o usuário precisa de `CREATEDB`). Sem a
-variável, tudo roda em SQLite, como antes.
+`postgres` do CI faz (`postgres:16`; o usuário precisa de `CREATEDB` **e** de
+`CONNECT` no banco de manutenção `postgres`). Sem a variável, tudo roda em SQLite,
+como antes — e o fixture `db_session` liga `PRAGMA foreign_keys=ON` para que o gate
+local também detecte FKs órfãs.
 
 ## Test Coverage Matrix
 

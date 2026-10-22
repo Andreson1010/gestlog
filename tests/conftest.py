@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session
 
 from gestlog.config import Settings
@@ -101,6 +101,20 @@ def engine_postgres(url_postgres: str | None) -> Iterator[Engine | None]:
     engine.dispose()
 
 
+def _ligar_fk_sqlite(engine: Engine) -> None:
+    """Liga ``PRAGMA foreign_keys=ON`` nas conexões de um engine SQLite.
+
+    Sem isso o SQLite aceita FKs órfãs silenciosamente e o gate local perde a
+    classe de erro que a matriz de dialetos do Postgres cobre no CI.
+    """
+
+    @event.listens_for(engine, "connect")
+    def _pragma_foreign_keys(dbapi_connection: Any, _record: Any) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
 @pytest.fixture
 def db_session(engine_postgres: Engine | None) -> Iterator[Session]:
     """Sessão SQLAlchemy com as tabelas criadas, isolada por teste.
@@ -113,6 +127,7 @@ def db_session(engine_postgres: Engine | None) -> Iterator[Session]:
     if engine_postgres is None:
         settings = Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:")
         engine = build_engine(settings)
+        _ligar_fk_sqlite(engine)
         init_db(engine)
         factory = build_session_factory(engine)
         with factory() as session:
