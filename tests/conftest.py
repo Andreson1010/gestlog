@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from typing import Any
 
 import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
 from gestlog.config import Settings
 from gestlog.db import build_engine, build_session_factory, init_db
+
+VAR_POSTGRES = "GESTLOG_TEST_DATABASE_URL"
 
 
 class FakeChatModel:
@@ -79,12 +83,50 @@ def fake_model_cls() -> type[FakeChatModel]:
     return FakeChatModel
 
 
-@pytest.fixture
-def db_session() -> Iterator[Session]:
-    """Sessão SQLAlchemy em SQLite em memória com todas as tabelas criadas."""
-    settings = Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:")
-    engine = build_engine(settings)
+@pytest.fixture(scope="session")
+def url_postgres() -> str | None:
+    """URL do Postgres da matriz de dialetos (``GESTLOG_TEST_DATABASE_URL``)."""
+    return os.environ.get(VAR_POSTGRES) or None
+
+
+@pytest.fixture(scope="session")
+def engine_postgres(url_postgres: str | None) -> Iterator[Engine | None]:
+    """Engine do Postgres de teste com o schema criado; ``None`` sem a variável."""
+    if url_postgres is None:
+        yield None
+        return
+    engine = create_engine(url_postgres)
     init_db(engine)
-    factory = build_session_factory(engine)
-    with factory() as session:
-        yield session
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def db_session(engine_postgres: Engine | None) -> Iterator[Session]:
+    """Sessão SQLAlchemy com as tabelas criadas, isolada por teste.
+
+    Sem ``GESTLOG_TEST_DATABASE_URL`` usa SQLite em memória. Com a variável
+    definida, roda no Postgres da matriz de dialetos: cada teste escreve dentro
+    de uma transação externa e os ``commit`` viram releases de savepoint, tudo
+    revertido no teardown — o mesmo isolamento do banco em memória.
+    """
+    if engine_postgres is None:
+        settings = Settings(_env_file=None, database_url="sqlite+pysqlite:///:memory:")
+        engine = build_engine(settings)
+        init_db(engine)
+        factory = build_session_factory(engine)
+        with factory() as session:
+            yield session
+        return
+    with engine_postgres.connect() as conexao:
+        transacao = conexao.begin()
+        session = Session(
+            bind=conexao,
+            join_transaction_mode="create_savepoint",
+            expire_on_commit=False,
+        )
+        try:
+            yield session
+        finally:
+            session.close()
+            transacao.rollback()

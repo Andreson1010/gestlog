@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from apoio import criar_usuario
 from langchain_core.language_models.chat_models import BaseChatModel
 from sqlalchemy.orm import Session
 
@@ -63,7 +64,7 @@ def _service(
     return CopilotService(
         session=session,
         empresa_id=empresa_id,
-        user_id=user_id or uuid4(),
+        user_id=user_id or criar_usuario(session),
         model=model,
         settings=settings or Settings(_env_file=None),
     )
@@ -250,7 +251,7 @@ def test_answer_registra_auditoria_sem_pii(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     model = fake_model_cls(
         routes=["transporte", "FINISH"],
         tool_calls=[_tool_comum("coleta agendada", fontes="TMS")],
@@ -343,7 +344,7 @@ def test_answer_acumula_turnos_na_mesma_conversa(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     servico = _service(
         db_session,
         fake_model_cls(
@@ -376,7 +377,7 @@ def test_historico_isola_entre_empresas(
 ) -> None:
     empresa = _empresa(db_session, "A")
     outra = _empresa(db_session, "B")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     _service(
         db_session,
         fake_model_cls(
@@ -397,8 +398,8 @@ def test_historico_isola_entre_usuarios(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
-    outro = uuid4()
+    usuario = criar_usuario(db_session)
+    outro = criar_usuario(db_session)
     _service(
         db_session,
         fake_model_cls(
@@ -416,7 +417,7 @@ def test_historico_monta_turno_de_pergunta_sem_resposta(
     db_session: Session,
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     conversa = ConversationRepository(db_session).get_or_create(empresa, usuario)
     MessageRepository(db_session).add_message(conversa.id, "user", "pergunta órfã")
     db_session.commit()
@@ -430,7 +431,7 @@ def test_historico_anexa_recomendacao_e_ultima_decisao(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     servico = _service(
         db_session,
         fake_model_cls(
@@ -462,7 +463,7 @@ def test_historico_anexa_recomendacao_ao_turno_certo(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     _service(
         db_session,
         fake_model_cls(routes=["estoque", "FINISH"], final="sem base"),
@@ -578,7 +579,7 @@ def test_answer_persiste_recomendacao_na_conversa(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     model = fake_model_cls(
         routes=["estoque", "FINISH"],
         tool_calls=[
@@ -604,7 +605,7 @@ def test_insuficiencia_nao_persiste_recomendacao(
     db_session: Session, fake_model_cls: type
 ) -> None:
     empresa = _empresa(db_session, "A")
-    usuario = uuid4()
+    usuario = criar_usuario(db_session)
     model = fake_model_cls(routes=["estoque", "FINISH"], final="resposta solta")
 
     _service(db_session, model, empresa, usuario).answer("o que fazer?")

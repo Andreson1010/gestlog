@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
+from apoio import criar_usuario
 from sqlalchemy.orm import Session
 
 from gestlog.audit import EVENTO_CORRECAO_REJEITADA
@@ -82,7 +83,7 @@ def test_rejeitar_grava_estado_e_auditoria(db_session: Session) -> None:
     empresa_id, _ = _empresas(db_session)
     item = _item(db_session, empresa_id)
     db_session.commit()
-    user_id = uuid4()
+    user_id = criar_usuario(db_session)
 
     rejeitado = CorrectionService(db_session, empresa_id).rejeitar(
         item.id, user_id, "gestor", "  valor incorreto  "
@@ -138,7 +139,7 @@ def test_rejeitar_sem_sugestao_permite(db_session: Session) -> None:
     db_session.commit()
 
     rejeitado = CorrectionService(db_session, empresa_id).rejeitar(
-        item.id, uuid4(), "gestor", "sem base para aprovar"
+        item.id, criar_usuario(db_session), "gestor", "sem base para aprovar"
     )
 
     assert rejeitado.status == "rejeitado"
@@ -151,7 +152,7 @@ def test_rejeitar_remove_item_da_fila(db_session: Session) -> None:
     db_session.commit()
     servico = CorrectionService(db_session, empresa_id)
 
-    servico.rejeitar(item.id, uuid4(), "gestor", "motivo")
+    servico.rejeitar(item.id, criar_usuario(db_session), "gestor", "motivo")
 
     assert item.id not in {pendente.id for pendente in servico.listar()}
 
@@ -162,7 +163,9 @@ def test_rejeitar_nao_escreve_no_catalogo(db_session: Session) -> None:
     item = _item(db_session, empresa_id)
     db_session.commit()
 
-    CorrectionService(db_session, empresa_id).rejeitar(item.id, uuid4(), "gestor", "x")
+    CorrectionService(db_session, empresa_id).rejeitar(
+        item.id, criar_usuario(db_session), "gestor", "x"
+    )
 
     assert StockRepository(db_session).get_by_sku(empresa_id, "SKU-1").minimo == 0
     eventos = {evento.evento for evento in AuditRepository(db_session).list(empresa_id)}

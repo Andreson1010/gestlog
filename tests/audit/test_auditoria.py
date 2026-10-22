@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
+from apoio import criar_usuario
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -48,7 +49,7 @@ def _conversa_com_dependentes(
     session: Session, empresa_id: UUID, dias_atras: int
 ) -> tuple[UUID, UUID]:
     momento = datetime.now(UTC) - timedelta(days=dias_atras)
-    user_id = uuid4()
+    user_id = criar_usuario(session)
     conversa = ConversationRepository(session).create(empresa_id, user_id)
     conversa.created_at = momento
     mensagem = MessageRepository(session).add_message(conversa.id, "user", "oi")

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from gestlog.config import Settings
-from gestlog.db import build_engine, build_session_factory, init_db, models
+from gestlog.db import build_engine, init_db, models
 from gestlog.db.base import Base
 
 
@@ -19,13 +19,6 @@ def engine() -> Engine:
     resolved = build_engine(settings)
     init_db(resolved)
     return resolved
-
-
-@pytest.fixture
-def session(engine: Engine) -> Session:
-    factory = build_session_factory(engine)
-    with factory() as sessao:
-        yield sessao
 
 
 def test_sqlite_memoria_usa_static_pool() -> None:
@@ -58,25 +51,25 @@ def test_user_tem_colunas_do_fastapi_users() -> None:
     assert {"id", "email", "hashed_password", "is_active", "is_verified"} <= colunas
 
 
-def test_dados_isolados_por_empresa(session: Session) -> None:
+def test_dados_isolados_por_empresa(db_session: Session) -> None:
     t1 = models.Empresa(nome="A")
     t2 = models.Empresa(nome="B")
-    session.add_all([t1, t2])
-    session.commit()
-    session.add(
+    db_session.add_all([t1, t2])
+    db_session.commit()
+    db_session.add(
         models.StockItem(empresa_id=t1.id, sku="SKU-1", nome="Caixa", quantidade=10)
     )
-    session.commit()
+    db_session.commit()
 
     do_t1 = (
-        session.execute(
+        db_session.execute(
             select(models.StockItem).where(models.StockItem.empresa_id == t1.id)
         )
         .scalars()
         .all()
     )
     do_t2 = (
-        session.execute(
+        db_session.execute(
             select(models.StockItem).where(models.StockItem.empresa_id == t2.id)
         )
         .scalars()
@@ -86,25 +79,25 @@ def test_dados_isolados_por_empresa(session: Session) -> None:
     assert do_t2 == []
 
 
-def test_sku_unico_por_empresa(session: Session) -> None:
+def test_sku_unico_por_empresa(db_session: Session) -> None:
     t = models.Empresa(nome="A")
-    session.add(t)
-    session.commit()
-    session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="a"))
-    session.commit()
-    session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="b"))
+    db_session.add(t)
+    db_session.commit()
+    db_session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="a"))
+    db_session.commit()
+    db_session.add(models.StockItem(empresa_id=t.id, sku="SKU-1", nome="b"))
     with pytest.raises(IntegrityError):
-        session.commit()
-    session.rollback()
+        db_session.commit()
+    db_session.rollback()
 
 
-def test_import_job_com_erros(session: Session) -> None:
+def test_import_job_com_erros(db_session: Session) -> None:
     t = models.Empresa(nome="A")
-    session.add(t)
-    session.commit()
+    db_session.add(t)
+    db_session.commit()
     job = models.ImportJob(empresa_id=t.id, tipo="estoque")
     job.errors.append(models.ImportJobError(linha=2, motivo="sku ausente"))
-    session.add(job)
-    session.commit()
+    db_session.add(job)
+    db_session.commit()
     assert len(job.errors) == 1
     assert job.errors[0].motivo == "sku ausente"

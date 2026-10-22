@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from apoio import criar_usuario
 from sqlalchemy.orm import Session
 
 from gestlog.repositories.catalog import (
@@ -137,7 +138,7 @@ def test_audit_record_e_list(db_session: Session) -> None:
 
 def test_membership_add_e_by_user(db_session: Session) -> None:
     t1, _ = _dois_empresas(db_session)
-    user_id = uuid4()
+    user_id = criar_usuario(db_session)
     repo = MembershipRepository(db_session)
     repo.add_member(t1, user_id, papel="admin")
     db_session.commit()
@@ -150,7 +151,7 @@ def test_membership_add_e_by_user(db_session: Session) -> None:
 
 def test_conversas_mensagens_recomendacoes_feedback(db_session: Session) -> None:
     t1, _ = _dois_empresas(db_session)
-    user_id = uuid4()
+    user_id = criar_usuario(db_session)
     conv_repo = ConversationRepository(db_session)
     conversa = conv_repo.create(t1, user_id)
 
@@ -171,7 +172,7 @@ def test_conversas_mensagens_recomendacoes_feedback(db_session: Session) -> None
 
 def test_conversation_get_or_create_reutiliza_conversa(db_session: Session) -> None:
     t1, _ = _dois_empresas(db_session)
-    user_id = uuid4()
+    user_id = criar_usuario(db_session)
     repo = ConversationRepository(db_session)
 
     primeira = repo.get_or_create(t1, user_id)

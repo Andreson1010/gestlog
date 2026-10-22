@@ -496,9 +496,34 @@ então no SQLite o `JOIN` por `user_id` retornava vazio — o débito da AD-027,
 obrigava o workaround `User.id.in_(ids)`.
 **Trade-off:** exige migração e alinha todas as FKs (não só `Membership`); o tipo
 declarado no SQLite segue `CHAR` (afinidade TEXT), sem efeito funcional; o caminho
-Postgres da migração não é coberto pelo CI (só SQLite).
+Postgres da migração não era coberto pelo CI (só SQLite) — fechado na AD-031.
 **Impact:** `db/models.py`, `auth/accounts.py`, `alembic/versions/b7d2e9a4f108_*`,
 `tests/test_migrations.py`; ADR `docs/adr/ad027-alinha-fk-user-guid-self-review.md`.
+
+### AD-031: Matriz de dialetos no CI com Postgres efêmero (2026-10-22)
+
+**Decision:** o CI ganha o job `postgres` (service `postgres:16`) rodando a suíte
+completa com `GESTLOG_TEST_DATABASE_URL` definida; os testes de banco ficam
+dialeto-aware: `db_session` usa o Postgres da matriz com transação externa e
+savepoints (mesmo isolamento do SQLite em memória) e `alembic_config` cria e
+derruba um banco descartável por teste. Sem a variável, tudo roda em SQLite como
+antes. O teste de migração das FKs ganhou o cenário de UUID nativo (migração no-op
+no Postgres) e os testes que semeavam FKs órfãs (`user_id`/`empresa_id` fictícios)
+passaram a persistir os pais reais via `tests/apoio.py`.
+**Reason:** era o follow-up explícito da AD-027 — o ramo no-op da migração
+`b7d2e9a4f108` e as colunas `UUID` nativas não eram exercidos pelo CI, e a produção
+é Postgres. A matriz revelou dívida real: o SQLite não aplica FK por padrão, então
+53 testes semeavam pais fictícios e passavam, escondendo violações que o Postgres
+rejeita.
+**Trade-off:** a matriz cobre `tests/test_migrations.py` e os ~120 testes que usam
+`db_session` (repositórios, auditoria, correções, ingestão, copilot e modelos);
+web/auth seguem com fixtures próprias em SQLite (migrar depois, se necessário). O job
+roda a suíte inteira com `--no-cov` (a cobertura fica no job `quality`), para o alvo
+não apodrecer; o usuário de teste precisa de `CREATEDB`.
+**Impact:** `tests/conftest.py`, `tests/apoio.py` (novo), `tests/test_migrations.py`,
+`tests/test_db.py`, `tests/{audit,copilot,correcoes}/*`, `tests/test_repositories*.py`,
+`.github/workflows/ci.yml`, `docs/specs/codebase/TESTING.md`; ADR
+`docs/adr/postgres-ci-self-review.md`.
 
 ---
 

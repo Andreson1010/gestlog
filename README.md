@@ -40,4 +40,8 @@ uv run black src/ tests/ alembic/
 uv run pytest
 ```
 
+Com `GESTLOG_TEST_DATABASE_URL` definida, os testes de banco rodam no Postgres da
+matriz de dialetos (é o que o job `postgres` do CI faz); sem ela, em SQLite — ver
+`docs/specs/codebase/TESTING.md`.
+
 Consulte `AGENTS.md` para a arquitetura do grafo e as convenções do projeto.
