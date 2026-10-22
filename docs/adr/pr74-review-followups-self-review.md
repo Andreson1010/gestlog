@@ -43,8 +43,8 @@ transformar isso em regra global do código de produção.
 - **Decision 3: `pythonpath = ["src", "tests"]` no `pyproject.toml:82`, em vez de
   mexer em `sys.path` no `conftest`.**
   - **Justification:** `from apoio import ...` funcionava por acidente — o pytest
-    insere o diretório-base no `sys.path` no modo `prepend`, o que quebra ao rodar
-    um único arquivo de um subdiretório ou ao adotar `--import-mode=importlib`. A
+    insere o diretório-base no `sys.path` no modo `prepend` (o atual), o que
+    deixaria de valer ao adotar `--import-mode=importlib`. A
     opção `pythonpath` é declarativa, vale para toda a suíte e não tem efeito fora
     do pytest; produção não é afetada.
 
@@ -87,7 +87,8 @@ transformar isso em regra global do código de produção.
 - O pragma é verificado pelo efeito (FK órfã rejeitada), não por asserção direta
   de `PRAGMA foreign_keys`; essa consulta é dialetal e falharia no Postgres.
 - Fixtures com engine próprio (`tests/web/`, `tests/acceptance/`,
-  `tests/test_migrations.py`) continuam sem FK no SQLite: o MEDIUM está fechado
+  `tests/test_migrations.py` e o `engine` de `tests/test_db.py`, que só inspeciona
+  schema) continuam sem FK no SQLite: o MEDIUM está fechado
   para a camada de modelos/repositórios, não para todos os engines de teste.
 - O teste não distingue qual das duas FKs disparou o `IntegrityError`; cobrir cada
   coluna separadamente exigiria criar empresas/usuários válidos e não muda o
