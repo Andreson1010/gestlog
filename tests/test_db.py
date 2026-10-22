@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 from sqlalchemy import Engine, select
 from sqlalchemy.exc import IntegrityError
@@ -101,3 +103,10 @@ def test_import_job_com_erros(db_session: Session) -> None:
     db_session.commit()
     assert len(job.errors) == 1
     assert job.errors[0].motivo == "sku ausente"
+
+
+def test_sqlite_de_teste_aplica_chaves_estrangeiras(db_session: Session) -> None:
+    db_session.add(models.Membership(user_id=uuid4(), empresa_id=uuid4()))
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
