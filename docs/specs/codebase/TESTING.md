@@ -9,8 +9,14 @@
 | --- | --- |
 | quick | `uv run pytest tests/<caminho> --no-cov -q` |
 | full | `uv run pytest` (gate de cobertura 80% via `addopts`) |
+| matrix | `GESTLOG_TEST_DATABASE_URL=postgresql+psycopg://... uv run pytest --no-cov` |
 | lint | `uv run ruff check src/ tests/ alembic/` |
 | format | `uv run black --check src/ tests/ alembic/` |
+
+Com `GESTLOG_TEST_DATABASE_URL` definida, os testes de banco (`db_session` e
+`tests/test_migrations.py`) rodam no Postgres da matriz de dialetos — é o que o job
+`postgres` do CI faz (`postgres:16`; o usuário precisa de `CREATEDB`). Sem a
+variável, tudo roda em SQLite, como antes.
 
 ## Test Coverage Matrix
 

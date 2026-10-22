@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, time, timedelta
-from uuid import UUID, uuid4
+from uuid import UUID
 
+from apoio import criar_empresa
 from sqlalchemy.orm import Session
 
 from gestlog.db.models import CatalogoHistorico
@@ -32,7 +33,7 @@ def _snap(
 
 
 def test_estoque_classifica_abaixo_excedente_e_agrega(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -93,7 +94,7 @@ def test_estoque_classifica_abaixo_excedente_e_agrega(db_session: Session) -> No
 
 
 def test_estoque_minimo_zero_nunca_e_excedente(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -115,7 +116,8 @@ def test_estoque_minimo_zero_nunca_e_excedente(db_session: Session) -> None:
 
 
 def test_estoque_isola_por_empresa(db_session: Session) -> None:
-    empresa_a, empresa_b = uuid4(), uuid4()
+    empresa_a = criar_empresa(db_session, "A")
+    empresa_b = criar_empresa(db_session, "B")
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -145,7 +147,7 @@ def test_estoque_isola_por_empresa(db_session: Session) -> None:
 
 
 def test_estoque_ultimo_snapshot_por_chave_vence(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     dia = datetime(2026, 6, 10, 8, tzinfo=UTC)
     _snap(
         db_session,
@@ -176,7 +178,7 @@ def test_estoque_ultimo_snapshot_por_chave_vence(db_session: Session) -> None:
 
 
 def test_estoque_recorte_de_igual_a_ate_cobre_o_dia(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     dentro = datetime(2026, 6, 10, 12, tzinfo=UTC)
     fora = datetime(2026, 6, 12, 12, tzinfo=UTC)
     _snap(
@@ -193,7 +195,7 @@ def test_estoque_recorte_de_igual_a_ate_cobre_o_dia(db_session: Session) -> None
 
 
 def test_estoque_recorte_apenas_um_limite(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     janeiro = datetime(2026, 1, 10, 12, tzinfo=UTC)
     junho = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
@@ -212,7 +214,7 @@ def test_estoque_recorte_apenas_um_limite(db_session: Session) -> None:
 
 def test_estoque_dedup_mesma_chave_mesma_importacao(db_session: Session) -> None:
     """Chave repetida na mesma importação vira uma linha e não dobra agregados."""
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -251,7 +253,7 @@ def test_estoque_dedup_mesma_chave_mesma_importacao(db_session: Session) -> None
 
 def test_estoque_dedup_vence_maior_id(db_session: Session) -> None:
     """No empate de importado_em, vence o snapshot de maior id."""
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -285,7 +287,7 @@ def test_estoque_dedup_vence_maior_id(db_session: Session) -> None:
 
 def test_estoque_segundo_import_nao_duplica_chave(db_session: Session) -> None:
     """Um segundo import com a mesma chave mantém uma linha, a mais recente."""
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     primeiro = datetime(2026, 6, 9, 12, tzinfo=UTC)
     segundo = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
@@ -334,7 +336,7 @@ def test_transporte_dedup_mesma_chave_nao_duplica_agregados(
     db_session: Session,
 ) -> None:
     """Chave repetida na mesma importação não dobra peso, status nem atrasos."""
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     for identificador in (UUID(int=1), UUID(int=2)):
         _snap(
@@ -362,7 +364,7 @@ def test_transporte_dedup_mesma_chave_nao_duplica_agregados(
 
 
 def test_transporte_agrega_status_peso_e_atrasos(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -411,7 +413,7 @@ def test_transporte_agrega_status_peso_e_atrasos(db_session: Session) -> None:
 
 
 def test_transporte_status_vazio_conta_como_valor_real(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -432,7 +434,7 @@ def test_transporte_status_vazio_conta_como_valor_real(db_session: Session) -> N
 
 
 def test_fornecedores_distribui_e_calcula_medias(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     quando = datetime(2026, 6, 10, 12, tzinfo=UTC)
     _snap(
         db_session,
@@ -486,7 +488,7 @@ def test_fornecedores_distribui_e_calcula_medias(db_session: Session) -> None:
 
 
 def test_relatorios_vazios_nao_levantam(db_session: Session) -> None:
-    empresa = uuid4()
+    empresa = criar_empresa(db_session)
     repo = RelatorioRepository(db_session)
 
     estoque = repo.estoque(empresa)

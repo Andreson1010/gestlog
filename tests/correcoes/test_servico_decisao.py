@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
+from apoio import criar_usuario
 from sqlalchemy.orm import Session
 
 from gestlog.audit import (
@@ -92,7 +93,7 @@ def test_aprovar_aplica_valor_e_audita(db_session: Session) -> None:
     item = CorrectionService(db_session, empresa_id).gerar_fila()
     alvo = next(i for i in item if i.campo == "minimo")
     assert alvo.valor_sugerido == "9"
-    user_id = uuid4()
+    user_id = criar_usuario(db_session)
 
     aprovado = CorrectionService(db_session, empresa_id).aprovar(
         alvo.id, user_id, "gestor"
@@ -172,7 +173,9 @@ def test_aprovar_alvo_ausente_marca_falhou(db_session: Session) -> None:
     db_session.commit()
 
     with pytest.raises(CorrecaoAlvoInvalido):
-        CorrectionService(db_session, empresa_id).aprovar(item.id, uuid4(), "gestor")
+        CorrectionService(db_session, empresa_id).aprovar(
+            item.id, criar_usuario(db_session), "gestor"
+        )
 
     recarregado = CorrectionRepository(db_session).get(empresa_id, item.id)
     assert recarregado.status == "falhou"
@@ -189,7 +192,9 @@ def test_aprovar_conflito_marca_falhou_sem_sobrescrever(db_session: Session) -> 
     db_session.commit()
 
     with pytest.raises(CorrecaoAlvoInvalido):
-        CorrectionService(db_session, empresa_id).aprovar(item.id, uuid4(), "gestor")
+        CorrectionService(db_session, empresa_id).aprovar(
+            item.id, criar_usuario(db_session), "gestor"
+        )
 
     recarregado = CorrectionRepository(db_session).get(empresa_id, item.id)
     assert recarregado.status == "falhou"
@@ -208,7 +213,7 @@ def test_aprovar_no_op_quando_sugestao_igual_atual(
     monkeypatch.setattr(StockRepository, "upsert", lambda *args: chamadas.append(args))
 
     aprovado = CorrectionService(db_session, empresa_id).aprovar(
-        item.id, uuid4(), "gestor"
+        item.id, criar_usuario(db_session), "gestor"
     )
 
     assert chamadas == []
@@ -234,7 +239,9 @@ def test_aprovar_erro_de_escrita_marca_falhou(
     monkeypatch.setattr(StockRepository, "upsert", falhar)
 
     with pytest.raises(CorrecaoFalhaEscrita):
-        CorrectionService(db_session, empresa_id).aprovar(item.id, uuid4(), "gestor")
+        CorrectionService(db_session, empresa_id).aprovar(
+            item.id, criar_usuario(db_session), "gestor"
+        )
 
     recarregado = CorrectionRepository(db_session).get(empresa_id, item.id)
     assert recarregado.status == "falhou"
@@ -251,7 +258,7 @@ def test_aprovar_remove_item_da_fila(db_session: Session) -> None:
     servico = CorrectionService(db_session, empresa_id)
     alvo = next(i for i in servico.gerar_fila() if i.campo == "minimo")
 
-    servico.aprovar(alvo.id, uuid4(), "gestor")
+    servico.aprovar(alvo.id, criar_usuario(db_session), "gestor")
 
     assert alvo.id not in {item.id for item in servico.listar()}
 
@@ -266,7 +273,7 @@ def test_aprovar_aplica_fornecedor(db_session: Session) -> None:
     alvo = next(item for item in servico.gerar_fila() if item.campo == "categoria")
     assert alvo.valor_sugerido == "Insumos"
 
-    servico.aprovar(alvo.id, uuid4(), "gestor")
+    servico.aprovar(alvo.id, criar_usuario(db_session), "gestor")
 
     atualizado = SupplierRepository(db_session).get_by_fornecedor_id(empresa_id, "F-1")
     assert atualizado.categoria == "Insumos"
@@ -282,7 +289,7 @@ def test_aprovar_aplica_transporte(db_session: Session) -> None:
     alvo = next(item for item in servico.gerar_fila() if item.campo == "origem")
     assert alvo.valor_sugerido == "Origem B"
 
-    servico.aprovar(alvo.id, uuid4(), "gestor")
+    servico.aprovar(alvo.id, criar_usuario(db_session), "gestor")
 
     atualizado = TransportRepository(db_session).get_by_codigo(empresa_id, "GL-1")
     assert atualizado.origem == "Origem B"

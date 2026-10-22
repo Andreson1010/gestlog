@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -10,17 +11,61 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import Engine, create_engine, inspect, text
+from sqlalchemy.engine import make_url
 
 
 @pytest.fixture
 def alembic_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> tuple[Config, str]:
-    db_url = f"sqlite+pysqlite:///{tmp_path / 'mig.db'}"
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    url_postgres: str | None,
+) -> Iterator[tuple[Config, str]]:
+    """Config do Alembic sobre um banco limpo do dialeto em uso.
+
+    Sem ``GESTLOG_TEST_DATABASE_URL`` usa um arquivo SQLite temporário. Com a
+    variável definida, cria um banco Postgres descartável por teste (exige
+    permissão de ``CREATEDB``) e o derruba no teardown.
+    """
+    if url_postgres is None:
+        db_url = f"sqlite+pysqlite:///{tmp_path / 'mig.db'}"
+        monkeypatch.setenv("DATABASE_URL", db_url)
+        yield _config_alembic(), db_url
+        return
+    nome = f"gestlog_mig_{uuid4().hex[:12]}"
+    db_url = _url_com_banco(url_postgres, nome)
+    _executar_admin(url_postgres, f'CREATE DATABASE "{nome}"')
     monkeypatch.setenv("DATABASE_URL", db_url)
+    try:
+        yield _config_alembic(), db_url
+    finally:
+        _executar_admin(url_postgres, f'DROP DATABASE IF EXISTS "{nome}" WITH (FORCE)')
+
+
+def _config_alembic() -> Config:
+    """Config do Alembic apontando para o diretório de scripts do repositório."""
     cfg = Config("alembic.ini")
     cfg.set_main_option("script_location", "alembic")
-    return cfg, db_url
+    return cfg
+
+
+def _url_com_banco(url: str, banco: str) -> str:
+    """URL equivalente apontando para outro banco do mesmo servidor."""
+    return make_url(url).set(database=banco).render_as_string(hide_password=False)
+
+
+def _executar_admin(url_postgres: str, comando: str) -> None:
+    """Executa DDL administrativo (criar/derrubar banco) fora de transação."""
+    engine = create_engine(
+        _url_com_banco(url_postgres, "postgres"), isolation_level="AUTOCOMMIT"
+    )
+    with engine.connect() as conexao:
+        conexao.execute(text(comando))
+    engine.dispose()
+
+
+def _dialeto(db_url: str) -> str:
+    """Nome do dialeto do banco de teste em uso."""
+    return make_url(db_url).get_backend_name()
 
 
 def test_upgrade_head_cria_tabelas(alembic_config: tuple[Config, str]) -> None:
@@ -87,6 +132,15 @@ def test_downgrade_remove_historico_e_colunas(
     }
 
 
+def _como_utc(valor: str | datetime) -> datetime:
+    """Normaliza o ``importado_em`` lido (str no SQLite, datetime no Postgres)."""
+    if isinstance(valor, str):
+        return datetime.strptime(valor, "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=UTC)
+    if valor.tzinfo is None:
+        return valor.replace(tzinfo=UTC)
+    return valor
+
+
 def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) -> None:
     cfg, db_url = alembic_config
     command.upgrade(cfg, "9c2f7a41b6d3")
@@ -113,7 +167,7 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
                 "INSERT INTO supplier "
                 "(id, empresa_id, fornecedor_id, nome, categoria, prazo_dias, "
                 "avaliacao, ativo) "
-                "VALUES (:id, :empresa, 'F-1', 'TransLog', 'transporte', 5, 4.5, 1)"
+                "VALUES (:id, :empresa, 'F-1', 'TransLog', 'transporte', 5, 4.5, TRUE)"
             ),
             {"id": uuid4().hex, "empresa": empresa_id},
         )
@@ -151,9 +205,7 @@ def test_backfill_historico_dos_catalogos(alembic_config: tuple[Config, str]) ->
     assert dominios == {"estoque", "fornecedores", "transporte"}
     assert jobs_nulos == 3
     assert len(set(importados_em)) == 1
-    gravado = datetime.strptime(importados_em[0], "%Y-%m-%d %H:%M:%S.%f").replace(
-        tzinfo=UTC
-    )
+    gravado = _como_utc(importados_em[0])
     assert antes <= gravado <= depois
 
 
@@ -210,9 +262,10 @@ def _linhas_fk_legadas(
     ]
 
 
-def _semear_fk_legadas(engine: Engine, empresa_id: str, usuario_id: str) -> None:
-    """Grava empresa, usuário (GUID de 36) e uma FK legada (32) por tabela."""
-    legado = usuario_id.replace("-", "")
+def _semear_fk_legadas(
+    engine: Engine, empresa_id: str, usuario_id: str, valor_fk: str
+) -> None:
+    """Grava empresa, usuário e uma linha por tabela com a FK no valor dado."""
     with engine.begin() as conn:
         conn.execute(
             text(
@@ -223,28 +276,28 @@ def _semear_fk_legadas(engine: Engine, empresa_id: str, usuario_id: str) -> None
         )
         conn.execute(
             text(
-                "INSERT INTO user (id, email, hashed_password, is_active, "
+                'INSERT INTO "user" (id, email, hashed_password, is_active, '
                 "is_superuser, is_verified) "
-                "VALUES (:id, 'u@a.com', 'x', 1, 0, 1)"
+                "VALUES (:id, 'u@a.com', 'x', TRUE, FALSE, TRUE)"
             ),
             {"id": usuario_id},
         )
-        linhas = _linhas_fk_legadas(empresa_id, legado, uuid4().hex, uuid4().hex)
+        linhas = _linhas_fk_legadas(empresa_id, valor_fk, uuid4().hex, uuid4().hex)
         for sql, params in linhas:
             conn.execute(text(sql), params)
 
 
 def _valor_fk(engine: Engine, tabela: str, coluna: str) -> str:
-    """Lê o valor da coluna FK da única linha semeada na tabela."""
+    """Lê o valor da coluna FK da única linha semeada, como texto."""
     with engine.connect() as conn:
-        return conn.execute(text(f"SELECT {coluna} FROM {tabela}")).scalar_one()
+        return str(conn.execute(text(f"SELECT {coluna} FROM {tabela}")).scalar_one())
 
 
 def _contagem_join(engine: Engine, tabela: str, coluna: str) -> int:
     """Conta quantas linhas da tabela casam com ``user.id`` por JOIN direto."""
     with engine.connect() as conn:
         return conn.execute(
-            text(f"SELECT COUNT(*) FROM {tabela} t JOIN user u ON t.{coluna} = u.id")
+            text(f'SELECT COUNT(*) FROM {tabela} t JOIN "user" u ON t.{coluna} = u.id')
         ).scalar_one()
 
 
@@ -252,12 +305,14 @@ def test_migracao_normaliza_fk_user_para_guid(
     alembic_config: tuple[Config, str],
 ) -> None:
     cfg, db_url = alembic_config
+    if _dialeto(db_url) != "sqlite":
+        pytest.skip("dados legados de 32 caracteres sem hífen só existem no SQLite")
     command.upgrade(cfg, "c4a81f0d9e2b")
     engine = create_engine(db_url)
     empresa_id = uuid4().hex
     usuario_id = str(uuid4())
-    _semear_fk_legadas(engine, empresa_id, usuario_id)
     legado = usuario_id.replace("-", "")
+    _semear_fk_legadas(engine, empresa_id, usuario_id, legado)
 
     assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [legado] * len(_FKS_USER)
     assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [0] * len(_FKS_USER)
@@ -273,6 +328,39 @@ def test_migracao_normaliza_fk_user_para_guid(
 
     assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [legado] * len(_FKS_USER)
     assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [0] * len(_FKS_USER)
+
+
+def test_migracao_postgres_nao_altera_fk_user(
+    alembic_config: tuple[Config, str],
+) -> None:
+    """No Postgres as colunas já são UUID nativo: a migração é no-op."""
+    cfg, db_url = alembic_config
+    if _dialeto(db_url) != "postgresql":
+        pytest.skip("cenário de UUID nativo específico do Postgres")
+    command.upgrade(cfg, "c4a81f0d9e2b")
+    engine = create_engine(db_url)
+    empresa_id = uuid4().hex
+    usuario_id = str(uuid4())
+    _semear_fk_legadas(engine, empresa_id, usuario_id, usuario_id)
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [usuario_id] * len(
+        _FKS_USER
+    )
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
+
+    command.upgrade(cfg, "head")
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [usuario_id] * len(
+        _FKS_USER
+    )
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
+
+    command.downgrade(cfg, "c4a81f0d9e2b")
+
+    assert [_valor_fk(engine, t, c) for t, c in _FKS_USER] == [usuario_id] * len(
+        _FKS_USER
+    )
+    assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
 
 
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
