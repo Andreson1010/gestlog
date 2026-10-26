@@ -10,14 +10,14 @@ Antes da explicação, o vocabulário. Cada termo abaixo aparece no assunto e é
 ### 1.1 Processo de desenvolvimento
 
 - **ADR (Architecture Decision Record — Registro de Decisão de Arquitetura)**: documento curto que registra *uma decisão técnica*, o porquê, as alternativas descartadas e o que se perdeu. Pense numa "ata de reunião" que o time do futuro lê para entender por que o código está daquele jeito. O assunto aqui é a ADR `docs/adr/pr74-review-followups-self-review.md`.
-- **PR (Pull Request)**: pedido para incorporar uma branch ao `main`. É onde o código é revisado antes do merge. Os PRs citados são o **#74** (matriz de dialetos no CI) e o **#75** (esta ADR e os consertos).
+- **PR (Pull Request)**: pedido para incorporar uma branch ao `main`. É onde o código é revisado antes do merge. Os PRs citados são o **#74** (matriz de dialetos no CI), o **#75** (o ADR `pr74-review-followups-self-review.md` e os consertos) e o **#76** (este documento didático, derivado da ADR do #75).
 - **Code review**: revisão por outra pessoa — ou, aqui, por um **subagente** de IA com modelo diferente do autor — que só aponta problemas, nunca corrige.
 - **Self-review**: revisão feita pelo próprio autor antes do PR, para polir e registrar decisões (fase 5.5 do fluxo `feature-factory`, descrita em `AGENTS.md:185-195`).
 - **Follow-up**: pendência que nasce de uma revisão e fica para depois. Um "a fazer" derivado de um achado.
 - **Achado com severidade CRITICAL / HIGH / MEDIUM / LOW**: classificação do impacto de um problema. `MEDIUM` = importa, mas não bloqueia o merge; `LOW` = melhoria/documentação. CRITICAL/HIGH bloqueiam.
 - **Gate**: "portão" de qualidade que precisa passar antes de mesclar — testes, cobertura mínima, lint e formatação (`AGENTS.md:16-31`).
 - **CI (Continuous Integration — Integração Contínua)**: robô que roda os gates automaticamente a cada push/PR. No projeto, é o GitHub Actions (`.github/workflows/ci.yml`).
-- **Job**: uma tarefa dentro do CI. Aqui há dois: `quality` (black + ruff + pytest em SQLite) e `postgres` (pytest contra Postgres), em `.github/workflows/ci.yml:42-76`.
+- **Job**: uma tarefa dentro do CI. Aqui há dois: `quality` (black + ruff + pytest em SQLite) e `postgres` (pytest contra Postgres), em `.github/workflows/ci.yml:42-77`.
 
 ### 1.2 Banco de dados
 
@@ -64,13 +64,13 @@ Antes da explicação, o vocabulário. Cada termo abaixo aparece no assunto e é
 
 ### 2.0 O contexto: o que aconteceu antes desta ADR
 
-O PR #74 colocou a suíte para rodar **também contra Postgres** no CI — a "matriz de dialetos" (`.github/workflows/ci.yml:42-76`, documentada em `docs/specs/codebase/TESTING.md:16-21`). A revisão independente desse PR aprovou, mas deixou três pendências:
+O PR #74 colocou a suíte para rodar **também contra Postgres** no CI — a "matriz de dialetos" (`.github/workflows/ci.yml:42-77`, documentada em `docs/specs/codebase/TESTING.md:16-21`). A revisão independente desse PR aprovou, mas deixou três pendências:
 
 1. **MEDIUM** — o SQLite usado nos testes locais **não aplicava FKs**; a suíte podia gravar linhas órfãs e passar, enquanto o Postgres recusaria.
 2. **LOW** — `from apoio import ...` funcionava "por acidente", dependendo de como o pytest mexe no `sys.path`.
 3. **LOW** — a documentação dizia que criar bancos no Postgres exige `CREATEDB`, mas omitia que também é preciso `CONNECT` no banco `postgres`.
 
-O PR #75 e esta ADR existem para fechar exatamente esses três pontos.
+O PR #75 (e este documento didático, entregue no PR #76) existem para fechar exatamente esses três pontos.
 
 ### 2.1 Parte 1 — o problema das FKs no SQLite (o achado MEDIUM)
 
@@ -142,7 +142,7 @@ Esses imports funcionavam porque o pytest, no modo `prepend`, insere diretórios
 
 Para isso funcionar, o usuário precisa de duas permissões: `CREATEDB` **e** `CONNECT` no banco `postgres`. A documentação antiga citava só `CREATEDB`. Sem `CONNECT`, o erro que aparece é de conexão — e parece "matriz quebrada", não falta de privilégio.
 
-A correção está em `docs/specs/codebase/TESTING.md:16-21`, que agora cita as duas permissões e também explica o pragma do SQLite. O job que reproduz esse cenário está em `.github/workflows/ci.yml:42-60` (service `postgres:16`) e roda os testes em `:76`.
+A correção está em `docs/specs/codebase/TESTING.md:16-21`, que agora cita as duas permissões e também explica o pragma do SQLite. O job que reproduz esse cenário está em `.github/workflows/ci.yml:42-60` (service `postgres:16`) e roda os testes em `:77`.
 
 ### 2.5 Parte 5 — como a decisão foi validada e registrada
 

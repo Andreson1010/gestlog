@@ -1,7 +1,8 @@
 # Contexto da Sessão — revisão de modelos + follow-ups do PR #74
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-10-22.
-> Branch: `main` · HEAD: `7d7999f` (= `origin/main`)
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-10-26.
+> Branch: `main` · HEAD `7d7999f` + PR #76 (branch `chore/wip-pos-74`, head `895fafc`;
+> no squash-merge do #76 este arquivo entra já na versão atualizada).
 
 ## Estado atual
 
@@ -10,7 +11,8 @@
 - `main` @ `7d7999f`; tags `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
 - **PR #74 MERGED** (squash `24128ac`): a suíte roda em Postgres no CI (matriz de dialetos;
   AD-031 no STATE). **PR #75 MERGED** (squash `7d7999f`): follow-ups do review do #74.
-  Branches apagadas (local e remota).
+  Branches apagadas (local e remota). **PR #76**: WIP de config/docs comitado
+  (3 commits) — merge pendente no momento da gravação deste handoff.
 - **Modelos (tudo pago)**: default do projeto e builders em `opencode-go/glm-5.3-flash`;
   revisor `code-reviewer-agent` em `opencode-go/deepseek-v4.1-flash` (independência real
   de lab). Ambos testados OK após a renovação da key do `opencode-go`.
@@ -38,7 +40,8 @@
   review **APPROVE** (2 LOW documentais corrigidos); squash-merge `7d7999f`.
 - **Gates**: SQLite **573 passed, 1 skipped, 99.23%**; Postgres **573 passed, 1 skipped**;
   CI `quality` + `postgres` verdes nos dois PRs.
-- **Documento didático**: `docs/adr/pr74-review-followups-explicacao.md` criado (não commitado).
+- **Documento didático**: `docs/adr/pr74-review-followups-explicacao.md` criado;
+  commitado no PR #76 (commit `895fafc`), com linhas do `ci.yml` corrigidas no review.
 
 ## Decisões e regras (não esquecer)
 
@@ -76,12 +79,14 @@
 
 ## WIP local (não commitado)
 
-- `M`: `.opencode/CONTEXT.md`, `.opencode/LESSONS.md`,
-  `.opencode/agent/{backend-builder,code-reviewer-agent,frontend-builder}.md`,
-  `.opencode/skills/ship-feature/SKILL.md`, `AGENTS.md`, `opencode.json`
-  (config de modelos + docs; CONTEXT/LESSONS são rastreados).
-- `??`: `docs/adr/pr74-review-followups-explicacao.md` (novo);
-  `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não é desta sessão).
+- Limpo pelo **PR #76** (branch `chore/wip-pos-74`; commits `aa8dcfc` config/revisor,
+  `0b65b4a` memória de sessão, `895fafc` ADR didático — squash-merge pendente).
+- Restou apenas `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado
+  de propósito, decisão do autor).
+- Follow-ups do review do #76 (LOW, para depois): sandbox/ambiente sanitizado para
+  `uv run pytest` no revisor + decidir sobre `git fetch` na allowlist (L-1);
+  regra da L-033 (mesmo formatador tela×CSV) removida da poda da LESSONS —
+  realocar (L-3).
 
 ## Artefatos do graphify
 
