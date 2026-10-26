@@ -3,6 +3,9 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-043 · 2026-10-26 · permissões/allowlist de git
+- **Gatilho/Erro**: liberei `"git fetch origin*"` e depois `git branch*`/`git diff*` no revisor; o review do #77 mostrou refspec reescrevendo `origin/main`, `git branch -f/-D`, `--output`/`-o` gravando arquivo e `git grep -O` executando. **Regra**: no bash de subagente, permita subcomandos com wildcard SÓ com negações explícitas DEPOIS dos allows (última regra vence) — valide a allowlist contra flags que gravam/reescrevem/executam, não só contra o comando base. Evidência: review do #77 (rodadas 1 e 2), `475123a` + fix.
+
 ## L-042 · 2026-10-26 · handoff/estado commitado
 - **Gatilho/Erro**: comitei no PR #76 um CONTEXT.md descrevendo estado inexistente no HEAD (config listada como "não commitada" já dentro do commit; ADR recém-commitada listada como pendente) — review achou M-1. **Regra**: antes de commitar o handoff, reclasse as seções para o estado resultante do próprio commit (não o anterior); confirme com `git status`/`git show`. Evidência: review do #76, M-1 corrigido em `7d58e04`.
 

@@ -54,7 +54,9 @@
   `opencode-go/deepseek-v4.1-flash` (lab independente). Free tier: 200K/32K, lento,
   promo temporária — não usar sem confirmar trade-off.
 - **Subagente**: nunca `bash "*": ask`; allowlist read-only explícita + `deny`
-  (falha rápida) e prompt sem pipe/variável/backtick/script no pwsh.
+  (falha rápida), **negativos por flag DEPOIS dos allows** (`--output`/`-o`,
+  `git branch -f/-D/-m`, `git grep -O` — última regra vence; ver L-043) e prompt
+  sem pipe/variável/backtick/script no pwsh.
 - **FK no SQLite de teste**: pragma só no `db_session` (`tests/conftest.py:104-116`,
   chamado em `:130`), **nunca** em `build_engine` — produção é Postgres
   (`src/gestlog/config.py:34`) e `libs` não muda por requisito de teste.
@@ -63,11 +65,13 @@
 - **Relatórios**: empresa de `exigir_papel(*PAPEIS_APROVADORES)` (nunca URL/query);
   401 sem sessão, 403 operador, 404 domínio inválido, 422 `de > ate`/data malformada;
   recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180: o **texto de cada célula
-  do CSV é idêntico ao texto da célula correspondente na tela** (regra da L-033,
-  realocada aqui — não há formatador única compartilhado, o contrato é textual);
-  cobertura: teste de aceitação por domínio compara linhas do CSV com a tabela
-  HTML (estoque: `test_relatorios_export.py`, transporte: `:78`, fornecedores:
-  `test_relatorios_fornecedores.py`).
+  do CSV é idêntico ao texto da célula correspondente na tela, EXCETO a
+  neutralização de fórmulas** — célula que começa com `= + - @` (ou tab/CR)
+  recebe `'` como prefixo no CSV (`csv_relatorios.py::neutralizar`; contrato
+  anti CSV-injection). Sem formatador única compartilhada — o contrato é
+  textual; cobertura: teste de aceitação por domínio compara linhas do CSV com
+  a tabela HTML (estoque: `test_relatorios_export.py` — inclusive o caso
+  `=valor`; transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
 - **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
   independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**
   recebe push direto.

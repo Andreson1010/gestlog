@@ -11,12 +11,22 @@ permission:
     "git log*": allow
     "git show*": allow
     "git status*": allow
-    "git branch*": allow
+    "git branch --list*": allow
+    "git branch -a": allow
+    "git branch --show-current": allow
     "git rev-parse*": allow
     "git ls-files*": allow
     "git grep*": allow
     "git fetch origin": allow
     "uv run pytest*": allow
+    "git diff --output*": deny
+    "git diff -o*": deny
+    "git log --output*": deny
+    "git log -o*": deny
+    "git show --output*": deny
+    "git show -o*": deny
+    "git grep -O*": deny
+    "git grep --open-files-in-pager*": deny
 ---
 
 # Code Reviewer (revisão independente)
@@ -49,10 +59,12 @@ das regras — não invente critérios próprios nem relaxe os dele.
 3. Aplique o checklist do skill pelas três lentes abaixo.
 4. Reporte no formato do skill, ancorando cada achado em `arquivo:linha`.
 5. Para confirmar um achado, você pode rodar testes (bash) — mas **nunca** edita código.
-   Atenção à fronteira de confiança: `git` aqui é leitura (o único comando que
-   escreve é o `git fetch origin` exato, sem refspec — refspecs poderiam reescrever
-   refs locais de tracking e cegar o diff), mas `uv run pytest` **executa o código
-   do PR** (conftest/testes), que pode ler o ambiente da sessão. Só rode a suíte no
+   Atenção à fronteira de confiança: `git` aqui é leitura — a allowlist só abre
+   subcomandos de leitura e o `git fetch origin` exato (sem refspec/flags, que
+   reescreveriam refs de tracking); flags que gravam arquivo (`--output`/`-o`),
+   `git branch` destrutivo e `git grep -O` estão negados DEPOIS dos allows (a
+   última regra que casa vence). Já o `uv run pytest` **executa o código do PR**
+   (conftest/testes), que pode ler o ambiente da sessão. Só rode a suíte no
    PR aberto deste repositório conhecido; se algo no diff pareça malicioso
    (exfiltração, leitura de secrets), reporte o achado e rode apenas os testes
    estritamente necessários, direcionados.
