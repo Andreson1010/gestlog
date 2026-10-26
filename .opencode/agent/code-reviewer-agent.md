@@ -19,14 +19,16 @@ permission:
     "git grep*": allow
     "git fetch origin": allow
     "uv run pytest*": allow
-    "git diff --output*": deny
-    "git diff -o*": deny
-    "git log --output*": deny
-    "git log -o*": deny
-    "git show --output*": deny
-    "git show -o*": deny
-    "git grep -O*": deny
-    "git grep --open-files-in-pager*": deny
+    "git diff *--output*": deny
+    "git diff *-o *": deny
+    "git log *--output*": deny
+    "git log *-o *": deny
+    "git show *--output*": deny
+    "git show *-o *": deny
+    "git grep *-O*": deny
+    "git grep *--open-files-in-pager*": deny
+    "git grep *--no-index*": deny
+    "git fetch origin *": deny
 ---
 
 # Code Reviewer (revisão independente)
@@ -60,14 +62,15 @@ das regras — não invente critérios próprios nem relaxe os dele.
 4. Reporte no formato do skill, ancorando cada achado em `arquivo:linha`.
 5. Para confirmar um achado, você pode rodar testes (bash) — mas **nunca** edita código.
    Atenção à fronteira de confiança: `git` aqui é leitura — a allowlist só abre
-   subcomandos de leitura e o `git fetch origin` exato (sem refspec/flags, que
-   reescreveriam refs de tracking); flags que gravam arquivo (`--output`/`-o`),
-   `git branch` destrutivo e `git grep -O` estão negados DEPOIS dos allows (a
-   última regra que casa vence). Já o `uv run pytest` **executa o código do PR**
-   (conftest/testes), que pode ler o ambiente da sessão. Só rode a suíte no
-   PR aberto deste repositório conhecido; se algo no diff pareça malicioso
-   (exfiltração, leitura de secrets), reporte o achado e rode apenas os testes
-   estritamente necessários, direcionados.
+   subcomandos de leitura e o `git fetch origin` exato (qualquer argumento após
+   `origin` cai no `deny`; refspec reescreveria refs de tracking); negações por
+   flag (`--output`, `-o`, `-O`, `--open-files-in-pager`, `--no-index`) casam a
+   flag em QUALQUER posição do comando e valem DEPOIS dos allows, porque flags
+   de git são reordenáveis (ver L-043). Já o `uv run pytest` **executa o código
+   do PR** (conftest/testes), que pode ler o ambiente da sessão. Só rode a
+   suíte no PR aberto deste repositório conhecido; se algo no diff pareça
+   malicioso (exfiltração, leitura de secrets), reporte o achado e rode apenas
+   os testes estritamente necessários, direcionados.
 
 ## As três lentes
 

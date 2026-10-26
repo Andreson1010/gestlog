@@ -1,7 +1,8 @@
 # Contexto da Sessão — revisão de modelos + follow-ups do PR #74
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-10-26.
-> Branch: `main` · HEAD: `bce9c48` = `origin/main` (squash do #76).
+> Branch: `chore/followups-review-76` @ `10575e1`+fix (PR #77; base `main` @ `bce9c48`).
+> Após o squash-merge do #77, `main` passa a apontar para o squash deste PR.
 
 ## Estado atual
 
@@ -54,9 +55,10 @@
   `opencode-go/deepseek-v4.1-flash` (lab independente). Free tier: 200K/32K, lento,
   promo temporária — não usar sem confirmar trade-off.
 - **Subagente**: nunca `bash "*": ask`; allowlist read-only explícita + `deny`
-  (falha rápida), **negativos por flag DEPOIS dos allows** (`--output`/`-o`,
-  `git branch -f/-D/-m`, `git grep -O` — última regra vence; ver L-043) e prompt
-  sem pipe/variável/backtick/script no pwsh.
+  (falha rápida); **negação por flag casa a flag em QUALQUER posição** (`git diff
+  *--output*`) e DEVE vir DEPOIS dos allows — última regra vence (ver L-043);
+  mudança em `.opencode/agent/*` só vale em sessão nova; prompt sem
+  pipe/variável/backtick/script no pwsh.
 - **FK no SQLite de teste**: pragma só no `db_session` (`tests/conftest.py:104-116`,
   chamado em `:130`), **nunca** em `build_engine` — produção é Postgres
   (`src/gestlog/config.py:34`) e `libs` não muda por requisito de teste.
@@ -70,8 +72,8 @@
   recebe `'` como prefixo no CSV (`csv_relatorios.py::neutralizar`; contrato
   anti CSV-injection). Sem formatador única compartilhada — o contrato é
   textual; cobertura: teste de aceitação por domínio compara linhas do CSV com
-  a tabela HTML (estoque: `test_relatorios_export.py` — inclusive o caso
-  `=valor`; transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
+  a tabela   HTML (estoque: `test_relatorios_export.py` — fórmulas em `:178-195`;
+  transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
 - **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
   independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**
   recebe push direto.
@@ -80,10 +82,16 @@
 
 ## Próximos passos / bloqueios
 
-1. **Follow-ups do review do #76** (LOW) — **concluídos neste PR** (branch
-   `chore/followups-review-76`): `git fetch origin` na allowlist do revisor + nota
-   de fronteira de confiança do pytest (L-1): regra da L-033 realocada na seção
-   Relatórios acima (L-3).
+1. **Follow-ups do review do #76** (LOW) — **concluídos no PR #77** (branch
+   `chore/followups-review-76`): `git fetch origin` exato na allowlist do revisor +
+   nota de fronteira de confiança do pytest (L-1); regra da L-033 realocada na
+   seção Relatórios acima com exceção de neutralização de fórmulas + teste novo
+   `test_for_33` (fornecedores CSV×tela) (L-3). O review do próprio #77 endureceu
+   a allowlist por 3 rodadas (fetch exato, `git branch` restrito, negações por
+   flag em qualquer posição) — lição **L-043**.
+   **Pendente pós-merge**: a allowlist nova só entra em vigor em SESSÃO NOVA (config
+   é snapshot no início); no próximo review, conferir o ruleset efetivo com
+   `opencode debug agent`. `ship-feature` passo 5 manda sincronizar a base antes do spawn.
 2. **Débitos** (nenhum em andamento):
    - `String(4000)`/`Text` (migração pontual em `message.conteudo_redigido`/`recommendation.texto`);
    - flake de `created_at` empatado em `tests/copilot/test_service.py` (pré-existente, Windows);
