@@ -3,37 +3,35 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
-## L-038 · 2026-10-22 · testes/cobertura da matriz de dialetos
-- **Erro**: a matriz Postgres foi ligada só ao fixture `db_session`; `tests/test_db.py` (camada de modelos) seguiu em SQLite apesar de o `TESTING.md` prometer "DB models ... Postgres no CI", e o STATE afirmava "~92 testes" quando o medido é 117 (120 com os modelos).
-- **Regra**: ao criar matriz de dialetos, migre **todo** fixture de banco (inclusive os bespoke) e **meça** a cobertura alegada (STATE/ADR/TESTING) antes de fechar — estimativa não vale como número. Evidência: self-review `refactor/postgres-no-ci`; `tests/test_db.py` → `db_session` (6 passed nos dois dialetos); AD-031 corrigida.
+## L-041 · 2026-10-22 · review/validação de achado
+- **Gatilho/Erro**: o review do #74 apontou `.opencode/CONTEXT.md`/`LESSONS.md` como commitados e eu declarei o achado "inválido" por supor que eram mudanças locais; `git show --name-only 24128ac` provou que estavam no commit. **Regra**: antes de invalidar achado por escopo, confirme no git o que o commit contém — suposição não vale. Evidência: registro corrigido no CONTEXT.
 
-## L-037 · 2026-10-07 · testes/conjunto + migração de dados
-- **Erro**: o teste da migração de dados `b7d2e9a4f108` validava só `membership.user_id`; as outras 4 das 5 colunas do conjunto e o `downgrade` com dado ficaram sem asserção (reincidiu L-029).
-- **Regra**: migração de dados que itera um conjunto de colunas exige 1 asserção por coluna (valor + efeito no JOIN), cobrindo `upgrade` **e** `downgrade` com dado legado. Evidência: `tests/test_migrations.py::test_migracao_normaliza_fk_user_para_guid`.
+## L-040 · 2026-10-22 · subagentes/permissões
+- **Gatilho/Erro**: `code-reviewer-agent` travou 3x no #74 porque `bash "*": ask` bloqueia em subagente não-interativo (o modelo tenta contornar e encerra sem relatório). **Regra**: subagente precisa de allowlist read-only + catch-all `deny` (falha rápida, nunca `ask`) e prompt proibindo pipe/variável/script. Evidência: `opencode debug agent` → `bash *: deny`; review do #74 concluído.
 
-## L-036 · 2026-10-06 · alembic/geração + formatação
-- **Erro**: briguei com o `script.py.mako` p/ deixá-lo black-clean; `${repr()}` emite aspas simples (black reformata), o `${imports}` vazio deixa linha em branco e o corpo do autogenerate nem passa pelo template.
-- **Regra**: migração gerada nasce conforme via `[post_write_hooks]` (ruff --fix + black) no `alembic.ini`, que formata o arquivo inteiro; não edite o `.mako` p/ isso. Evidência: PR #72 (`f348d0b`).
+## L-039 · 2026-10-22 · agentes/modelos
+- **Gatilho/Erro**: "caso sim, coloque builders em GLM free" foi lido como gatilho e eu troquei o fluxo sem confirmar, mesmo com o free inferior ao pago; usuário corrigiu. **Regra**: quando a verificação quebra a premissa do pedido, pare e pergunte antes de editar config. Evidência: revertido para pago (builders `opencode-go/glm-5.3-flash`, revisor `opencode-go/deepseek-v4.1-flash`).
 
-## L-035 · 2026-10-06 · ambiente/Windows SAC + venv
-- **Erro**: recriei o venv em 3.13 p/ driblar o Smart App Control no `_sqlite3` do 3.14; o bloqueio só migrou de DLL (`psycopg` `pq.pyd`).
-- **Regra**: não troque interpretador por causa do SAC; rode o gate no **WSL2** sobre `/mnt/c` com venv fora do repo (`UV_PROJECT_ENVIRONMENT`) ou use o CI. Evidência: `gestlog-gate`/Ubuntu 26.04 → 571 passed.
+## L-038 · 2026-10-22 · testes/cobertura da matriz
+- **Gatilho/Erro**: matriz Postgres ligada só ao `db_session`; `tests/test_db.py` ficou em SQLite e o STATE dizia "~92 testes" (medido 117/120). **Regra**: ao criar matriz de dialetos, migre todo fixture de banco e meça a cobertura alegada. Evidência: `tests/test_db.py` → `db_session`; AD-031 corrigida.
 
-## L-034 · 2026-10-06 · shell/pwsh + git/PR (absorve L-027)
-- **Erro**: `head`/`tail`/`rg` não existem no pwsh; backtick em `--body` inline quebrou; `"$VAR"`/`$(...)` dentro de `wsl bash -lc "..."` são expandidos pelo pwsh.
-- **Regra**: use cmdlets nativos (`Select-Object`/`Select-String`); PR/commit com markdown via `--body-file`; comando p/ WSL em script `.sh`; basename único de teste; default `""` em `Form()`; fonte canônica p/ flags/conjuntos (`PAPEIS_APROVADORES`, `get_args`); sincronize `origin` antes do PR; valide a ADR pelas 5 seções. Evidência: PRs #47/#55/#67/#68.
+## L-037 · 2026-10-07 · testes/migração de dados
+- **Gatilho/Erro**: teste da migração `b7d2e9a4f108` validava 1 de 5 colunas e não cobria `downgrade` com dado (reincidiu L-029). **Regra**: 1 asserção por coluna (valor + efeito no JOIN) em `upgrade` **e** `downgrade`. Evidência: `tests/test_migrations.py::test_migracao_normaliza_fk_user_para_guid`.
 
-## L-033 · 2026-09-28 · web/formatação tela×CSV
-- **Erro/Regra**: tela renderizava datetime cru e CSV `.isoformat()`; use o **mesmo** formatador e cubra comparando o texto da página com a célula do CSV. Evidência: `web/relatorios.py::_data`, `tests/web/test_relatorios.py`.
+## L-036 · 2026-10-06 · alembic/geração
+- **Gatilho/Erro**: brigar com `script.py.mako` para deixá-lo black-clean; `${repr()}`/`${imports}` quebram e o autogenerate não passa pelo template. **Regra**: deixe o `[post_write_hooks]` do `alembic.ini` (ruff --fix + black) formatar o arquivo gerado. Evidência: PR #72 (`f348d0b`).
+
+## L-035 · 2026-10-06 · ambiente/Windows SAC
+- **Gatilho/Erro**: recriei o venv em 3.13 para driblar o Smart App Control; o bloqueio só migrou de DLL (`psycopg`). **Regra**: não troque interpretador por causa do SAC; rode o gate no WSL2 sobre `/mnt/c` (venv fora do repo) ou no CI. Evidência: `gestlog-gate` → 573 passed.
+
+## L-034 · 2026-10-06 · shell/pwsh + git/PR
+- **Gatilho/Erro**: `head`/`tail`/`rg` não existem no pwsh; backtick em `--body` e `"$VAR"`/`$(...)` no `wsl bash -lc` quebram. **Regra**: cmdlets nativos (`Select-Object`/`Select-String`); markdown via `--body-file`; comandos WSL em script `.sh`; sincronize `origin` antes do PR. Evidência: PRs #47/#55/#67/#68.
 
 ## L-032 · 2026-09-28 · tipagem (dispatchers/Select)
-- **Erro/Regra**: dispatchers e `Select` sem anotação apagavam a união real; anote `_Resumo = A | B | C` e `Select[tuple[X]]` e valide antes do `getattr`. Evidência: `audit/eventos.py`; T6/T7/T9.
+- **Gatilho/Erro**: dispatcher e `Select` sem anotação apagavam a união real. **Regra**: anote `_Resumo = A | B | C` e `Select[tuple[X]]`; valide antes do `getattr`. Evidência: `audit/eventos.py`; T6/T7/T9.
 
 ## L-031 · 2026-09-28 · testes/timezone SQLite
-- **Erro/Regra**: datetime aware relido do SQLite volta naive; normalize (`.replace(tzinfo=UTC)`) no teste, sem alterar produção. Evidência: `tests/test_repositories.py`.
+- **Gatilho/Erro**: datetime aware relido do SQLite volta naive. **Regra**: normalize (`.replace(tzinfo=UTC)`) no teste, sem alterar produção. Evidência: `tests/test_repositories.py`.
 
-## L-030 · 2026-09-27 · testes/tamanho de arquivo
-- **Erro/Regra**: não entregue arquivo > 800 linhas (nem helpers quebrados); dimensione antes e modularize (conftest/helpers/por grupo). Evidência: `tests/acceptance/f2_*` (≤487 linhas).
-
-## L-029 · 2026-09-27 · testes/ancoragem (absorve L-026, L-028)
-- **Erro/Regra**: ancore ao dado/estado do critério (não a affordance/ORM truthy); 1 teste por elemento do conjunto; autofix de linter sobre `Row` não é seguro. Evidência: `test_inc_02`; `repositories/users.py::emails` (revertido).
+## L-029 · 2026-09-27 · testes/ancoragem (absorve L-026/L-028)
+- **Gatilho/Erro**: asserção em affordance/ORM truthy e autofix de linter sobre `Row` não são seguros. **Regra**: ancore no dado/estado do critério; 1 teste por elemento do conjunto. Evidência: `test_inc_02`; `repositories/users.py::emails` (revertido).
