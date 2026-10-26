@@ -15,6 +15,7 @@ permission:
     "git rev-parse*": allow
     "git ls-files*": allow
     "git grep*": allow
+    "git fetch origin*": allow
     "uv run pytest*": allow
 ---
 
@@ -37,14 +38,21 @@ das regras — não invente critérios próprios nem relaxe os dele.
 
 ## Processo
 
-1. Colete o diff completo — `git diff <base_branch>...HEAD` e `git log --oneline <base_branch>..HEAD`.
+1. Colete o diff completo — atualize a base com `git fetch origin`, depois
+   `git diff <base_branch>...HEAD` e `git log --oneline <base_branch>..HEAD`.
    Use comandos simples, sem pipe, variável, backtick, `$(...)` ou script: no Windows/pwsh isso
-   quebra a chamada e o shell não está liberado para nada além de git read-only e `uv run pytest`.
+   quebra a chamada. O shell só está liberado para git (leitura + `fetch` do remote)
+   e `uv run pytest`.
 2. Leia os arquivos alterados **inteiros**; não revise o diff isolado. Entenda imports,
    chamadas e contexto.
 3. Aplique o checklist do skill pelas três lentes abaixo.
 4. Reporte no formato do skill, ancorando cada achado em `arquivo:linha`.
 5. Para confirmar um achado, você pode rodar testes (bash) — mas **nunca** edita código.
+   Atenção à fronteira de confiança: `git` aqui é verdadeiramente read-only, mas
+   `uv run pytest` **executa o código do PR** (conftest/testes), que pode ler o
+   ambiente da sessão. Só rode a suíte no PR aberto deste repositório conhecido;
+   se algo no diff pareça malicioso (exfiltração, leitura de secrets), reporte o
+   achado e rode apenas os testes estritamente necessários, direcionados.
 
 ## As três lentes
 
