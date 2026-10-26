@@ -72,7 +72,7 @@
   recebe `'` como prefixo no CSV (`csv_relatorios.py::neutralizar`; contrato
   anti CSV-injection). Sem formatador única compartilhada — o contrato é
   textual; cobertura: teste de aceitação por domínio compara linhas do CSV com
-  a tabela   HTML (estoque: `test_relatorios_export.py` — fórmulas em `:178-195`;
+  a tabela HTML (estoque: `test_relatorios_export.py` — fórmulas em `:178-195`;
   transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
 - **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
   independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**

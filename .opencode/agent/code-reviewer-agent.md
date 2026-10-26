@@ -21,6 +21,7 @@ permission:
     "uv run pytest*": allow
     "git diff *--output*": deny
     "git diff *-o *": deny
+    "git diff *--no-index*": deny
     "git log *--output*": deny
     "git log *-o *": deny
     "git show *--output*": deny
@@ -55,7 +56,8 @@ das regras — não invente critérios próprios nem relaxe os dele.
    `git diff <base_branch>...HEAD` e `git log --oneline <base_branch>..HEAD`.
    Use comandos simples, sem pipe, variável, backtick, `$(...)` ou script: no Windows/pwsh isso
    quebra a chamada. O shell só está liberado para git de leitura, o `git fetch origin`
-   exato e `uv run pytest`.
+   exato e `uv run pytest`. Arquivos de `.opencode/` leia com Read/Grep, não com
+   git pathspec (o runtime bloqueia essa rota de propósito).
 2. Leia os arquivos alterados **inteiros**; não revise o diff isolado. Entenda imports,
    chamadas e contexto.
 3. Aplique o checklist do skill pelas três lentes abaixo.
@@ -64,11 +66,12 @@ das regras — não invente critérios próprios nem relaxe os dele.
    Atenção à fronteira de confiança: `git` aqui é leitura — a allowlist só abre
    subcomandos de leitura e o `git fetch origin` exato (qualquer argumento após
    `origin` cai no `deny`; refspec reescreveria refs de tracking); negações por
-   flag (`--output`, `-o`, `-O`, `--open-files-in-pager`, `--no-index`) casam a
-   flag em QUALQUER posição do comando e valem DEPOIS dos allows, porque flags
-   de git são reordenáveis (ver L-043). Já o `uv run pytest` **executa o código
-   do PR** (conftest/testes), que pode ler o ambiente da sessão. Só rode a
-   suíte no PR aberto deste repositório conhecido; se algo no diff pareça
+   flag (`--output`, `-O`/`--open-files-in-pager`, `--no-index`) casam a flag em
+   QUALQUER posição do comando e valem DEPOIS dos allows, porque flags de git
+   são reordenáveis (ver L-043; o `-o` do grep fica bloqueado por design, custo
+   consciente do case-insensitive do Windows). Já o `uv run pytest` **executa o
+   código do PR** (conftest/testes), que pode ler o ambiente da sessão. Só rode
+   a suíte no PR aberto deste repositório conhecido; se algo no diff pareça
    malicioso (exfiltração, leitura de secrets), reporte o achado e rode apenas
    os testes estritamente necessários, direcionados.
 
