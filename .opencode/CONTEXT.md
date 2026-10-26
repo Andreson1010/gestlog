@@ -1,18 +1,24 @@
 # Contexto da Sessão — revisão de modelos + follow-ups do PR #74
 
 > Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-10-26.
-> Branch: `main` · HEAD `7d7999f` + PR #76 (branch `chore/wip-pos-74`, head `895fafc`;
-> no squash-merge do #76 este arquivo entra já na versão atualizada).
+> Branch: `chore/followups-review-76` @ `10575e1`+fix (PR #77; base `main` @ `bce9c48`).
+> Após o squash-merge do #77, `main` passa a apontar para o squash deste PR.
 
 ## Estado atual
 
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `7d7999f`; tags `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
+- `main` @ `bce9c48` (pós-merge do #76; o #77 soma o squash próprio); tags
+  `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
 - **PR #74 MERGED** (squash `24128ac`): a suíte roda em Postgres no CI (matriz de dialetos;
   AD-031 no STATE). **PR #75 MERGED** (squash `7d7999f`): follow-ups do review do #74.
-  Branches apagadas (local e remota). **PR #76**: WIP de config/docs comitado
-  (3 commits) — merge pendente no momento da gravação deste handoff.
+  Branches apagadas (local e remota). **PR #76 MERGED** (squash `bce9c48`): WIP de
+  config/docs (modelos pagos, permissão do revisor, memória de sessão, ADR didático)
+  comitado em 3 commits; branch `chore/wip-pos-74` apagada.
+- **PR #76** — code review independente: **APPROVE** (0 CRITICAL/HIGH, 1 MEDIUM + 3 LOW);
+  M-1 (handoff defasado no CONTEXT) corrigido em `7d58e04` — lição **L-042**;
+  follow-ups LOW (sandbox do pytest no revisor; realocar regra da L-033) registrados
+  nos "Próximos passos". Resquício no pwsh: `rg` não existe — usar cmdlets/Grep.
 - **Modelos (tudo pago)**: default do projeto e builders em `opencode-go/glm-5.3-flash`;
   revisor `code-reviewer-agent` em `opencode-go/deepseek-v4.1-flash` (independência real
   de lab). Ambos testados OK após a renovação da key do `opencode-go`.
@@ -49,7 +55,10 @@
   `opencode-go/deepseek-v4.1-flash` (lab independente). Free tier: 200K/32K, lento,
   promo temporária — não usar sem confirmar trade-off.
 - **Subagente**: nunca `bash "*": ask`; allowlist read-only explícita + `deny`
-  (falha rápida) e prompt sem pipe/variável/backtick/script no pwsh.
+  (falha rápida); **negação por flag casa a flag em QUALQUER posição** (`git diff
+  *--output*`) e DEVE vir DEPOIS dos allows — última regra vence (ver L-043);
+  mudança em `.opencode/agent/*` só vale em sessão nova; prompt sem
+  pipe/variável/backtick/script no pwsh.
 - **FK no SQLite de teste**: pragma só no `db_session` (`tests/conftest.py:104-116`,
   chamado em `:130`), **nunca** em `build_engine` — produção é Postgres
   (`src/gestlog/config.py:34`) e `libs` não muda por requisito de teste.
@@ -57,7 +66,14 @@
   JOIN com o FastAPI Users.
 - **Relatórios**: empresa de `exigir_papel(*PAPEIS_APROVADORES)` (nunca URL/query);
   401 sem sessão, 403 operador, 404 domínio inválido, 422 `de > ate`/data malformada;
-  recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180 com o mesmo formatador da tela.
+  recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180: o **texto de cada célula
+  do CSV é idêntico ao texto da célula correspondente na tela, EXCETO a
+  neutralização de fórmulas** — célula que começa com `= + - @` (ou tab/CR)
+  recebe `'` como prefixo no CSV (`csv_relatorios.py::neutralizar`; contrato
+  anti CSV-injection). Sem formatador única compartilhada — o contrato é
+  textual; cobertura: teste de aceitação por domínio compara linhas do CSV com
+  a tabela HTML (estoque: `test_relatorios_export.py` — fórmulas em `:178-195`;
+  transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
 - **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
   independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**
   recebe push direto.
@@ -66,27 +82,33 @@
 
 ## Próximos passos / bloqueios
 
-1. **Débitos** (nenhum em andamento):
+1. **Follow-ups do review do #76** (LOW) — **concluídos no PR #77** (branch
+   `chore/followups-review-76`): `git fetch origin` exato na allowlist do revisor +
+   nota de fronteira de confiança do pytest (L-1); regra da L-033 realocada na
+   seção Relatórios acima com exceção de neutralização de fórmulas + teste novo
+   `test_for_33` (fornecedores CSV×tela) (L-3). O review do próprio #77 endureceu
+   a allowlist por 3 rodadas (fetch exato, `git branch` restrito, negações por
+   flag em qualquer posição) — lição **L-043**.
+   **Pendente pós-merge**: a allowlist nova só entra em vigor em SESSÃO NOVA (config
+   é snapshot no início); no próximo review, conferir o ruleset efetivo com
+   `opencode debug agent`. `ship-feature` passo 5 manda sincronizar a base antes do spawn.
+2. **Débitos** (nenhum em andamento):
    - `String(4000)`/`Text` (migração pontual em `message.conteudo_redigido`/`recommendation.texto`);
    - flake de `created_at` empatado em `tests/copilot/test_service.py` (pré-existente, Windows);
    - T23/AD-019 (botões no turno ao vivo + ordenação monotônica); rate limiting/convite
      por token (AD-015); empresa ativa; `evals/` no CI.
-2. **Gate local via WSL2**: `wsl -d Ubuntu -u root -- gestlog-gate` → **573 passed, 99.23%**;
+3. **Gate local via WSL2**: `wsl -d Ubuntu -u root -- gestlog-gate` → **573 passed, 99.23%**;
    focado `... gestlog-gate tests/test_db.py --no-cov -q`; Postgres:
    `wsl -d Ubuntu -u root -- bash /mnt/c/Users/ander/AppData/Local/Temp/opencode/gestlog-pg-gate.sh`
    (Docker `gestlog-pg`, porta 5433).
-3. **Sem bloqueios ativos.**
+4. **Sem bloqueios ativos.**
 
 ## WIP local (não commitado)
 
-- Limpo pelo **PR #76** (branch `chore/wip-pos-74`; commits `aa8dcfc` config/revisor,
-  `0b65b4a` memória de sessão, `895fafc` ADR didático — squash-merge pendente).
-- Restou apenas `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado
-  de propósito, decisão do autor).
-- Follow-ups do review do #76 (LOW, para depois): sandbox/ambiente sanitizado para
-  `uv run pytest` no revisor + decidir sobre `git fetch` na allowlist (L-1);
-  regra da L-033 (mesmo formatador tela×CSV) removida da poda da LESSONS —
-  realocar (L-3).
+- Limpo após o commit deste PR (branch `chore/followups-review-76`): nada pendente
+  além do PDF abaixo.
+- `??`: `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado de
+  propósito, decisão do autor).
 
 ## Artefatos do graphify
 

@@ -3,6 +3,12 @@
 > Só erro real, já corrigido e observado; mais recente no topo.
 > Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
 
+## L-043 · 2026-10-26 · permissões/allowlist de git
+- **Gatilho/Erro**: liberei `git fetch origin*`, `git branch*` e `git diff/log/show*` no revisor sem validar bypass: refspec reescrevia `origin/main`, `git branch -f/-D/-m` reescrevia refs locais, negação ancorada por posição era contornável (`git diff --stat --output=arquivo` casou o allow e gravou) e `--no-index` lia arquivo do host. **Regra**: negação por flag deve casar em QUALQUER posição (`git diff *--output*`) e vir DEPOIS dos allows (última regra vence); valide a allowlist EXECUTANDO os bypass NA sessão em que o ruleset já é o novo (`opencode debug agent`) — antes disso, simule o matcher. Evidência: review do #77 (rodadas 1–4), fuzzing real; consertos em `475123a`, `10575e1`, `75d9f92` + fix.
+
+## L-042 · 2026-10-26 · handoff/estado commitado
+- **Gatilho/Erro**: comitei no PR #76 um CONTEXT.md descrevendo estado inexistente no HEAD (config listada como "não commitada" já dentro do commit; ADR recém-commitada listada como pendente) — review achou M-1. **Regra**: antes de commitar o handoff, reclasse as seções para o estado resultante do próprio commit (não o anterior); confirme com `git status`/`git show`. Evidência: review do #76, M-1 corrigido em `7d58e04`.
+
 ## L-041 · 2026-10-22 · review/validação de achado
 - **Gatilho/Erro**: o review do #74 apontou `.opencode/CONTEXT.md`/`LESSONS.md` como commitados e eu declarei o achado "inválido" por supor que eram mudanças locais; `git show --name-only 24128ac` provou que estavam no commit. **Regra**: antes de invalidar achado por escopo, confirme no git o que o commit contém — suposição não vale. Evidência: registro corrigido no CONTEXT.
 

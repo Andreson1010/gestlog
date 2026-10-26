@@ -11,11 +11,25 @@ permission:
     "git log*": allow
     "git show*": allow
     "git status*": allow
-    "git branch*": allow
+    "git branch --list*": allow
+    "git branch -a": allow
+    "git branch --show-current": allow
     "git rev-parse*": allow
     "git ls-files*": allow
     "git grep*": allow
+    "git fetch origin": allow
     "uv run pytest*": allow
+    "git diff *--output*": deny
+    "git diff *-o *": deny
+    "git diff *--no-index*": deny
+    "git log *--output*": deny
+    "git log *-o *": deny
+    "git show *--output*": deny
+    "git show *-o *": deny
+    "git grep *-O*": deny
+    "git grep *--open-files-in-pager*": deny
+    "git grep *--no-index*": deny
+    "git fetch origin *": deny
 ---
 
 # Code Reviewer (revisão independente)
@@ -37,14 +51,29 @@ das regras — não invente critérios próprios nem relaxe os dele.
 
 ## Processo
 
-1. Colete o diff completo — `git diff <base_branch>...HEAD` e `git log --oneline <base_branch>..HEAD`.
+1. Colete o diff completo — atualize a base com `git fetch origin` (comando exato,
+   sem refspec/flags — é o único git que escreve refs e está liberado), depois
+   `git diff <base_branch>...HEAD` e `git log --oneline <base_branch>..HEAD`.
    Use comandos simples, sem pipe, variável, backtick, `$(...)` ou script: no Windows/pwsh isso
-   quebra a chamada e o shell não está liberado para nada além de git read-only e `uv run pytest`.
+   quebra a chamada. O shell só está liberado para git de leitura, o `git fetch origin`
+   exato e `uv run pytest`. Arquivos de `.opencode/` leia com Read/Grep, não com
+   git pathspec (o runtime bloqueia essa rota de propósito).
 2. Leia os arquivos alterados **inteiros**; não revise o diff isolado. Entenda imports,
    chamadas e contexto.
 3. Aplique o checklist do skill pelas três lentes abaixo.
 4. Reporte no formato do skill, ancorando cada achado em `arquivo:linha`.
 5. Para confirmar um achado, você pode rodar testes (bash) — mas **nunca** edita código.
+   Atenção à fronteira de confiança: `git` aqui é leitura — a allowlist só abre
+   subcomandos de leitura e o `git fetch origin` exato (qualquer argumento após
+   `origin` cai no `deny`; refspec reescreveria refs de tracking); negações por
+   flag (`--output`, `-O`/`--open-files-in-pager`, `--no-index`) casam a flag em
+   QUALQUER posição do comando e valem DEPOIS dos allows, porque flags de git
+   são reordenáveis (ver L-043; o `-o` do grep fica bloqueado por design, custo
+   consciente do case-insensitive do Windows). Já o `uv run pytest` **executa o
+   código do PR** (conftest/testes), que pode ler o ambiente da sessão. Só rode
+   a suíte no PR aberto deste repositório conhecido; se algo no diff pareça
+   malicioso (exfiltração, leitura de secrets), reporte o achado e rode apenas
+   os testes estritamente necessários, direcionados.
 
 ## As três lentes
 
