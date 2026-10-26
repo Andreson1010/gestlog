@@ -7,7 +7,8 @@
 
 - **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
   com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `7d7999f`; tags `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
+- `main` @ `bce9c48` (pós-merge do #76; o #77 soma o squash próprio); tags
+  `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
 - **PR #74 MERGED** (squash `24128ac`): a suíte roda em Postgres no CI (matriz de dialetos;
   AD-031 no STATE). **PR #75 MERGED** (squash `7d7999f`): follow-ups do review do #74.
   Branches apagadas (local e remota). **PR #76 MERGED** (squash `bce9c48`): WIP de
@@ -61,10 +62,12 @@
   JOIN com o FastAPI Users.
 - **Relatórios**: empresa de `exigir_papel(*PAPEIS_APROVADORES)` (nunca URL/query);
   401 sem sessão, 403 operador, 404 domínio inválido, 422 `de > ate`/data malformada;
-  recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180: a célula sai do **mesmo
-  formatador usado pela tela**, e os testes cobrem isso comparando o **texto da
-  célula do CSV com o texto renderizado na tela** (não affordance/ORM truthy) —
-  era a regra da L-033, realocada aqui quando a LESSONS podou.
+  recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180: o **texto de cada célula
+  do CSV é idêntico ao texto da célula correspondente na tela** (regra da L-033,
+  realocada aqui — não há formatador única compartilhado, o contrato é textual);
+  cobertura: teste de aceitação por domínio compara linhas do CSV com a tabela
+  HTML (estoque: `test_relatorios_export.py`, transporte: `:78`, fornecedores:
+  `test_relatorios_fornecedores.py`).
 - **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
   independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**
   recebe push direto.
@@ -90,9 +93,8 @@
 
 ## WIP local (não commitado)
 
-- `M`: `.opencode/CONTEXT.md`, `.opencode/LESSONS.md` (sync pós-merge do #76: HEAD e
-  estado reclassificados + lição **L-042**; padrão do loop de sessões — entra no PR
-  da próxima task).
+- Limpo após o commit deste PR (branch `chore/followups-review-76`): nada pendente
+  além do PDF abaixo.
 - `??`: `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado de
   propósito, decisão do autor).
 

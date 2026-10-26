@@ -10,6 +10,8 @@ from relatorios_suporte import (
     QUANDO,
     celulas_da_linha,
     criar_conta,
+    exportar,
+    ler_csv,
     login,
     semear,
 )
@@ -159,3 +161,40 @@ async def test_for_05_recorte_de_periodo_inclusivo(
 
     assert "<td>JUN</td>" in filtrado.text
     assert "JAN" not in filtrado.text
+
+
+async def test_for_33_csv_igual_a_tabela_da_tela(
+    client: AsyncClient,
+    fabrica_sync: sessionmaker[Session],
+) -> None:
+    """REL-33: cada linha do CSV corresponde exatamente à linha da tela."""
+    dados = await criar_conta(client, "A", "a@tenant.com")
+    empresa_id = UUID(dados["empresa_id"])
+    _fornecedor(
+        fabrica_sync,
+        empresa_id,
+        "F1",
+        nome="Alfa",
+        categoria="Transporte",
+        prazo_dias=3,
+        avaliacao=4.5,
+        ativo=True,
+    )
+    _fornecedor(
+        fabrica_sync,
+        empresa_id,
+        "F2",
+        nome="Beta",
+        categoria="Insumos",
+        prazo_dias=0,
+        avaliacao=0.0,
+        ativo=False,
+    )
+    await login(client, "a@tenant.com")
+
+    pagina = await client.get(_FORNECEDORES)
+    linhas = ler_csv(await exportar(client, "fornecedores"))
+
+    assert len(linhas) == 3
+    for linha in linhas[1:]:
+        assert celulas_da_linha(pagina.text, linha[0]) == linha
