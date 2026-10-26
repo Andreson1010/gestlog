@@ -190,6 +190,6 @@ Dois momentos de revisão, em papéis distintos:
    `developer-self-reviewer` (mesmo modelo do autor). Conserta o que o autor deixou
    passar e escreve a ADR. Não é revisão independente — é polimento + registro.
 2. **Code review (após o PR)** — passo 5 do `ship-feature`, subagente
-   **`code-reviewer-agent`**, em **modelo independente** (`opencode-go/glm-5.3-flash`),
+   **`code-reviewer-agent`**, em **modelo independente** (`opencode-go/deepseek-v4.1-flash`),
    como QA / Sênior / Tech Lead. Revisa o diff contra a branch base e **só reporta**
    (`edit: deny`); o builder corrige. É a revisão por pares de verdade.
