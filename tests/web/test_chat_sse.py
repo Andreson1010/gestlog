@@ -208,7 +208,11 @@ async def test_chat_stream_fragmento_referencia_recomendacao_do_turno(
     engines: tuple[AsyncEngine, Engine],
     fake_model_cls: type,
 ) -> None:
-    """O fragmento é o da recomendação deste turno, nunca de turnos anteriores."""
+    """O fragmento é o da recomendação deste turno, nunca de turnos anteriores.
+
+    O segundo turno (fora de escopo) não tem recomendação própria: mesmo com
+    uma recomendação antiga na conversa, não pode emitir ``fontes``.
+    """
     motor_async, motor_sync = engines
     await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
     await _login(client, "a@empresa.com")
@@ -220,21 +224,31 @@ async def test_chat_stream_fragmento_referencia_recomendacao_do_turno(
     resposta = await client.get(
         "/chat/stream", params={"pergunta": "como está o estoque?"}
     )
-    esperado = _id_ultima_recomendacao(motor_sync)
+    esperado = _id_recomendacao(motor_sync, primeiro=True)
 
     assert resposta.status_code == 200
     assert f"feedback-{esperado}" in resposta.text
     assert f"/recomendacoes/{esperado}/feedback" in resposta.text
 
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(routes=["FINISH"])
+    segunda = await client.get(
+        "/chat/stream", params={"pergunta": "qual a capital da França?"}
+    )
 
-def _id_ultima_recomendacao(motor_sync: Engine) -> UUID:
+    assert segunda.status_code == 200
+    assert "event: fontes" not in segunda.text
+    assert f"/recomendacoes/{esperado}/feedback" not in segunda.text
+
+
+def _id_recomendacao(motor_sync: Engine, primeiro: bool) -> UUID:
     from sqlalchemy import select
 
     from gestlog.db.models import Recommendation
 
-    consulta = (
-        select(Recommendation.id).order_by(Recommendation.created_at.desc()).limit(1)
-    )
+    consulta = select(Recommendation.id).order_by(Recommendation.created_at)
+    if not primeiro:
+        consulta = consulta.desc()
+    consulta = consulta.limit(1)
     with motor_sync.connect() as conexao:
         return conexao.execute(consulta).scalar_one()
 

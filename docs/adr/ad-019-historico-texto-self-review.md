@@ -161,9 +161,10 @@ e `sse-swap="fontes"` na tela. A ordem dos eventos é garantida pelo servidor
   continua correta; o valor absoluto continua legível em auditoria e KPI
   (agregações usam `feedback.created_at`, não o carimbo).
 * **Evento `fontes` carrega os botões, não a lista de fontes técnica:** o
-  nome é parte do contrato já público da T18 (o painel técnico de fontes
-  vem do turno completo no reload do histórico); reutilizar o mesmo canal
-  evita inventar um segundo canal de stream para a mesma conexão.
+  nome reutiliza o canal já público da T18; a lista técnica de fontes fica
+  persistida em `Recommendation`/`Turno`, mas não é renderizada no reload
+  (a tela de histórico mostra só a resposta). O canal único evita inventar
+  um segundo canal de stream para a mesma conexão.
 
 ## 4. O que vem a seguir (Roadmap Imediato)
 
@@ -241,7 +242,7 @@ e `sse-swap="fontes"` na tela. A ordem dos eventos é garantida pelo servidor
   `answer_com_recomendacao(pergunta) -> (resposta, recomendacao_id)` o
   expõe; `web/chat.py` emite o fragmento **só** a partir desse id (quota,
   fora de escopo e erro → `None` → sem `fontes`). `answer()` permanece com
-  o contrato antigo para callers simples (CLI/testes). Testes novos fixam
+  o contrato antigo para callers simples (testes). Testes novos fixam
   o contrato: quota sem `fontes`, erro do grafo sem `fontes`, fragmento
   referenciando o id do turno corrente, e `answer_com_recomendacao` em
   ambos os caminhos do service.
