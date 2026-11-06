@@ -63,6 +63,25 @@ def test_limitador_poda_chaves_sem_marca_viva(monkeypatch: pytest.MonkeyPatch) -
     assert "rota:nova" in limite._tentativas
 
 
+def test_limitador_evicta_mais_antiga_quando_todas_vivas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """O teto é rígido: sem chaves mortas, a mais antiga cede lugar à nova."""
+    monkeypatch.setattr("gestlog.web.rate_limit._MAX_CHAVES", 2)
+    monkeypatch.setattr("gestlog.web.rate_limit.time.monotonic", lambda: 100.0)
+    limite = RateLimiter()
+    limite.permitir("a", 1, 60)
+    limite.permitir("b", 1, 60)
+    limite.permitir("b", 1, 60)  # excede limite, mas mantém a chave viva
+
+    limite.permitir("c", 1, 60)
+
+    assert "a" not in limite._tentativas
+    assert "b" in limite._tentativas
+    assert "c" in limite._tentativas
+    assert len(limite._tentativas) == 2
+
+
 def _settings_com_limite(tentativas: int) -> Settings:
     return Settings(
         _env_file=None,

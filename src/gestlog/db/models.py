@@ -324,6 +324,7 @@ class Convite(Base):
     """
 
     __tablename__ = "convite"
+    __table_args__ = (Index("ix_convite_empresa", "empresa_id"),)
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))

@@ -11,8 +11,7 @@ from fastapi import FastAPI
 from fastapi_users.password import PasswordHelper
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.ext.asyncio import AsyncSession as AsyncSessao
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from gestlog.auth import get_async_session
 from gestlog.config import Settings, get_settings
@@ -25,7 +24,6 @@ from gestlog.db.session import (
 from gestlog.web import create_app
 
 _SENHA = "senha-secreta-123"
-_COOKIE = "gestlog_auth"
 
 
 def _settings() -> Settings:
@@ -52,7 +50,7 @@ async def motor_async(tmp_path: Path) -> AsyncIterator[AsyncEngine]:
 async def app(motor_async: AsyncEngine) -> AsyncIterator[FastAPI]:
     aplicacao = create_app(_settings())
 
-    async def _override_session() -> AsyncIterator[AsyncSessao]:
+    async def _override_session() -> AsyncIterator[AsyncSession]:
         factory = build_async_session_factory(motor_async)
         async with factory() as session:
             yield session

@@ -383,6 +383,10 @@ def test_convite_tem_tabela_e_upgrade_downgrade_simetricos(
         "usado_em",
         "created_at",
     } <= colunas
+    indices = {
+        idx["name"]: set(idx["column_names"]) for idx in inspetor.get_indexes("convite")
+    }
+    assert indices["ix_convite_empresa"] == {"empresa_id"}
 
     command.downgrade(cfg, "d5e6f8a2b7c4")
 

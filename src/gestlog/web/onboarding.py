@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gestlog.auth import accounts, exigir_papel
 from gestlog.auth.accounts import (
     ConviteDuplicadoError,
+    ConviteEmailRegistradoError,
     ConviteInvalidoError,
 )
 from gestlog.auth.db import get_async_session
@@ -64,7 +65,7 @@ def create_onboarding_router() -> APIRouter:
         except ConviteDuplicadoError as exc:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Usuário já vinculado à empresa.",
+                detail="E-mail já registrado no sistema; convite só cria conta nova.",
             ) from exc
         return {"email": corpo.email, "papel": corpo.papel, "token": token}
 
@@ -73,7 +74,7 @@ def create_onboarding_router() -> APIRouter:
         corpo: ConviteAceiteCreate,
         session: Annotated[AsyncSession, Depends(get_async_session)],
     ) -> dict[str, str]:
-        """Troca o token válido por vínculo na empresa, com a senha escolhida."""
+        """Troca o token válido por conta nova na empresa, senha escolhida."""
         try:
             usuario, convite = await accounts.aceitar_convite(
                 session, corpo.token, corpo.senha
@@ -82,6 +83,11 @@ def create_onboarding_router() -> APIRouter:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Convite inválido, expirado ou já utilizado.",
+            ) from exc
+        except ConviteEmailRegistradoError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="E-mail já registrado; vincule-se autenticado (fluxo futuro).",
             ) from exc
         except IntegrityError as exc:
             await session.rollback()

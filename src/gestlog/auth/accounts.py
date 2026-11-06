@@ -26,8 +26,12 @@ class ConviteInvalidoError(Exception):
     """Convite inexistente, expirado ou já utilizado."""
 
 
+class ConviteEmailRegistradoError(Exception):
+    """O e-mail do convite já tem conta; o aceite autenticado é fluxo futuro."""
+
+
 class ConviteDuplicadoError(Exception):
-    """Usuário já é membro da empresa convidante."""
+    """E-mail já registrado no sistema (em qualquer empresa)."""
 
 
 async def _por_email(session: AsyncSession, email: str) -> User | None:
@@ -84,12 +88,13 @@ async def criar_convite(
 
     O admin não define a senha do convidado (AD-015): quem aceita o convite
     escolhe a própria. O token é devolvido só no retorno desta chamada — a
-    entrega por e-mail fica para a integração de notificações.
+    entrega por e-mail fica para a integração de notificações, de modo que o
+    token NÃO é prova de posse do e-mail; por isso só se convida e-mail
+    NÃO registrado (AD-015): jamais se toca na credencial de um usuário
+    global existente.
     """
     usuario = await _por_email(session, email)
-    if usuario is not None and await _vinculo_do_usuario(
-        session, empresa_id, usuario.id
-    ):
+    if usuario is not None:
         raise ConviteDuplicadoError(email)
     token = secrets.token_urlsafe(32)
     convite = Convite(
@@ -117,22 +122,24 @@ async def _convite_valido(session: AsyncSession, token: str) -> Convite | None:
 async def aceitar_convite(
     session: AsyncSession, token: str, senha: str
 ) -> tuple[User, Convite]:
-    """Aceita o convite definindo a própria senha e cria o vínculo.
+    """Aceita o convite criando a conta nova com a senha escolhida.
 
-    Para e-mail já cadastrado sem vínculo, vincula e redefine a senha (quem
-    tem o token válido do admin pode assumir o acesso convidado). Erros de
-    unicidade (dupla aceitação concorrente) sobem ``IntegrityError``.
+    Restrito a e-mail NÃO registrado (AD-015): o token é entregue ao
+    convidador, não ao convidado, logo não comprova posse do e-mail — se o
+    e-mail já existe, sobe ``ConviteEmailRegistradoError`` e a credencial
+    global nunca é alterada (o vínculo para usuário existente passa pelo
+    aceite autenticado, fluxo futuro). Erros de unicidade (dupla aceitação
+    concorrente) sobem ``IntegrityError``.
     """
     convite = await _convite_valido(session, token)
     if convite is None:
         raise ConviteInvalidoError
     usuario = await _por_email(session, convite.email)
-    if usuario is None:
-        usuario = _novo_usuario(convite.email, senha)
-        session.add(usuario)
-        await session.flush()
-    else:
-        usuario.hashed_password = _password_helper.hash(senha)
+    if usuario is not None:
+        raise ConviteEmailRegistradoError(convite.email)
+    usuario = _novo_usuario(convite.email, senha)
+    session.add(usuario)
+    await session.flush()
     session.add(
         Membership(
             user_id=usuario.id, empresa_id=convite.empresa_id, papel=convite.papel

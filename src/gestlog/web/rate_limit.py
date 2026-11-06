@@ -32,12 +32,14 @@ class RateLimiter:
         """Devolve ``True`` se a tentativa cabe no limite da janela.
 
         Registra a tentativa corrente quando permitida; descarta as marcas
-        mais velhas que a janela antes de contar.
+        mais velhas que a janela antes de contar. A contenção acontece
+        ANTES da inserção (L-047): primeiro caem as chaves sem marca viva;
+        persistindo o teto (janelas com IPs demais ao mesmo tempo), a chave
+        mais antiga é evictada e o dicionário nunca excede ``_MAX_CHAVES``.
         """
         agora = time.monotonic()
         with self._trava:
-            if len(self._tentativas) >= _MAX_CHAVES:
-                self._podar(agora, janela)
+            self._podar(agora, janela)
             marcas = self._tentativas.setdefault(chave, deque())
             while marcas and marcas[0] <= agora - janela:
                 marcas.popleft()
@@ -47,7 +49,12 @@ class RateLimiter:
             return True
 
     def _podar(self, agora: float, janela: int) -> None:
-        """Remove chaves sem marca viva, contendo o uso de memória."""
+        """Contém o dicionário no teto: chaves mortas primeiro, senão a mais antiga.
+
+        Remoção ANTES do ``setdefault`` da chave corrente (L-047): a poda
+        remove chaves por idade, em ``iter`` — ordem de inserção do ``dict`` —
+        e nunca a chave sendo contada, pois esta ainda não está inserida.
+        """
         gastas = [
             chave
             for chave, marcas in self._tentativas.items()
@@ -55,6 +62,8 @@ class RateLimiter:
         ]
         for chave in gastas:
             del self._tentativas[chave]
+        while len(self._tentativas) >= _MAX_CHAVES:
+            del self._tentativas[next(iter(self._tentativas))]
 
     def reset(self) -> None:
         """Limpa todas as marcas (uso em testes e entre reinícios de rota)."""

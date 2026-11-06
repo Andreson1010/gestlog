@@ -30,20 +30,30 @@ cota no fim do período e recomeça em cheio no instante seguinte; na deslizante
 as marcas expiram uma a uma e o custo da repetição é contínuo. O relógio é
 monotônico, então ajustar o relógio do processo não reinicia janelas.
 
-**2. Uso de memória contido: poda de chaves sem marca viva**
+**2. Uso de memória contido: teto rígido com poda por marca viva**
 
 A chave é `grupo + IP`, e a origem vem de `request.client.host` — **sem** confiar
-em `X-Forwarded-For`, spoofável diretamente contra a aplicação. A consequência
-que o primeiro desenho ignorava era o crescimento do dicionário: cada IP novo
-criava uma chave que ninguém mais removia, e o gatilho é justamente tráfego na
-rota pública — exaustão de memória como efeito colateral do rate limiting. A
-versão final poda: quando o dicionário atinge `_MAX_CHAVES` (10 000), removem-se,
-sob o mesmo lock, as chaves sem marca viva (deque vazio ou última marca mais
-velha que a janela). A poda roda **antes** do `setdefault` — executá-la depois
-era um bug que o teste novo capturou: a chave da requisição corrente era podada
-no meio da própria contagem e a tentativa se perdia (detalhado nos achados). O
-teto é constante de módulo justamente para o teste apertá-lo (`monkeypatch`) sem
-mexer em produção.
+em `X-Forwarded-For`, spoofável diretamente contra a aplicação. A premissa é a
+app **exposta diretamente** (deploy atual, sem proxy de terminação): atrás de
+reverse proxy, `client.host` vira o IP do proxy para todos os clientes e o
+limite por IP degenera num freio global — quando houver proxy, configurar
+`uvicorn --proxy-headers --forwarded-allow-ips` e consumir o cabeçalho só de
+origens confiáveis. A consequência que o primeiro desenho ignorava era o
+crescimento do dicionário: cada IP novo criava uma chave que ninguém mais
+removia, e o gatilho é justamente tráfego na rota pública — exaustão de memória
+como efeito colateral do rate limiting. A contenção é **rígida** e roda **antes**
+do `setdefault` (executar depois era um bug que o teste novo capturou: a chave
+da requisição corrente era podada no meio da própria contagem e a tentativa se
+perdia — detalhado nos achados): primeiro removem-se, sob o mesmo lock, as
+chaves sem marca viva (deque vazio ou última marca mais velha que a janela);
+persistindo o teto porque todas estão vivas na janela, a chave mais antiga (ordem
+de inserção do dict) é evictada. Com janelas de tráfego acima do teto, um IP que
+esteja nela há mais tempo tem suas marcas perdidas e recomeça a contar — costa
+aceitável em troca do teto garantido; a janela de risco real (IP ativo com
+tráfego de brute force contínuo) é a mesma que justifica o freio. O teto é
+constante de módulo justamente para o teste apertá-lo (`monkeypatch`) sem mexer
+em produção; `test_limitador_evicta_mais_antiga_quando_todas_vivas` fixa o ramo
+sem chaves mortas.
 
 **3. Convite por token: o token em claro nunca toca o banco**
 
@@ -53,14 +63,22 @@ token somente no retorno da chamada — quem o perde ali não o recupera, porque
 não existe em repouso: um vazamento do banco não rende convites aproveitáveis. O
 aceite (`aceitar_convite`) busca por hash, exigindo `usado_em IS NULL` **e**
 `expira_em > agora`, e quem aceita define a própria senha
-(`ConviteAceiteCreate`), seja criando o usuário novo, seja redefinindo a senha de
-e-mail já cadastrado sem vínculo — nesse caso o token emitido pelo admin é a
-prova de direito de assumir o acesso convidado. A dupla aceitação concorrente é
-fechada às cegas: `usado_em` não é operação atômica otimista, mas `Membership`
-tem `UniqueConstraint(user_id, empresa_id)`, então o segundo `commit` bate na
-unicidade e o `IntegrityError` capturado na rota vira 409. Convite inexistente,
-expirado ou já usado é um único 400 — não distinguir "expirado" de "inexistente"
-impede enumerar tokens válidos pela resposta.
+(`ConviteAceiteCreate`) **criando a conta nova**. A regra de segurança é
+definitiva: **o convite nunca toca a credencial de um usuário global existente**
+— o token vive em poder do CONVIDADOR (a entrega por e-mail é futura), logo não
+comprova posse do e-mail; redefinir a senha de um `User` já registrado
+possibilitaria takeover de conta entre tenants (achado CRITICAL do code review).
+`criar_convite` portanto só emite para e-mail **não** registrado: e-mail que já
+tem conta — em qualquer empresa — devolve 409 na criação, e mesmo que um convite
+para esse e-mail apareça no banco (gravado à mão em teste, bug futuro), o
+`aceitar_convite` recusa com `ConviteEmailRegistradoError` → 400
+(defense-in-depth). Para vínculos de usuários existentes, o caminho futuro é o
+aceite autenticado: o próprio usuário, logado, confirma o vínculo. A dupla
+aceitação concorrente é fechada pela `UniqueConstraint(user_id, empresa_id)` do
+`Membership`: o segundo `commit` bate na unicidade e o `IntegrityError`
+capturado na rota vira 409. Convite inexistente, expirado ou já usado é um único
+400 — não distinguir "expirado" de "inexistente" impede enumerar tokens válidos
+pela resposta.
 
 **4. Contrato: a senha sai do payload do admin**
 
@@ -70,9 +88,9 @@ quebrou em três pontos, todos corrigidos no mesmo PR: o endpoint de convite, os
 dois suportes de aceitação (`f2_suporte`, `relatorios_suporte`) e o `test_acc_03`
 da F1 — o helper `convidar()` dos suportes agora encadeia convite → aceite com a
 senha padrão de teste, então nenhum teste de aceitação precisou saber do
-protocolo de token além da chamada do helper. Convite para e-mail já vinculado
-levanta `ConviteDuplicadoError` → 409 **antes** de gastar um token — inclusive o
-self-convite do próprio admin, que já tem vínculo.
+protocolo de token além da chamada do helper. Convite para e-mail (vinculado à
+empresa ou registrado em outra) levanta `ConviteDuplicadoError` → 409 **antes** de
+gastar um token — inclusive o self-convite do próprio admin.
 
 **5. Migração `e8a1c5d9f3b7` com round-trip de teste**
 
@@ -130,7 +148,7 @@ ainda que sem dado a validar por coluna).
   429 ponta a ponta, limite lido do `Settings`) e a poda;
   `tests/web/test_onboarding.py` cobre convite feliz, 403 sem admin, 409
   duplicado, 400 inválido, expirado e de uso único; o teste de migração cobre o
-  round-trip da tabela. Gate completo (WSL): **599 passed, 1 skipped, 99.01%**.
+  round-trip da tabela. Gate completo (WSL): **606 passed, 1 skipped, 99.01%**.
 * **Padrões de qualidade:** `black --check` + `ruff check` verdes;
   `from __future__ import annotations`, docstrings e nomes em português, sem
   comentários fora de docstring, sem `print`; funções ≤ 50 linhas e arquivos
@@ -156,3 +174,35 @@ ainda que sem dado a validar por coluna).
   `motor_async(tmp_path: object)` + `# type: ignore[attr-defined]` em
   `tests/web/test_empresa_ativa.py`; corrigido para `tmp_path: Path`, como no
   restante de `tests/web/`.
+
+## Achados endereçados no code review independente
+
+* **Takeover de conta entre tenants (CRITICAL, bloqueante):** o aceite original
+  redefinia a senha global de e-mail já registrado — e o token é entregue ao
+  CONVIDADOR, não ao convidado, logo qualquer pessoa que criasse uma empresa por
+  `/onboarding` podia convidar o e-mail da vítima, receber o token e redefinir a
+  senha dela. Corrigido na raiz e em camada dupla: `criar_convite` só emite
+  convite para e-mail NÃO registrado (409 caso contrário) e `aceitar_convite`
+  recusa `ConviteEmailRegistradoError` → 400 sem criar vínculo nem tocar
+  senha. Testes novos: convite para e-mail registrado → 409; convite gravado à
+  mão no banco com e-mail registrado → recusa + senha global intacta (login
+  original continua válido, senha do atacante inválida).
+* **429 nunca testado nas rotas reais (média):** os testes cobriam o `RateLimiter`
+  e um app sintético; remover o wiring não deixaria a suíte vermelha. Um
+  teste por rota real (`/auth/login`, `/onboarding`, `/empresa/convites`,
+  `/convites/aceitar`) com limite 1 fixa o `[esperado, 429]`.
+* **Teto do limiter não era rígido (baixa):** com todas as chaves vivas, nada era
+  removido e o dicionário crescia além de `_MAX_CHAVES`. A poda passa a evictar
+  a chave mais antiga (ordem de inserção) até caber a nova; teste fixa o
+  comportamento e a ADR registra a degradação de um IP longevo na janela.
+* **FK `convite.empresa_id` sem índice (baixa):** índice `ix_convite_empresa`
+  adicionado no modelo e na migração (create/drop simétricos) — hoje não há
+  consulta por empresa, mas FK não gera índice em Postgres.
+* **Coesão de commits D5/D6 (registrada, não corrigida):** o wiring de `/auth`
+  e helpers de vínculo ficaram em commits vizinhos do ideal; como o PR é
+  squash-mergeado, o histórico final é um commit coeso — a nota fica para
+  revisão futura de fatiamento.
+* **`/empresa/ativa` fora do rate limit (baixa):** exige autenticação e só
+  reordena o próprio vínculo; freio desnecessário, registrado aqui.
+* **Constante morta (baixa):** `_COOKIE` não usado em
+  `tests/web/test_empresa_ativa.py` removido.

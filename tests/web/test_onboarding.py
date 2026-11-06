@@ -6,6 +6,7 @@ import hashlib
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from uuid import UUID
 
 import pytest
 from fastapi import Depends, FastAPI
@@ -25,7 +26,8 @@ from gestlog.db.session import (
     build_async_session_factory,
     init_async_db,
 )
-from gestlog.web import create_onboarding_router
+from gestlog.web import create_app, create_onboarding_router
+from gestlog.web.rate_limit import limitador
 
 _SENHA = "senha-secreta-123"
 _COOKIE = "gestlog_auth"
@@ -34,6 +36,18 @@ _COOKIE = "gestlog_auth"
 def _hash_token_sha256(token: str) -> str:
     """SHA-256 hex do token, espelhando o repositório de convites."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _settings_limite_1() -> Settings:
+    """Settings com limite de 1 tentativa por janela (roda o 429 cedo)."""
+    return Settings(
+        _env_file=None,
+        database_url="sqlite+aiosqlite:///:memory:",
+        auth_secret="segredo-de-teste-com-pelo-menos-32-bytes",
+        auth_cookie_secure=False,
+        rate_limit_tentativas=1,
+        rate_limit_janela_segundos=86_400,
+    )
 
 
 def _settings() -> Settings:
@@ -78,6 +92,28 @@ async def app(engine: AsyncEngine) -> AsyncIterator[FastAPI]:
 @pytest.fixture
 async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as cliente:
+        yield cliente
+
+
+@pytest.fixture
+async def app_real(engine: AsyncEngine) -> AsyncIterator[FastAPI]:
+    """App real (`create_app`) para conferir o wiring do limitador em produção."""
+    aplicacao = create_app(_settings())
+
+    async def _override_session() -> AsyncIterator[AsyncSession]:
+        factory = build_async_session_factory(engine)
+        async with factory() as session:
+            yield session
+
+    aplicacao.dependency_overrides[get_async_session] = _override_session
+    aplicacao.dependency_overrides[get_settings] = _settings
+    yield aplicacao
+
+
+@pytest.fixture
+async def client_real(app_real: FastAPI) -> AsyncIterator[AsyncClient]:
+    transport = ASGITransport(app=app_real)
     async with AsyncClient(transport=transport, base_url="http://test") as cliente:
         yield cliente
 
@@ -188,6 +224,61 @@ async def test_convite_duplicado_retorna_409(client: AsyncClient) -> None:
     assert duplicado.status_code == 409
 
 
+async def test_convite_para_email_registrado_retorna_409(client: AsyncClient) -> None:
+    """E-mail registrado (em qualquer empresa) não gera convite (AD-015).
+
+    O token fica em poder do CONVIDADOR, não do convidado: só convites para
+    e-mail novo podem ser criados — nunca há redefinição de credencial
+    global.
+    """
+    await _criar_conta(client)
+    await _login(client, "admin@empresa.com")
+
+    resposta = await client.post(
+        "/empresa/convites",
+        json={"email": "admin@empresa.com", "papel": "operador"},
+    )
+
+    assert resposta.status_code == 409
+
+
+async def test_aceite_nao_altera_senha_de_email_registrado(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    """Defense-in-depth: convite forjado para e-mail existente é recusado.
+
+    Mesmo com um convite válido gravado direto no banco (bypass do POST de
+    convite, que é barrado), o aceite não altera a senha global e não cria
+    vínculo sem consentimento.
+    """
+    dados = await _criar_conta(client)
+    factory = build_async_session_factory(engine)
+    async with factory() as session:
+        session.add(
+            Convite(
+                empresa_id=UUID(dados["empresa_id"]),
+                email="admin@empresa.com",
+                papel="operador",
+                token_hash=_hash_token_sha256("token-forjado"),
+                expira_em=datetime.now(UTC) + timedelta(days=1),
+            )
+        )
+        await session.commit()
+
+    resposta = await client.post(
+        "/convites/aceitar",
+        json={"token": "token-forjado", "senha": "senha-do-atacante-123"},
+    )
+    assert resposta.status_code == 400
+
+    await _login(client, "admin@empresa.com")
+    invasao = await client.post(
+        "/auth/login",
+        data={"username": "admin@empresa.com", "password": "senha-do-atacante-123"},
+    )
+    assert invasao.status_code in (400, 401)
+
+
 async def test_convite_invalido_retorna_400(client: AsyncClient) -> None:
     await _criar_conta(client)
 
@@ -245,3 +336,71 @@ async def test_convite_expirado_retorna_400(
     )
 
     assert resposta.status_code == 400
+
+
+async def test_login_limitado_recebe_429_na_rota_real(
+    client_real: AsyncClient, app_real: FastAPI
+) -> None:
+    """O wiring do limitador no router de auth do app real devolve 429."""
+    await _criar_conta(client_real)
+    app_real.dependency_overrides[get_settings] = _settings_limite_1
+    limitador.reset()
+
+    primeira = await client_real.post(
+        "/auth/login", data={"username": "admin@empresa.com", "password": _SENHA}
+    )
+    segunda = await client_real.post(
+        "/auth/login", data={"username": "admin@empresa.com", "password": _SENHA}
+    )
+
+    assert primeira.status_code == 204
+    assert segunda.status_code == 429
+
+
+async def test_onboarding_limitado_recebe_429_na_rota_real(
+    client_real: AsyncClient, app_real: FastAPI
+) -> None:
+    """O limite vale para a criação de contas pública também."""
+    app_real.dependency_overrides[get_settings] = _settings_limite_1
+    limitador.reset()
+    corpo = {
+        "nome_empresa": "Lotus",
+        "email": "lotus@empresa.com",
+        "senha": _SENHA,
+    }
+
+    primeira = await client_real.post("/onboarding", json=corpo)
+    segunda = await client_real.post("/onboarding", json=corpo)
+
+    assert primeira.status_code == 201
+    assert segunda.status_code == 429
+
+
+async def test_convites_limitado_recebe_429_na_rota_real(
+    client_real: AsyncClient, app_real: FastAPI
+) -> None:
+    await _criar_conta(client_real)
+    await _login(client_real, "admin@empresa.com")
+    app_real.dependency_overrides[get_settings] = _settings_limite_1
+    limitador.reset()
+    corpo = {"email": "operador@empresa.com", "papel": "operador"}
+
+    primeira = await client_real.post("/empresa/convites", json=corpo)
+    segunda = await client_real.post("/empresa/convites", json=corpo)
+
+    assert primeira.status_code == 201
+    assert segunda.status_code == 429
+
+
+async def test_aceite_limitado_recebe_429_na_rota_real(
+    client_real: AsyncClient, app_real: FastAPI
+) -> None:
+    app_real.dependency_overrides[get_settings] = _settings_limite_1
+    limitador.reset()
+    corpo = {"token": "token-inexistente", "senha": _SENHA}
+
+    primeira = await client_real.post("/convites/aceitar", json=corpo)
+    segunda = await client_real.post("/convites/aceitar", json=corpo)
+
+    assert primeira.status_code == 400
+    assert segunda.status_code == 429

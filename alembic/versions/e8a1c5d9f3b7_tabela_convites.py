@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Cria a tabela ``convite`` (AD-015)."""
+    """Cria a tabela ``convite`` (AD-015) com índice por empresa."""
     op.create_table(
         "convite",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -39,8 +39,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("token_hash"),
     )
+    op.create_index("ix_convite_empresa", "convite", ["empresa_id"])
 
 
 def downgrade() -> None:
     """Remove a tabela ``convite``."""
+    op.drop_index("ix_convite_empresa", table_name="convite")
     op.drop_table("convite")
