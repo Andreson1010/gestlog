@@ -183,8 +183,10 @@ async def test_turno_abre_assinatura_sse(
     )
 
     assert resposta.status_code == 200
+    assert 'hx-ext="sse"' in resposta.text
     assert 'sse-connect="/chat/stream?pergunta=' in resposta.text
     assert 'sse-swap="resposta"' in resposta.text
+    assert 'sse-swap="fontes"' in resposta.text
     assert 'hx-swap="textContent"' in resposta.text
     assert 'sse-close="fim"' in resposta.text
     assert "como está o estoque?" in resposta.text
