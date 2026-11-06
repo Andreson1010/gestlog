@@ -19,6 +19,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
 )
@@ -239,7 +240,7 @@ class Message(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     conversation_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("conversation.id"))
     papel: Mapped[str] = mapped_column(String(20))
-    conteudo_redigido: Mapped[str] = mapped_column(String(4000), default="")
+    conteudo_redigido: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
@@ -253,7 +254,7 @@ class Recommendation(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     conversation_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("conversation.id"))
     dominio: Mapped[str] = mapped_column(String(30))
-    texto: Mapped[str] = mapped_column(String(4000))
+    texto: Mapped[str] = mapped_column(Text)
     justificativa: Mapped[str] = mapped_column(String(2000), default="")
     fontes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
