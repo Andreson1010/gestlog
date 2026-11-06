@@ -363,6 +363,40 @@ def test_migracao_postgres_nao_altera_fk_user(
     assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
 
 
+def test_convite_tem_tabela_e_upgrade_downgrade_simetricos(
+    alembic_config: tuple[Config, str],
+) -> None:
+    """A tabela ``convite`` nasce no head e desaparece no downgrade (round-trip)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "head")
+
+    inspetor = inspect(create_engine(db_url))
+    assert "convite" in inspetor.get_table_names()
+    colunas = {coluna["name"] for coluna in inspetor.get_columns("convite")}
+    assert {
+        "id",
+        "empresa_id",
+        "email",
+        "papel",
+        "token_hash",
+        "expira_em",
+        "usado_em",
+        "created_at",
+    } <= colunas
+    indices = {
+        idx["name"]: set(idx["column_names"]) for idx in inspetor.get_indexes("convite")
+    }
+    assert indices["ix_convite_empresa"] == {"empresa_id"}
+
+    command.downgrade(cfg, "d5e6f8a2b7c4")
+
+    assert "convite" not in inspect(create_engine(db_url)).get_table_names()
+
+    command.upgrade(cfg, "head")
+
+    assert "convite" in inspect(create_engine(db_url)).get_table_names()
+
+
 def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> None:
     cfg, db_url = alembic_config
     command.upgrade(cfg, "head")

@@ -29,10 +29,19 @@ class ContaCreate(BaseModel):
 
 
 class ConviteCreate(BaseModel):
-    """Dados para convidar um usuário para a empresa da sessão."""
+    """Dados para convidar um usuário para a empresa da sessão.
+
+    Sem senha: o convidado define a própria ao aceitar o token (AD-015).
+    """
 
     email: EmailStr
     papel: Papel = "operador"
+
+
+class ConviteAceiteCreate(BaseModel):
+    """Aceite de convite: token recebido e a senha escolhida pelo convidado."""
+
+    token: str = Field(min_length=1, max_length=128)
     senha: str = Field(min_length=8, max_length=128)
 
 

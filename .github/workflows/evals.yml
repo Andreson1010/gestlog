@@ -1,0 +1,49 @@
+name: Evals
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-set:
+    name: golden set contra o modelo real
+    runs-on: ubuntu-latest
+    env:
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync dependencies
+        run: uv sync --extra dev
+
+      - name: Avaliação do golden set
+        if: ${{ env.LLM_BASE_URL != '' }}
+        run: uv run python evals/run_golden_set.py
+
+      - name: Publica relatório como artefato
+        if: ${{ env.LLM_BASE_URL != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-evals
+          path: evals/relatorio.json
+          if-no-files-found: error
+
+      - name: Sem credenciais de LLM — avaliação pulada
+        if: ${{ env.LLM_BASE_URL == '' }}
+        run: echo "LLM_BASE_URL não configurado; golden set real não roda no CI."

@@ -5,6 +5,7 @@ from __future__ import annotations
 from gestlog.auth.backend import build_auth_backend, get_jwt_strategy
 from gestlog.auth.db import get_async_engine, get_async_session, get_user_db
 from gestlog.auth.deps import (
+    COOKIE_EMPRESA_ATIVA,
     current_active_user,
     current_active_user_optional,
     exigir_papel,
@@ -19,6 +20,7 @@ from gestlog.auth.manager import UserManager, get_user_manager
 from gestlog.auth.routes import create_auth_router
 
 __all__ = [
+    "COOKIE_EMPRESA_ATIVA",
     "UserManager",
     "build_auth_backend",
     "create_auth_router",

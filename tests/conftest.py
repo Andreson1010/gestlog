@@ -83,6 +83,20 @@ def fake_model_cls() -> type[FakeChatModel]:
     return FakeChatModel
 
 
+@pytest.fixture(autouse=True)
+def _rate_limit_limpo() -> Iterator[None]:
+    """Zera as marcas do rate limiter antes e depois de cada teste.
+
+    O limitador é um singleton em memória; sem o reset, testes que batem em
+    ``/auth/login``/``/onboarding`` consumiriam a janela uns dos outros.
+    """
+    from gestlog.web.rate_limit import limitador
+
+    limitador.reset()
+    yield
+    limitador.reset()
+
+
 @pytest.fixture(scope="session")
 def url_postgres() -> str | None:
     """URL do Postgres da matriz de dialetos (``GESTLOG_TEST_DATABASE_URL``)."""

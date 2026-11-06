@@ -315,6 +315,31 @@ class AuditLog(Base):
     )
 
 
+class Convite(Base):
+    """Convite pendente para vincular um usuário a uma empresa (AD-015).
+
+    O token em claro nunca é persistido: guarda-se só o SHA-256, de modo que
+    um vazamento do banco não permita aceitar convites. Quem aceita define a
+    própria senha; o admin não a conhece.
+    """
+
+    __tablename__ = "convite"
+    __table_args__ = (Index("ix_convite_empresa", "empresa_id"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    empresa_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("empresa.id"))
+    email: Mapped[str] = mapped_column(String(254))
+    papel: Mapped[str] = mapped_column(String(20))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expira_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    usado_em: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_agora
+    )
+
+
 class ItemCorrecao(Base):
     """Item de correção cadastral aguardando decisão humana."""
 

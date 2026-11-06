@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import Depends, FastAPI, Form, Request, Response, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -15,12 +16,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gestlog.auth import (
+    COOKIE_EMPRESA_ATIVA,
     create_auth_router,
     current_active_user_optional,
     get_async_session,
     get_current_membership_optional,
+    get_current_user,
 )
-from gestlog.auth.accounts import criar_conta
+from gestlog.auth.accounts import criar_conta, listar_vinculos, vinculo_na_empresa
 from gestlog.config import Settings, get_settings
 from gestlog.correcoes import PAPEIS_APROVADORES
 from gestlog.db.models import Membership, User
@@ -33,6 +36,7 @@ from gestlog.web.feedback import create_feedback_router
 from gestlog.web.ingestion_ui import create_ingestion_router
 from gestlog.web.kpis import create_kpis_router
 from gestlog.web.onboarding import create_onboarding_router
+from gestlog.web.rate_limit import limitar
 from gestlog.web.relatorios import create_relatorios_router
 from gestlog.web.schemas import ContaCreate
 
@@ -70,7 +74,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         StaticFiles(directory=str(_BASE_DIR / "static")),
         name="static",
     )
-    aplicacao.include_router(create_auth_router(resolved), prefix="/auth")
+    aplicacao.include_router(
+        create_auth_router(resolved),
+        prefix="/auth",
+        dependencies=[Depends(limitar("auth"))],
+    )
     aplicacao.include_router(create_onboarding_router())
     aplicacao.include_router(create_admin_router())
     aplicacao.include_router(create_admin_ui_router())
@@ -89,10 +97,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         membership: Annotated[
             Membership | None, Depends(get_current_membership_optional)
         ],
+        session: Annotated[AsyncSession, Depends(get_async_session)],
     ) -> Response:
         """Página inicial autenticada; sem sessão redireciona ao login."""
         if usuario is None:
             return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        vinculos = await listar_vinculos(session, usuario.id)
+        ativa = next(
+            (
+                v
+                for v in vinculos
+                if membership is not None and v.empresa_id == membership.empresa_id
+            ),
+            None,
+        )
         return _TEMPLATES.TemplateResponse(
             request,
             "home.html",
@@ -102,8 +120,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "admin": membership is not None and membership.papel == "admin",
                 "pode_aprovar": membership is not None
                 and membership.papel in PAPEIS_APROVADORES,
+                "empresa_nome": ativa.empresa.nome if ativa else "",
+                "empresa_ativa_id": (str(membership.empresa_id) if membership else ""),
+                "empresas": [
+                    {"id": str(v.empresa_id), "nome": v.empresa.nome} for v in vinculos
+                ],
             },
         )
+
+    @aplicacao.post("/empresa/ativa")
+    async def definir_empresa_ativa(
+        usuario: Annotated[User, Depends(get_current_user)],
+        session: Annotated[AsyncSession, Depends(get_async_session)],
+        empresa_id: Annotated[str, Form()],
+    ) -> Response:
+        """Define a empresa ativa da sessão pelo cookie (exige vínculo)."""
+        try:
+            alvo = UUID(empresa_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="empresa_id inválido.",
+            ) from exc
+        vinculo = await vinculo_na_empresa(session, usuario.id, alvo)
+        if vinculo is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Usuário sem empresa vinculada.",
+            )
+        resposta = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        resposta.set_cookie(
+            COOKIE_EMPRESA_ATIVA,
+            str(alvo),
+            httponly=True,
+            samesite="lax",
+            secure=resolved.auth_cookie_secure,
+        )
+        return resposta
 
     @aplicacao.get("/login", response_class=HTMLResponse)
     async def login(

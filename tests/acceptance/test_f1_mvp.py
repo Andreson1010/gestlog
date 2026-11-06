@@ -242,10 +242,16 @@ async def test_acc_03_convite_da_acesso_com_papel(client: AsyncClient) -> None:
 
     convite = await client.post(
         "/empresa/convites",
-        json={"email": "op@c.com", "papel": "operador", "senha": _SENHA},
+        json={"email": "op@c.com", "papel": "operador"},
     )
     assert convite.status_code == 201
     assert convite.json()["papel"] == "operador"
+
+    aceite = await client.post(
+        "/convites/aceitar",
+        json={"token": convite.json()["token"], "senha": _SENHA},
+    )
+    assert aceite.status_code == 201
 
     await _login(client, "op@c.com")
     assert (await client.get("/chat")).status_code == 200

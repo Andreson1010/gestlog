@@ -2,20 +2,36 @@
 
 from __future__ import annotations
 
+import hashlib
+import secrets
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi_users import exceptions
 from fastapi_users.password import PasswordHelper
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from gestlog.db.models import Empresa, Membership, User
+from gestlog.db.models import Convite, Empresa, Membership, User
 
 _password_helper = PasswordHelper()
 
 
 class UltimoAdministradorError(Exception):
     """Erro ao tentar rebaixar/remover o último administrador da empresa."""
+
+
+class ConviteInvalidoError(Exception):
+    """Convite inexistente, expirado ou já utilizado."""
+
+
+class ConviteEmailRegistradoError(Exception):
+    """O e-mail do convite já tem conta; o aceite autenticado é fluxo futuro."""
+
+
+class ConviteDuplicadoError(Exception):
+    """E-mail já registrado no sistema (em qualquer empresa)."""
 
 
 async def _por_email(session: AsyncSession, email: str) -> User | None:
@@ -56,23 +72,82 @@ async def criar_conta(
     return empresa, usuario
 
 
-async def convidar_usuario(
+def _hash_token(token: str) -> str:
+    """SHA-256 hex do token de convite (o token em claro nunca é persistido)."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+async def criar_convite(
     session: AsyncSession,
     empresa_id: UUID,
     email: str,
     papel: str,
-    senha: str,
-) -> Membership:
-    """Vincula um usuário à empresa, criando-o numa única transação se preciso."""
+    validade_dias: int,
+) -> tuple[Convite, str]:
+    """Cria um convite pendente e devolve o token em claro (uma única vez).
+
+    O admin não define a senha do convidado (AD-015): quem aceita o convite
+    escolhe a própria. O token é devolvido só no retorno desta chamada — a
+    entrega por e-mail fica para a integração de notificações, de modo que o
+    token NÃO é prova de posse do e-mail; por isso só se convida e-mail
+    NÃO registrado (AD-015): jamais se toca na credencial de um usuário
+    global existente.
+    """
     usuario = await _por_email(session, email)
-    if usuario is None:
-        usuario = _novo_usuario(email, senha)
-        session.add(usuario)
-        await session.flush()
-    vinculo = Membership(user_id=usuario.id, empresa_id=empresa_id, papel=papel)
-    session.add(vinculo)
+    if usuario is not None:
+        raise ConviteDuplicadoError(email)
+    token = secrets.token_urlsafe(32)
+    convite = Convite(
+        empresa_id=empresa_id,
+        email=email,
+        papel=papel,
+        token_hash=_hash_token(token),
+        expira_em=datetime.now(UTC) + timedelta(days=validade_dias),
+    )
+    session.add(convite)
     await session.commit()
-    return vinculo
+    return convite, token
+
+
+async def _convite_valido(session: AsyncSession, token: str) -> Convite | None:
+    """Busca o convite pelo token, exigindo não usado e dentro da validade."""
+    stmt = select(Convite).where(
+        Convite.token_hash == _hash_token(token),
+        Convite.usado_em.is_(None),
+        Convite.expira_em > datetime.now(UTC),
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def aceitar_convite(
+    session: AsyncSession, token: str, senha: str
+) -> tuple[User, Convite]:
+    """Aceita o convite criando a conta nova com a senha escolhida.
+
+    Restrito a e-mail NÃO registrado (AD-015): o token é entregue ao
+    convidador, não ao convidado, logo não comprova posse do e-mail — se o
+    e-mail já existe, sobe ``ConviteEmailRegistradoError`` e a credencial
+    global nunca é alterada (o vínculo para usuário existente passa pelo
+    aceite autenticado, fluxo futuro). Erros de unicidade (dupla aceitação
+    concorrente) sobem ``IntegrityError``.
+    """
+    convite = await _convite_valido(session, token)
+    if convite is None:
+        raise ConviteInvalidoError
+    usuario = await _por_email(session, convite.email)
+    if usuario is not None:
+        raise ConviteEmailRegistradoError(convite.email)
+    usuario = _novo_usuario(convite.email, senha)
+    session.add(usuario)
+    await session.flush()
+    session.add(
+        Membership(
+            user_id=usuario.id, empresa_id=convite.empresa_id, papel=convite.papel
+        )
+    )
+    convite.usado_em = datetime.now(UTC)
+    await session.commit()
+    return usuario, convite
 
 
 async def listar_usuarios(
@@ -92,6 +167,28 @@ async def listar_usuarios(
     )
     linhas = (await session.execute(stmt)).all()
     return [(vinculo, usuario) for vinculo, usuario in linhas]
+
+
+async def listar_vinculos(session: AsyncSession, user_id: UUID) -> list[Membership]:
+    """Lista os vínculos do usuário (mais antigo primeiro), com a empresa carregada."""
+    stmt = (
+        select(Membership)
+        .options(selectinload(Membership.empresa))
+        .where(Membership.user_id == user_id)
+        .order_by(Membership.created_at, Membership.id)
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def vinculo_na_empresa(
+    session: AsyncSession, user_id: UUID, empresa_id: UUID
+) -> Membership | None:
+    """Busca o vínculo do usuário em uma empresa específica."""
+    stmt = select(Membership).where(
+        Membership.user_id == user_id,
+        Membership.empresa_id == empresa_id,
+    )
+    return (await session.execute(stmt)).scalars().first()
 
 
 async def _vinculo_do_usuario(

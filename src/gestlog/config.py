@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     default_retention_days: int = Field(default=365, gt=0)
     llm_monthly_token_quota: int = Field(default=1_000_000, gt=0)
 
+    rate_limit_tentativas: int = Field(default=5, gt=0)
+    rate_limit_janela_segundos: int = Field(default=60, gt=0)
+    convite_validade_dias: int = Field(default=7, gt=0)
+
     @model_validator(mode="after")
     def _validar_segredo(self) -> Settings:
         """Impede segredo de desenvolvimento/curto quando ``ambiente`` é prod."""

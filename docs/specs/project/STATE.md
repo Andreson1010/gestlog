@@ -176,6 +176,17 @@ multi-worker, e convite por token exige envio de e-mail — ambos fora do escopo
 **Trade-off:** aceita risco de brute-force/abuso e de o admin conhecer a senha do
 convidado até o hardening.
 **Impact:** capturado em Deferred Ideas; revisar antes de abrir o produto ao público.
+**Revisão (2026-11-06):** parte do hardening quitada — rate limiting em memória
+com janela deslizante por (grupo de rota, IP) em `web/rate_limit.py` (5 tentativas
+em 60 s, configurável, teto rígido de chaves com evicção da mais antiga) aplicado
+a `/auth/*` e ao router onboarding, e convite por token: tabela `convite` com
+SHA-256 do token em repouso (`e8a1c5d9f3b7`), `POST /empresa/convites` devolve o
+token e `POST /convites/aceitar` cria a CONTA NOVA com a senha escolhida pelo
+convidado — o convite jamais toca a credencial de e-mail já registrado
+(code review de 2026-11-06: token entregue ao convidador não é prova de posse do
+e-mail; vínculo de usuário existente será pelo aceite autenticado). Pendente:
+entrega do token por e-mail, aceite autenticado para usuário existente, e store
+compartilhado (Redis) ao escalar réplicas.
 
 ### AD-016: Fluxo épico + 1 PR por task com CI obrigatório (2026-09-13)
 
@@ -596,10 +607,10 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [ ] Marketplace de conectores de terceiros — Captured during: definição de produto
 - [ ] Novos domínios (contratos, devoluções, inventário) — Captured during: definição de produto
 - [x] Botões de aceitar/descartar no turno ao vivo (SSE): evento `fontes` com o fragmento de feedback emitido pelo stream (`web/chat.py`, fragmento reutilizado de `web/feedback.py`); ordenação monotônica de mensagens feita por carimbo de `created_at` estritamente crescente por conversa em `repositories/conversations.py` (AD-019) — Captured during: F1/T23; quitado em 2026-10-28
-- [ ] Seleção de "empresa ativa" para usuários com múltiplos vínculos (hoje usa o mais antigo) — Captured during: code review F1
-- [ ] Rate limiting em `/auth/login`, `/onboarding` e `/empresa/convites` (AD-015) — Captured during: code review F1
-- [ ] Convite por token/e-mail (sem o admin definir a senha do convidado) (AD-015) — Captured during: code review F1
-- [ ] `evals/` no CI (roda golden set contra modelo real, publica relatório como artefato) — Captured during: F1
+- [x] Seleção de "empresa ativa" para usuários com múltiplos vínculos — quitado em 2026-11-06: cookie `gestlog_empresa_ativa` com `POST /empresa/ativa` (403 sem vínculo, 303 + cookie); `get_current_membership` e variantes `optional` preferem a empresa do cookie e caem no vínculo mais antigo se o cookie for malformado ou não casar — Captured during: code review F1
+- [x] Rate limiting em `/auth/login`, `/onboarding` e `/empresa/convites` (AD-015) — quitado em 2026-11-06: janela deslizante em memória por (grupo de rota, IP) em `web/rate_limit.py`, com teto rígido de chaves (poda de sem marca viva, evicção da mais antiga) e 429 ao exceder; testado na rota real — Captured during: code review F1
+- [x] Convite por token/e-mail (sem o admin definir a senha do convidado) (AD-015) — quitado em 2026-11-06: tabela `convite` (SHA-256 do token, migração `e8a1c5d9f3b7`), `POST /empresa/convites` devolve o token e `POST /convites/aceitar` cria a conta nova com a senha escolhida pelo convidado; e-mail já registrado é recusado (código review: token do convidador não comprova posse do e-mail); entrega por e-mail e aceite autenticado seguem pendentes — Captured during: code review F1
+- [x] `evals/` no CI (roda golden set contra modelo real, publica relatório como artefato) — quitado em 2026-11-06: workflow `evals.yml` (manual + semanal); sem `LLM_BASE_URL` pula com aviso; relatório vira artefato — Captured during: F1
 
 ---
 

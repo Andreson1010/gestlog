@@ -89,12 +89,15 @@ async def login(client: AsyncClient, email: str) -> None:
 
 
 async def convidar(client: AsyncClient, email: str, papel: str = "operador") -> None:
-    """Convida um usuário para o tenant da sessão (exige admin autenticado)."""
+    """Convida via token e aceita com a senha padrão (AD-015)."""
     resposta = await client.post(
-        "/empresa/convites",
-        json={"email": email, "papel": papel, "senha": SENHA},
+        "/empresa/convites", json={"email": email, "papel": papel}
     )
     assert resposta.status_code == 201, resposta.text
+    aceite = await client.post(
+        "/convites/aceitar", json={"token": resposta.json()["token"], "senha": SENHA}
+    )
+    assert aceite.status_code == 201, aceite.text
 
 
 def criar_empresa(fabrica: sessionmaker[Session], nome: str = "A") -> UUID:
