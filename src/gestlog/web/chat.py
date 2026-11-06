@@ -17,6 +17,7 @@ from gestlog.config import Settings, get_settings
 from gestlog.copilot import MENSAGEM_ERRO_COPILOTO, CopilotService
 from gestlog.db.models import Empresa, User
 from gestlog.llm import build_chat_model
+from gestlog.web.feedback import fragmento_feedback
 from gestlog.web.ingestion_ui import get_sync_session
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,27 @@ def _evento(nome: str, texto: str) -> str:
     return f"event: {nome}\n{corpo}\n"
 
 
-def _stream_resposta(resposta: str) -> Iterator[str]:
-    """Emite a resposta do especialista e o evento de encerramento."""
+def _stream_resposta(resposta: str, fragmento: str) -> Iterator[str]:
+    """Emite a resposta, o fragmento de feedback do turno e o encerramento.
+
+    O fragmento vai no evento ``fontes`` (AD-019): traz os botões
+    aceitar/descartar da recomendação recém-criada para o turno ao vivo,
+    sem exigir recarregar o histórico. Sem recomendação, o evento não é
+    emitido e o turno fica sem botões.
+    """
     yield _evento("resposta", resposta)
+    if fragmento:
+        yield _evento("fontes", fragmento)
     yield _evento("fim", "[DONE]")
+
+
+def _fragmento_do_ultimo_turno(servico: CopilotService) -> str:
+    """HTML de aceitar/descartar da recomendação do turno recém-criado."""
+    turnos = servico.historico()
+    if not turnos or turnos[-1].recomendacao_id is None:
+        return ""
+    ultimo = turnos[-1]
+    return fragmento_feedback(ultimo.recomendacao_id, ultimo.decisao)
 
 
 def create_chat_router() -> APIRouter:
@@ -69,8 +87,15 @@ def create_chat_router() -> APIRouter:
         except Exception:
             logger.exception("Falha ao responder a pergunta do copiloto")
             resposta = MENSAGEM_ERRO_COPILOTO
+            fragmento = ""
+        else:
+            try:
+                fragmento = _fragmento_do_ultimo_turno(servico)
+            except Exception:
+                logger.exception("Falha ao montar o fragmento de feedback do turno")
+                fragmento = ""
         return StreamingResponse(
-            _stream_resposta(resposta),
+            _stream_resposta(resposta, fragmento),
             media_type=_MEDIA_TYPE_SSE,
             headers={"Cache-Control": "no-cache"},
         )

@@ -164,6 +164,52 @@ async def test_chat_stream_emite_resposta_sse(
     assert "event: fim" in resposta.text
 
 
+async def test_chat_stream_emite_fragmento_de_feedback_ao_vivo(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    """Turno com recomendação recebe os botões de decisão no evento ``fontes``."""
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque suficiente", fontes="estoque")],
+    )
+
+    resposta = await client.get(
+        "/chat/stream", params={"pergunta": "como está o estoque?"}
+    )
+
+    assert resposta.status_code == 200
+    assert "event: fontes" in resposta.text
+    assert "Aceitar" in resposta.text
+    assert "Descartar" in resposta.text
+    assert "/feedback" in resposta.text
+
+
+async def test_chat_stream_sem_recomendacao_nao_emite_fontes(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    """Turno fora de escopo não tem recomendação: evento ``fontes`` não é emitido."""
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(routes=["FINISH"])
+
+    resposta = await client.get(
+        "/chat/stream", params={"pergunta": "qual a capital da França?"}
+    )
+
+    assert resposta.status_code == 200
+    assert "event: fontes" not in resposta.text
+
+
 async def test_chat_stream_fora_de_escopo(
     client: AsyncClient,
     app: FastAPI,
