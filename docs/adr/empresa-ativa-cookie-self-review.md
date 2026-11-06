@@ -97,7 +97,9 @@ achados).
   resolução sem cookie (vínculo mais antigo), troca com 303 + efeito na home,
   403 sem vínculo, 400 com `empresa_id` malformado e fallback de cookie
   malformado — ancorados no texto renderizado e nos status, não em
-  affordances. Gate completo (WSL): **599 passed, 1 skipped, 99.01%**.
+  affordances. Gate completo (WSL): **607 passed, 1 skipped, 99.04%**
+  (número da árvore final do PR; o 599 foi o gate antes das correções do
+  code review).
 * **Padrões de qualidade:** `black --check` + `ruff check` verdes;
   `from __future__ import annotations`, docstrings e nomes em português, sem
   comentários fora de docstring; funções ≤ 50 linhas e arquivos ≤ 800 linhas.

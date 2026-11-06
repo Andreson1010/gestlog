@@ -148,7 +148,8 @@ ainda que sem dado a validar por coluna).
   429 ponta a ponta, limite lido do `Settings`) e a poda;
   `tests/web/test_onboarding.py` cobre convite feliz, 403 sem admin, 409
   duplicado, 400 inválido, expirado e de uso único; o teste de migração cobre o
-  round-trip da tabela. Gate completo (WSL): **606 passed, 1 skipped, 99.01%**.
+  round-trip da tabela. Gate completo (WSL): **607 passed, 1 skipped, 99.04%**
+  (árvore final do PR, com o teste cross-tenant do code review).
 * **Padrões de qualidade:** `black --check` + `ruff check` verdes;
   `from __future__ import annotations`, docstrings e nomes em português, sem
   comentários fora de docstring, sem `print`; funções ≤ 50 linhas e arquivos
@@ -184,9 +185,11 @@ ainda que sem dado a validar por coluna).
   senha dela. Corrigido na raiz e em camada dupla: `criar_convite` só emite
   convite para e-mail NÃO registrado (409 caso contrário) e `aceitar_convite`
   recusa `ConviteEmailRegistradoError` → 400 sem criar vínculo nem tocar
-  senha. Testes novos: convite para e-mail registrado → 409; convite gravado à
-  mão no banco com e-mail registrado → recusa + senha global intacta (login
-  original continua válido, senha do atacante inválida).
+  senha. Testes novos: convite para e-mail registrado → 409 (auto e
+  cross-tenant: admin de outra empresa convidando o e-mail da vítima); aceite
+  de convite gravado à mão no banco → recusado + senha global intacta (login
+  original 204, senha do atacante recusada, sem conflito de
+  `uq_membership` mascarando o resultado).
 * **429 nunca testado nas rotas reais (média):** os testes cobriam o `RateLimiter`
   e um app sintético; remover o wiring não deixaria a suíte vermelha. Um
   teste por rota real (`/auth/login`, `/onboarding`, `/empresa/convites`,

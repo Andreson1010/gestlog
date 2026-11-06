@@ -93,7 +93,7 @@ def create_onboarding_router() -> APIRouter:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Usuário já vinculado à empresa.",
+                detail="Convite já utilizado ou conta em criação; tente novamente.",
             ) from exc
         return {
             "usuario_id": str(usuario.id),

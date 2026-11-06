@@ -10,6 +10,7 @@ from uuid import UUID
 
 import pytest
 from fastapi import Depends, FastAPI
+from fastapi_users.password import PasswordHelper
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -20,7 +21,7 @@ from gestlog.auth import (
     get_current_empresa,
 )
 from gestlog.config import Settings, get_settings
-from gestlog.db.models import Convite, Empresa
+from gestlog.db.models import Convite, Empresa, Membership, User
 from gestlog.db.session import (
     build_async_engine,
     build_async_session_factory,
@@ -240,6 +241,75 @@ async def test_convite_para_email_registrado_retorna_409(client: AsyncClient) ->
     )
 
     assert resposta.status_code == 409
+
+
+async def test_convite_de_outra_empresa_nao_toca_credencial_da_vitima(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    """Cenário cross-tenant do code review: A em outro tenant não é alvo.
+
+    Com o único guard antigo (vínculo na empresa convidante), o admin de B
+    podia convidar o e-mail da vítima de A, receber o token e redefinir a
+    senha global dela. Agora: convite → 409; convite forjado para B → aceite
+    recusado e credencial da vítima intacta (login original 204, senha do
+    atacante recusada) — sem conflito de ``uq_membership`` mascarando o
+    resultado.
+    """
+    dados = await _criar_conta(client, email="atacante@b.com", nome="Empresa Atacante")
+    factory = build_async_session_factory(engine)
+    async with factory() as session:
+        vitima = User(
+            email="vitima@x.com",
+            hashed_password=PasswordHelper().hash("senha-da-vitima-123"),
+            is_active=True,
+            is_verified=True,
+        )
+        empresa_vitima = Empresa(nome="Empresa Da Vitima")
+        session.add_all([vitima, empresa_vitima])
+        await session.flush()
+        session.add(
+            Membership(user_id=vitima.id, empresa_id=empresa_vitima.id, papel="admin")
+        )
+        await session.commit()
+
+    await _login(client, "atacante@b.com")
+    convite = await client.post(
+        "/empresa/convites",
+        json={"email": "vitima@x.com", "papel": "operador"},
+    )
+    assert convite.status_code == 409
+
+    session2 = build_async_session_factory(engine)
+    async with session2() as sessao:
+        sessao.add(
+            Convite(
+                empresa_id=UUID(dados["empresa_id"]),
+                email="vitima@x.com",
+                papel="operador",
+                token_hash=_hash_token_sha256("token-do-ataque"),
+                expira_em=datetime.now(UTC) + timedelta(days=1),
+            )
+        )
+        await sessao.commit()
+    aceite = await client.post(
+        "/convites/aceitar",
+        json={"token": "token-do-ataque", "senha": "senha-do-atacante-999"},
+    )
+    assert aceite.status_code == 400
+
+    await client.post("/auth/logout")
+    login_vitima_orig = await client.post(
+        "/auth/login",
+        data={"username": "vitima@x.com", "password": "senha-da-vitima-123"},
+    )
+    assert login_vitima_orig.status_code == 204
+
+    await client.post("/auth/logout")
+    falha = await client.post(
+        "/auth/login",
+        data={"username": "vitima@x.com", "password": "senha-do-atacante-999"},
+    )
+    assert falha.status_code in (400, 401)
 
 
 async def test_aceite_nao_altera_senha_de_email_registrado(

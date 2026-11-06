@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -68,8 +69,14 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 
 async def _usuario_com_duas_empresas(motor: AsyncEngine) -> None:
-    """Cria um usuário admin em duas empresas (A criada antes de B)."""
+    """Cria um usuário admin em duas empresas (A criada antes de B).
+
+    ``created_at`` explicito e distinto: o default do Python empataria num
+    mesmo tick e a ordem do vínculo antigo viraria desempate por id
+    aleatório (a mesma classe de flake que a AD-019 resolveu).
+    """
     factory = build_async_session_factory(motor)
+    agora = datetime.now(UTC)
     async with factory() as session:
         usuario = User(
             email="multi@empresa.com",
@@ -83,8 +90,18 @@ async def _usuario_com_duas_empresas(motor: AsyncEngine) -> None:
         await session.flush()
         session.add_all(
             [
-                Membership(user_id=usuario.id, empresa_id=a.id, papel="admin"),
-                Membership(user_id=usuario.id, empresa_id=b.id, papel="operador"),
+                Membership(
+                    user_id=usuario.id,
+                    empresa_id=a.id,
+                    papel="admin",
+                    created_at=agora - timedelta(seconds=30),
+                ),
+                Membership(
+                    user_id=usuario.id,
+                    empresa_id=b.id,
+                    papel="operador",
+                    created_at=agora,
+                ),
             ]
         )
         await session.commit()

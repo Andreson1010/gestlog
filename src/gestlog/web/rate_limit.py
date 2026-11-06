@@ -39,7 +39,8 @@ class RateLimiter:
         """
         agora = time.monotonic()
         with self._trava:
-            self._podar(agora, janela)
+            if len(self._tentativas) >= _MAX_CHAVES:
+                self._podar(agora, janela)
             marcas = self._tentativas.setdefault(chave, deque())
             while marcas and marcas[0] <= agora - janela:
                 marcas.popleft()
@@ -51,9 +52,11 @@ class RateLimiter:
     def _podar(self, agora: float, janela: int) -> None:
         """Contém o dicionário no teto: chaves mortas primeiro, senão a mais antiga.
 
-        Remoção ANTES do ``setdefault`` da chave corrente (L-047): a poda
-        remove chaves por idade, em ``iter`` — ordem de inserção do ``dict`` —
-        e nunca a chave sendo contada, pois esta ainda não está inserida.
+        Só roda no gatilho de teto (`permitir`) — o scan é O(N) e não pode
+        pagar por tentativa. Remoção ANTES do ``setdefault`` (L-047): a chave
+        nova nunca é vítima (não está inserida); no teto, uma chave já
+        existente e mais antiga pode ser evictada e recriada vazia — as
+        marcas dela se perdem, degradação aceita e registrada na ADR §2.2.
         """
         gastas = [
             chave
