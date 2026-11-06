@@ -231,8 +231,10 @@ def test_carimbo_monotonico_usa_clock_quando_nao_empata(db_session: Session) -> 
     antiga.created_at = datetime(2026, 1, 1, tzinfo=UTC)
     db_session.commit()
 
+    antes = datetime.now(UTC)
     nova = msg_repo.add_message(conversa.id, "assistant", "nova")
     db_session.commit()
+    depois = datetime.now(UTC)
 
     assert nova.created_at > antiga.created_at
-    assert nova.created_at.year == datetime.now(UTC).year
+    assert antes <= nova.created_at <= depois

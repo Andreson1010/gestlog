@@ -472,3 +472,4 @@ def test_migracao_conteudo_para_text(alembic_config: tuple[Config, str]) -> None
 
     for tabela, coluna in _COLUNAS_TEXT:
         assert "VARCHAR" in _tipo_coluna(engine, tabela, coluna).upper()
+        assert _ler(engine, tabela, coluna) == "curto"

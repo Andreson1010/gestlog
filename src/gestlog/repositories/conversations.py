@@ -11,12 +11,8 @@ from sqlalchemy.orm import Session
 from gestlog.db.models import Conversation, Feedback, Message, Recommendation
 from gestlog.repositories.base import EmpresaScopedRepository
 
-_ModeloConversa = type[Message] | type[Recommendation]
 
-
-def _carimbo_monotonico(
-    session: Session, modelo: _ModeloConversa, conversation_id: UUID
-) -> datetime:
+def _carimbo_monotonico(session: Session, conversation_id: UUID) -> datetime:
     """Carimbo de tempo estritamente crescente por conversa (AD-019).
 
     O clock do sistema pode devolver o mesmo instante para duas gravações
@@ -121,7 +117,7 @@ class MessageRepository:
             conversation_id=conversation_id,
             papel=papel,
             conteudo_redigido=conteudo_redigido,
-            created_at=_carimbo_monotonico(self.session, Message, conversation_id),
+            created_at=_carimbo_monotonico(self.session, conversation_id),
         )
         self.session.add(mensagem)
         self.session.flush()
@@ -158,9 +154,7 @@ class RecommendationRepository:
             texto=texto,
             justificativa=justificativa,
             fontes=fontes,
-            created_at=_carimbo_monotonico(
-                self.session, Recommendation, conversation_id
-            ),
+            created_at=_carimbo_monotonico(self.session, conversation_id),
         )
         self.session.add(recomendacao)
         self.session.flush()
