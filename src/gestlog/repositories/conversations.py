@@ -2,14 +2,46 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from gestlog.db.models import Conversation, Feedback, Message, Recommendation
 from gestlog.repositories.base import EmpresaScopedRepository
+
+_ModeloConversa = type[Message] | type[Recommendation]
+
+
+def _carimbo_monotonico(
+    session: Session, modelo: _ModeloConversa, conversation_id: UUID
+) -> datetime:
+    """Carimbo de tempo estritamente crescente por conversa (AD-019).
+
+    O clock do sistema pode devolver o mesmo instante para duas gravações
+    seguidas (resolução grosseira no Windows), e o desempate por ``id``
+    aleatório embaralharia a ordem dos turnos no histórico. Considera o
+    último carimbo gravado em ``Message`` **e** em ``Recommendation`` da
+    conversa e, quando o clock empata ou fica para trás, soma 1
+    microssegundo — mensagens e recomendações ficam intercaláveis sem
+    ambiguidade.
+    """
+    agora = datetime.now(UTC)
+    ultimo: datetime | None = None
+    for classe in (Message, Recommendation):
+        valor = session.execute(
+            select(func.max(classe.created_at)).where(
+                classe.conversation_id == conversation_id
+            )
+        ).scalar_one_or_none()
+        if valor is not None and valor.tzinfo is None:
+            valor = valor.replace(tzinfo=UTC)
+        if valor is not None and (ultimo is None or valor > ultimo):
+            ultimo = valor
+    if ultimo is None or ultimo < agora:
+        return agora
+    return ultimo + timedelta(microseconds=1)
 
 
 class ConversationRepository(EmpresaScopedRepository[Conversation]):
@@ -89,6 +121,7 @@ class MessageRepository:
             conversation_id=conversation_id,
             papel=papel,
             conteudo_redigido=conteudo_redigido,
+            created_at=_carimbo_monotonico(self.session, Message, conversation_id),
         )
         self.session.add(mensagem)
         self.session.flush()
@@ -125,6 +158,9 @@ class RecommendationRepository:
             texto=texto,
             justificativa=justificativa,
             fontes=fontes,
+            created_at=_carimbo_monotonico(
+                self.session, Recommendation, conversation_id
+            ),
         )
         self.session.add(recomendacao)
         self.session.flush()
