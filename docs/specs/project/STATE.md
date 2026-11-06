@@ -608,9 +608,9 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [x] Executar a F1 — T1–T33 + T34 concluídas; aceitação P1 verde.
 - [x] Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016) — `1c0768c`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
-- [x] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
-      `conversation`, mover `get_sync_session`
-      para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco.
+- [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
+      `conversation`, mover `get_sync_session` para `web/deps.py`, remover
+      `TOOLS` mock do REPL quando houver banco.
       (`String(4000)`/`Text` quitado em 2026-10-28 — migração `d5e6f8a2b7c4`;
       botões no turno ao vivo (SSE) e ordenação monotônica quitados em
       2026-10-28 — AD-019.)
