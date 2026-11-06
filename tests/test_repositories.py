@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from uuid import UUID, uuid4
 
+import pytest
 from apoio import criar_usuario
 from sqlalchemy.orm import Session
 
@@ -182,3 +183,58 @@ def test_conversation_get_or_create_reutiliza_conversa(db_session: Session) -> N
     assert segunda.id == primeira.id
     assert repo.get_by_user(t1, user_id).id == primeira.id
     assert repo.get_by_user(t1, uuid4()) is None
+
+
+class _RelogioTravado(datetime):
+    """``datetime`` cujo ``now`` devolve sempre o mesmo instante."""
+
+    @classmethod
+    def now(cls, tz: timezone | None = None) -> datetime:  # type: ignore[override]
+        return _INSTANTE_CONGELADO
+
+
+_INSTANTE_CONGELADO = datetime(2026, 10, 28, 12, 0, 0, tzinfo=UTC)
+
+
+def test_carimbo_monotonico_desempata_clock_travado(
+    db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Mensagens e recomendações ficam estritamente ordenadas sem avanço do clock."""
+    monkeypatch.setattr("gestlog.repositories.conversations.datetime", _RelogioTravado)
+    t1, _ = _dois_empresas(db_session)
+    user_id = criar_usuario(db_session)
+    conversa = ConversationRepository(db_session).create(t1, user_id)
+    msg_repo = MessageRepository(db_session)
+    rec_repo = RecommendationRepository(db_session)
+
+    eventos = [
+        msg_repo.add_message(conversa.id, "user", "p1").created_at,
+        msg_repo.add_message(conversa.id, "assistant", "r1").created_at,
+        rec_repo.add_recommendation(conversa.id, "estoque", "sug").created_at,
+        msg_repo.add_message(conversa.id, "user", "p2").created_at,
+        msg_repo.add_message(conversa.id, "assistant", "r2").created_at,
+    ]
+    db_session.commit()
+
+    assert eventos == sorted(eventos)
+    assert len(set(eventos)) == len(eventos)
+
+
+def test_carimbo_monotonico_usa_clock_quando_nao_empata(db_session: Session) -> None:
+    """Com registro antigo e clock normal, o carimbo é o agora corrente."""
+    t1, _ = _dois_empresas(db_session)
+    user_id = criar_usuario(db_session)
+    conversa = ConversationRepository(db_session).create(t1, user_id)
+    msg_repo = MessageRepository(db_session)
+
+    antiga = msg_repo.add_message(conversa.id, "user", "antiga")
+    antiga.created_at = datetime(2026, 1, 1, tzinfo=UTC)
+    db_session.commit()
+
+    antes = datetime.now(UTC)
+    nova = msg_repo.add_message(conversa.id, "assistant", "nova")
+    db_session.commit()
+    depois = datetime.now(UTC)
+
+    assert nova.created_at > antiga.created_at
+    assert antes <= nova.created_at <= depois

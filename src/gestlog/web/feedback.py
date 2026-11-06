@@ -55,9 +55,17 @@ def create_feedback_router() -> APIRouter:
     return router
 
 
-def _render_feedback(recommendation_id: UUID, decisao: str) -> HTMLResponse:
-    """Renderiza o fragmento de aceitar/descartar de uma recomendação."""
-    html = _TEMPLATES.env.get_template("_feedback.html").render(
+def fragmento_feedback(recommendation_id: UUID, decisao: str | None) -> str:
+    """Renderiza o HTML de aceitar/descartar de uma recomendação.
+
+    Usado tanto pela rota de feedback (troca do fragmento pós-decisão) quanto
+    pelo stream SSE do turno ao vivo, que o emite no evento ``fontes``.
+    """
+    return _TEMPLATES.env.get_template("_feedback.html").render(
         turno={"recomendacao_id": recommendation_id, "decisao": decisao}
     )
-    return HTMLResponse(html)
+
+
+def _render_feedback(recommendation_id: UUID, decisao: str) -> HTMLResponse:
+    """Renderiza o fragmento de aceitar/descartar de uma recomendação."""
+    return HTMLResponse(fragmento_feedback(recommendation_id, decisao))

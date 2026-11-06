@@ -372,3 +372,122 @@ def test_downgrade_base_remove_tabelas(alembic_config: tuple[Config, str]) -> No
     assert "empresa" not in tabelas
     assert "item_correcao" not in tabelas
     assert "catalogo_historico" not in tabelas
+
+
+_REV_TEXT = "b7d2e9a4f108"
+_CONTEUDO_LONGO = "x" * 5000
+_COLUNAS_TEXT = (
+    ("message", "conteudo_redigido"),
+    ("recommendation", "texto"),
+)
+
+
+def _semear_conversa(engine: Engine) -> None:
+    """Grava empresa, usuário, conversa e uma linha curta em message/recommendation."""
+    empresa_id = uuid4().hex
+    usuario_id = str(uuid4())
+    conversa_id = uuid4().hex
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, retention_days, created_at) "
+                "VALUES (:id, 'A', NULL, CURRENT_TIMESTAMP)"
+            ),
+            {"id": empresa_id},
+        )
+        conn.execute(
+            text(
+                'INSERT INTO "user" (id, email, hashed_password, is_active, '
+                "is_superuser, is_verified) "
+                "VALUES (:id, 'u@a.com', 'x', TRUE, FALSE, TRUE)"
+            ),
+            {"id": usuario_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO conversation (id, empresa_id, user_id, created_at) "
+                "VALUES (:id, :empresa, :user, CURRENT_TIMESTAMP)"
+            ),
+            {"id": conversa_id, "empresa": empresa_id, "user": usuario_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO message (id, conversation_id, papel, conteudo_redigido, "
+                "created_at) VALUES (:id, :conversa, 'user', 'oi', CURRENT_TIMESTAMP)"
+            ),
+            {"id": uuid4().hex, "conversa": conversa_id},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO recommendation "
+                "(id, conversation_id, dominio, texto, justificativa, fontes, "
+                "created_at) "
+                "VALUES (:id, :conversa, 'transporte', 't', 'j', NULL, "
+                "CURRENT_TIMESTAMP)"
+            ),
+            {"id": uuid4().hex, "conversa": conversa_id},
+        )
+
+
+def _gravar(engine: Engine, tabela: str, coluna: str, conteudo: str) -> None:
+    """Grava ``conteudo`` na coluna da tabela (única linha semeada)."""
+    with engine.begin() as conn:
+        conn.execute(
+            text(f"UPDATE {tabela} SET {coluna} = :conteudo"),
+            {"conteudo": conteudo},
+        )
+
+
+def _ler(engine: Engine, tabela: str, coluna: str) -> str:
+    """Lê o conteúdo da coluna da única linha semeada."""
+    with engine.connect() as conn:
+        return str(conn.execute(text(f"SELECT {coluna} FROM {tabela}")).scalar_one())
+
+
+def _tipo_coluna(engine: Engine, tabela: str, coluna: str) -> str:
+    """Tipo declarado da coluna conforme o inspetor do dialeto em uso."""
+    colunas = {c["name"]: c for c in inspect(engine).get_columns(tabela)}
+    return str(colunas[coluna]["type"])
+
+
+def _indices(engine: Engine, tabela: str) -> dict[str, set[str]]:
+    """Índices da tabela: nome -> conjunto de colunas cobertas."""
+    return {
+        idx["name"]: set(idx["column_names"])
+        for idx in inspect(engine).get_indexes(tabela)
+    }
+
+
+def test_migracao_conteudo_para_text(alembic_config: tuple[Config, str]) -> None:
+    """Colunas de conteúdo passam a aceitar texto além de 4000 chars (e voltam)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, _REV_TEXT)
+    engine = create_engine(db_url)
+    _semear_conversa(engine)
+
+    command.upgrade(cfg, "head")
+
+    for tabela, coluna in _COLUNAS_TEXT:
+        _gravar(engine, tabela, coluna, _CONTEUDO_LONGO)
+    for tabela, coluna in _COLUNAS_TEXT:
+        assert len(_ler(engine, tabela, coluna)) == len(_CONTEUDO_LONGO)
+    for tabela, coluna in _COLUNAS_TEXT:
+        assert "TEXT" in _tipo_coluna(engine, tabela, coluna).upper()
+    assert _indices(engine, "message")["ix_message_conversa_criado"] == {
+        "conversation_id",
+        "created_at",
+    }
+    assert _indices(engine, "recommendation")["ix_recommendation_conversa_criado"] == {
+        "conversation_id",
+        "created_at",
+    }
+
+    for tabela, coluna in _COLUNAS_TEXT:
+        _gravar(engine, tabela, coluna, "curto")
+    command.downgrade(cfg, _REV_TEXT)
+
+    for tabela, coluna in _COLUNAS_TEXT:
+        assert "VARCHAR" in _tipo_coluna(engine, tabela, coluna).upper()
+        assert _ler(engine, tabela, coluna) == "curto"
+    for tabela in ("message", "recommendation"):
+        assert all(not nome.startswith("ix_") for nome in _indices(engine, tabela))

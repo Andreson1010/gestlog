@@ -6,6 +6,7 @@ import logging
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -17,6 +18,7 @@ from gestlog.config import Settings, get_settings
 from gestlog.copilot import MENSAGEM_ERRO_COPILOTO, CopilotService
 from gestlog.db.models import Empresa, User
 from gestlog.llm import build_chat_model
+from gestlog.web.feedback import fragmento_feedback
 from gestlog.web.ingestion_ui import get_sync_session
 
 logger = logging.getLogger(__name__)
@@ -37,10 +39,33 @@ def _evento(nome: str, texto: str) -> str:
     return f"event: {nome}\n{corpo}\n"
 
 
-def _stream_resposta(resposta: str) -> Iterator[str]:
-    """Emite a resposta do especialista e o evento de encerramento."""
+def _stream_resposta(resposta: str, fragmento: str) -> Iterator[str]:
+    """Emite a resposta, o fragmento de feedback do turno e o encerramento.
+
+    O fragmento vai no evento ``fontes`` (AD-019): traz os botões
+    aceitar/descartar da recomendação recém-criada para o turno ao vivo,
+    sem exigir recarregar o histórico. Sem recomendação, o evento não é
+    emitido e o turno fica sem botões.
+    """
     yield _evento("resposta", resposta)
+    if fragmento:
+        yield _evento("fontes", fragmento)
     yield _evento("fim", "[DONE]")
+
+
+def _fragmento_da_recomendacao(recomendacao_id: UUID | None) -> str:
+    """HTML de aceitar/descartar da recomendação do turno recém-criado.
+
+    O id vem de ``answer_com_recomendacao`` (turno deste stream): nesse caminho
+    não há decisão anterior (quota estourada e fora de escopo devolvem ``None``).
+    """
+    if recomendacao_id is None:
+        return ""
+    try:
+        return fragmento_feedback(recomendacao_id, None)
+    except Exception:
+        logger.exception("Falha ao montar o fragmento de feedback do turno")
+        return ""
 
 
 def create_chat_router() -> APIRouter:
@@ -65,12 +90,15 @@ def create_chat_router() -> APIRouter:
             settings=settings,
         )
         try:
-            resposta = servico.answer(pergunta)
+            resposta, recomendacao_id = servico.answer_com_recomendacao(pergunta)
         except Exception:
             logger.exception("Falha ao responder a pergunta do copiloto")
             resposta = MENSAGEM_ERRO_COPILOTO
+            fragmento = ""
+        else:
+            fragmento = _fragmento_da_recomendacao(recomendacao_id)
         return StreamingResponse(
-            _stream_resposta(resposta),
+            _stream_resposta(resposta, fragmento),
             media_type=_MEDIA_TYPE_SSE,
             headers={"Cache-Control": "no-cache"},
         )

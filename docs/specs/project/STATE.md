@@ -595,10 +595,11 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [ ] Benchmarking anonimizado entre tenants — Captured during: definição de produto
 - [ ] Marketplace de conectores de terceiros — Captured during: definição de produto
 - [ ] Novos domínios (contratos, devoluções, inventário) — Captured during: definição de produto
+- [x] Botões de aceitar/descartar no turno ao vivo (SSE): evento `fontes` com o fragmento de feedback emitido pelo stream (`web/chat.py`, fragmento reutilizado de `web/feedback.py`); ordenação monotônica de mensagens feita por carimbo de `created_at` estritamente crescente por conversa em `repositories/conversations.py` (AD-019) — Captured during: F1/T23; quitado em 2026-10-28
+- [ ] Seleção de "empresa ativa" para usuários com múltiplos vínculos (hoje usa o mais antigo) — Captured during: code review F1
 - [ ] Rate limiting em `/auth/login`, `/onboarding` e `/empresa/convites` (AD-015) — Captured during: code review F1
 - [ ] Convite por token/e-mail (sem o admin definir a senha do convidado) (AD-015) — Captured during: code review F1
-- [ ] Seleção de "empresa ativa" para usuários com múltiplos vínculos (hoje usa o mais antigo) — Captured during: code review F1
-- [ ] Botões de aceitar/descartar no turno ao vivo (SSE), hoje só após recarregar o histórico; emitir `event: fontes`/fragmento e ordenação monotônica de mensagens (substituir o pareamento por `created_at`) (AD-019) — Captured during: F1/T23
+- [ ] `evals/` no CI (roda golden set contra modelo real, publica relatório como artefato) — Captured during: F1
 
 ---
 
@@ -608,6 +609,8 @@ especificidades do projeto ficam no `AGENTS.md`.
 - [x] Release da F1: PR `feat/f1-mvp → main` + tag `v0.1.0` (AD-016) — `1c0768c`.
 - [ ] Calibrar metas numéricas dos KPIs após primeiras semanas de uso.
 - [ ] Débitos técnicos herdados: `UniqueConstraint(empresa_id, user_id)` em
-      `conversation`, reavaliar `String(4000)`/`Text`, mover `get_sync_session`
-      para `web/deps.py`, remover `TOOLS` mock do REPL quando houver banco,
-      botões no turno ao vivo (SSE) e ordenação monotônica de mensagens (AD-019).
+      `conversation`, mover `get_sync_session` para `web/deps.py`, remover
+      `TOOLS` mock do REPL quando houver banco.
+      (`String(4000)`/`Text` quitado em 2026-10-28 — migração `d5e6f8a2b7c4`;
+      botões no turno ao vivo (SSE) e ordenação monotônica quitados em
+      2026-10-28 — AD-019.)

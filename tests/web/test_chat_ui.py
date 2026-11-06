@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -119,6 +120,46 @@ async def _login(client: AsyncClient, email: str) -> None:
     assert client.cookies.get(_COOKIE)
 
 
+_ESTRUTURAIS = frozenset(
+    {"div", "span", "section", "main", "form", "button", "ul", "li", "p"}
+)
+
+
+class _RastreadorSseSwap(HTMLParser):
+    """Confere que cada ``sse-swap`` é descendente da fonte ``sse-connect``.
+
+    A extensão htmx-sse só faz fan-out de eventos para descendentes do
+    elemento com ``sse-connect``/``hx-ext="sse"`` (L-046): um ``sse-swap``
+    irmão/órfão nunca recebe o evento, mesmo com o HTML "certo em um grep".
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.fontes: list[tuple[bool, bool]] = []
+        self.swaps_sem_fonte = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag not in _ESTRUTURAIS:
+            return
+        valores = dict(attrs)
+        fonte_ancestral = any(ext and conecta for ext, conecta in self.fontes)
+        fonte_si = (
+            valores.get("hx-ext") == "sse" and "sse-connect" in valores
+        ) or fonte_ancestral
+        if "sse-swap" in valores and not fonte_si:
+            self.swaps_sem_fonte += 1
+        self.fontes.append(
+            (
+                valores.get("hx-ext") == "sse",
+                "sse-connect" in valores,
+            )
+        )
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in _ESTRUTURAIS and self.fontes:
+            self.fontes.pop()
+
+
 async def test_pagina_chat_sem_sessao_redireciona_ao_login(
     client: AsyncClient,
 ) -> None:
@@ -183,11 +224,31 @@ async def test_turno_abre_assinatura_sse(
     )
 
     assert resposta.status_code == 200
+    assert 'hx-ext="sse"' in resposta.text
     assert 'sse-connect="/chat/stream?pergunta=' in resposta.text
     assert 'sse-swap="resposta"' in resposta.text
+    assert 'sse-swap="fontes"' in resposta.text
     assert 'hx-swap="textContent"' in resposta.text
     assert 'sse-close="fim"' in resposta.text
     assert "como está o estoque?" in resposta.text
+
+
+async def test_swaps_sse_descendentes_da_fonte_sse(
+    client: AsyncClient, engines: tuple[AsyncEngine, Engine]
+) -> None:
+    """``sse-swap`` deve estar sob o ancestral com ``sse-connect`` (L-046)."""
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+
+    resposta = await client.get(
+        "/chat/pergunta", params={"pergunta": "como está o estoque?"}
+    )
+
+    assert resposta.status_code == 200
+    rastreador = _RastreadorSseSwap()
+    rastreador.feed(resposta.text)
+    assert rastreador.swaps_sem_fonte == 0
 
 
 async def test_turno_codifica_pergunta_na_url(
