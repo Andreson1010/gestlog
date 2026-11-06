@@ -44,7 +44,8 @@ aditiva, não de reescrita).
 
 A D1 deliberadamente não tocou código, migrações ou testes. A verificação de
 que nada quebra é por ausência de dependências: o grep por `graphify` no
-repositório localiza apenas (a) a regra intencional do `.gitignore` para o
+código e na config do repositório (excluindo esta própria ADR) localiza
+apenas (a) a regra intencional do `.gitignore` para o
 artefato gerado localmente, (b) o comando
 `/end` do opencode (que já trata o MCP como opcional, com fallback explícito
 de escrever "graphify indisponível" quando ele não responde) e (c) os
@@ -79,8 +80,10 @@ listagem direta antes de declarar um caminho inexistente.
   tarefa de higiene do workspace do opencode, não da config deste PR; ficou
   registrada para a limpeza futura em vez de expandir o escopo de um commit
   de uma linha de verdade funcional.
-* **Sem `pytest`/gate de cobertura no PR:** o diff é JSON de configuração e
-  o `.gitignore`; a suíte não carrega `opencode.json` (verificado por busca
+* **Sem `pytest`/gate de cobertura no PR:** o diff líquido é JSON de
+  configuração e documentação (a tentativa de mexer no `.gitignore` foi
+  revertida, então ele não aparece no diff contra a base); a suíte não
+  carrega `opencode.json` (verificado por busca
   no `tests/`). A validação executada aqui foi parse estrutural do JSON com
   `ConvertFrom-Json` (válido, `mcp` com exatamente 3 servidores, sem chave
   residual `graphify`).
