@@ -8,10 +8,11 @@ from gestlog.web.ingestion_ui import create_ingestion_router, get_sync_session
 from gestlog.web.kpis import create_kpis_router
 from gestlog.web.onboarding import create_onboarding_router
 from gestlog.web.relatorios import create_relatorios_router
-from gestlog.web.schemas import ContaCreate, ConviteCreate
+from gestlog.web.schemas import ContaCreate, ConviteAceiteCreate, ConviteCreate
 
 __all__ = [
     "ContaCreate",
+    "ConviteAceiteCreate",
     "ConviteCreate",
     "create_app",
     "create_chat_router",

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import pytest
 from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from gestlog.auth import (
@@ -16,7 +19,7 @@ from gestlog.auth import (
     get_current_empresa,
 )
 from gestlog.config import Settings, get_settings
-from gestlog.db.models import Empresa
+from gestlog.db.models import Convite, Empresa
 from gestlog.db.session import (
     build_async_engine,
     build_async_session_factory,
@@ -26,6 +29,11 @@ from gestlog.web import create_onboarding_router
 
 _SENHA = "senha-secreta-123"
 _COOKIE = "gestlog_auth"
+
+
+def _hash_token_sha256(token: str) -> str:
+    """SHA-256 hex do token, espelhando o repositório de convites."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _settings() -> Settings:
@@ -120,9 +128,15 @@ async def test_admin_convida_usuario_para_a_empresa(client: AsyncClient) -> None
 
     convite = await client.post(
         "/empresa/convites",
-        json={"email": "operador@empresa.com", "papel": "operador", "senha": _SENHA},
+        json={"email": "operador@empresa.com", "papel": "operador"},
     )
     assert convite.status_code == 201
+    token = convite.json()["token"]
+    aceite = await client.post(
+        "/convites/aceitar", json={"token": token, "senha": _SENHA}
+    )
+    assert aceite.status_code == 201
+    assert aceite.json()["empresa_id"] == dados["empresa_id"]
 
     await client.post("/auth/logout")
     await _login(client, "operador@empresa.com")
@@ -135,16 +149,22 @@ async def test_admin_convida_usuario_para_a_empresa(client: AsyncClient) -> None
 async def test_convite_exige_papel_admin(client: AsyncClient) -> None:
     await _criar_conta(client)
     await _login(client, "admin@empresa.com")
-    await client.post(
+    convite = await client.post(
         "/empresa/convites",
-        json={"email": "operador@empresa.com", "papel": "operador", "senha": _SENHA},
+        json={"email": "operador@empresa.com", "papel": "operador"},
     )
+    assert convite.status_code == 201
+    aceite = await client.post(
+        "/convites/aceitar",
+        json={"token": convite.json()["token"], "senha": _SENHA},
+    )
+    assert aceite.status_code == 201
     await client.post("/auth/logout")
     await _login(client, "operador@empresa.com")
 
     resposta = await client.post(
         "/empresa/convites",
-        json={"email": "outro@empresa.com", "papel": "operador", "senha": _SENHA},
+        json={"email": "outro@empresa.com", "papel": "operador"},
     )
 
     assert resposta.status_code == 403
@@ -153,9 +173,75 @@ async def test_convite_exige_papel_admin(client: AsyncClient) -> None:
 async def test_convite_duplicado_retorna_409(client: AsyncClient) -> None:
     await _criar_conta(client)
     await _login(client, "admin@empresa.com")
-    corpo = {"email": "operador@empresa.com", "papel": "operador", "senha": _SENHA}
+    corpo = {"email": "operador@empresa.com", "papel": "operador"}
 
-    assert (await client.post("/empresa/convites", json=corpo)).status_code == 201
+    convite = await client.post("/empresa/convites", json=corpo)
+    assert convite.status_code == 201
+    aceite = await client.post(
+        "/convites/aceitar",
+        json={"token": convite.json()["token"], "senha": _SENHA},
+    )
+    assert aceite.status_code == 201
+
     duplicado = await client.post("/empresa/convites", json=corpo)
 
     assert duplicado.status_code == 409
+
+
+async def test_convite_invalido_retorna_400(client: AsyncClient) -> None:
+    await _criar_conta(client)
+
+    resposta = await client.post(
+        "/convites/aceitar", json={"token": "token-inexistente", "senha": _SENHA}
+    )
+
+    assert resposta.status_code == 400
+
+
+async def test_convite_tem_uso_unico(client: AsyncClient) -> None:
+    await _criar_conta(client)
+    await _login(client, "admin@empresa.com")
+    convite = await client.post(
+        "/empresa/convites",
+        json={"email": "operador@empresa.com", "papel": "operador"},
+    )
+    assert convite.status_code == 201
+    token = convite.json()["token"]
+    primeiro = await client.post(
+        "/convites/aceitar", json={"token": token, "senha": _SENHA}
+    )
+    assert primeiro.status_code == 201
+
+    repetido = await client.post(
+        "/convites/aceitar", json={"token": token, "senha": _SENHA}
+    )
+
+    assert repetido.status_code == 400
+
+
+async def test_convite_expirado_retorna_400(
+    client: AsyncClient,
+    engine: AsyncEngine,
+) -> None:
+    await _criar_conta(client)
+    await _login(client, "admin@empresa.com")
+    convite = await client.post(
+        "/empresa/convites",
+        json={"email": "operador@empresa.com", "papel": "operador"},
+    )
+    assert convite.status_code == 201
+    token = convite.json()["token"]
+    factory = build_async_session_factory(engine)
+    async with factory() as session:
+        await session.execute(
+            update(Convite)
+            .where(Convite.token_hash == _hash_token_sha256(token))
+            .values(expira_em=datetime.now(UTC) - timedelta(days=1))
+        )
+        await session.commit()
+
+    resposta = await client.post(
+        "/convites/aceitar", json={"token": token, "senha": _SENHA}
+    )
+
+    assert resposta.status_code == 400
