@@ -8,14 +8,6 @@
       "command": ["npx", "-y", "@playwright/mcp@latest"],
       "enabled": true
     },
-    "graphify": {
-      "type": "local",
-      "command": [
-        "graphify-mcp",
-        "C:\\Users\\ander\\8_projetos\\medasist\\graphify-out\\graph.json"
-      ],
-      "enabled": true
-    },
     "chrome-devtools": {
       "type": "local",
       "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
