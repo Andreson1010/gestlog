@@ -4,10 +4,26 @@
   <div class="hero">
     <h1>Bem-vindo ao gestlog</h1>
     <p>
-      Você está autenticado como <strong>{{ email }}</strong>. Comece importando
+      Você está autenticado como <strong>{{ email }}</strong>{% if empresa_nome %},
+      atuando em <strong>{{ empresa_nome }}</strong>{% endif %}. Comece importando
       seus dados ou pergunte ao copiloto logístico.
     </p>
   </div>
+  {% if empresas | length > 1 %}
+  <section class="seletor-empresa" aria-label="Empresa ativa">
+    <form method="post" action="/empresa/ativa">
+      <label for="empresa_id">Empresa ativa</label>
+      <select name="empresa_id" id="empresa_id">
+        {% for empresa in empresas %}
+        <option value="{{ empresa.id }}" {% if empresa.id == empresa_ativa_id %}selected{% endif %}>
+          {{ empresa.nome }}
+        </option>
+        {% endfor %}
+      </select>
+      <button type="submit">Trocar</button>
+    </form>
+  </section>
+  {% endif %}
   <section class="acoes" aria-label="Ações rápidas">
     <a class="acao-card" href="/importar">
       <span class="acao-icone">
