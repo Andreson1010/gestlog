@@ -236,6 +236,9 @@ class Message(Base):
     """Mensagem de uma conversa (conteúdo já redigido)."""
 
     __tablename__ = "message"
+    __table_args__ = (
+        Index("ix_message_conversa_criado", "conversation_id", "created_at"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     conversation_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("conversation.id"))
@@ -250,6 +253,9 @@ class Recommendation(Base):
     """Recomendação gerada pelo copiloto, com justificativa e fontes."""
 
     __tablename__ = "recommendation"
+    __table_args__ = (
+        Index("ix_recommendation_conversa_criado", "conversation_id", "created_at"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     conversation_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("conversation.id"))

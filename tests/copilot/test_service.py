@@ -191,6 +191,41 @@ def test_answer_persiste_turno_no_historico(
     assert turnos[0].resposta == resposta
 
 
+def test_answer_com_recomendacao_devolve_id_da_recomendacao_criada(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    usuario = criar_usuario(db_session)
+    model = fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque", fontes="estoque")],
+    )
+    servico = _service(db_session, model, empresa, usuario)
+
+    resposta, recomendacao_id = servico.answer_com_recomendacao("estoque?")
+
+    assert "Há estoque" in resposta
+    conversa = ConversationRepository(db_session).get_by_user(empresa, usuario)
+    assert conversa is not None
+    recommendation_repo = RecommendationRepository(db_session)
+    assert [
+        rec.id for rec in recommendation_repo.list_by_conversation(conversa.id)
+    ] == [recomendacao_id]
+
+
+def test_answer_com_recomendacao_sem_recomendacao_devolve_none(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    empresa = _empresa(db_session, "A")
+    usuario = criar_usuario(db_session)
+    servico = _service(db_session, fake_model_cls(routes=["FINISH"]), empresa, usuario)
+
+    resposta, recomendacao_id = servico.answer_com_recomendacao("capital da França?")
+
+    assert resposta == MENSAGEM_FORA_DE_ESCOPO
+    assert recomendacao_id is None
+
+
 def test_answer_redige_pii_antes_do_llm(
     db_session: Session, fake_model_cls: type
 ) -> None:
@@ -337,6 +372,9 @@ def test_answer_bloqueia_quota_sem_chamar_llm(
     assert servico.answer("estoque?") == MENSAGEM_QUOTA_EXCEDIDA
     assert model.mensagens_recebidas == []
     assert servico.historico() == []
+    resposta_quota, recomendacao_quota = servico.answer_com_recomendacao("estoque?")
+    assert resposta_quota == MENSAGEM_QUOTA_EXCEDIDA
+    assert recomendacao_quota is None
     assert len(UsageRepository(db_session).list(empresa)) == 1
 
 

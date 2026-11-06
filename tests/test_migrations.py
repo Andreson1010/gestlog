@@ -450,6 +450,14 @@ def _tipo_coluna(engine: Engine, tabela: str, coluna: str) -> str:
     return str(colunas[coluna]["type"])
 
 
+def _indices(engine: Engine, tabela: str) -> dict[str, set[str]]:
+    """Índices da tabela: nome -> conjunto de colunas cobertas."""
+    return {
+        idx["name"]: set(idx["column_names"])
+        for idx in inspect(engine).get_indexes(tabela)
+    }
+
+
 def test_migracao_conteudo_para_text(alembic_config: tuple[Config, str]) -> None:
     """Colunas de conteúdo passam a aceitar texto além de 4000 chars (e voltam)."""
     cfg, db_url = alembic_config
@@ -465,6 +473,14 @@ def test_migracao_conteudo_para_text(alembic_config: tuple[Config, str]) -> None
         assert len(_ler(engine, tabela, coluna)) == len(_CONTEUDO_LONGO)
     for tabela, coluna in _COLUNAS_TEXT:
         assert "TEXT" in _tipo_coluna(engine, tabela, coluna).upper()
+    assert _indices(engine, "message")["ix_message_conversa_criado"] == {
+        "conversation_id",
+        "created_at",
+    }
+    assert _indices(engine, "recommendation")["ix_recommendation_conversa_criado"] == {
+        "conversation_id",
+        "created_at",
+    }
 
     for tabela, coluna in _COLUNAS_TEXT:
         _gravar(engine, tabela, coluna, "curto")
@@ -473,3 +489,5 @@ def test_migracao_conteudo_para_text(alembic_config: tuple[Config, str]) -> None
     for tabela, coluna in _COLUNAS_TEXT:
         assert "VARCHAR" in _tipo_coluna(engine, tabela, coluna).upper()
         assert _ler(engine, tabela, coluna) == "curto"
+    for tabela in ("message", "recommendation"):
+        assert all(not nome.startswith("ix_") for nome in _indices(engine, tabela))

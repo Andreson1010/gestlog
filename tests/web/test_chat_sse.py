@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import pytest
 from fastapi import FastAPI
@@ -21,6 +22,7 @@ from gestlog.config import Settings, get_settings
 from gestlog.copilot.service import (
     MENSAGEM_ERRO_COPILOTO,
     MENSAGEM_FORA_DE_ESCOPO,
+    MENSAGEM_QUOTA_EXCEDIDA,
     CopilotService,
 )
 from gestlog.db.models import Empresa, Membership, User
@@ -54,6 +56,16 @@ def _settings() -> Settings:
         database_url="sqlite+aiosqlite:///:memory:",
         auth_secret="segredo-de-teste-com-pelo-menos-32-bytes",
         auth_cookie_secure=False,
+    )
+
+
+def _settings_quota_baixa() -> Settings:
+    return Settings(
+        _env_file=None,
+        database_url="sqlite+aiosqlite:///:memory:",
+        auth_secret="segredo-de-teste-com-pelo-menos-32-bytes",
+        auth_cookie_secure=False,
+        llm_monthly_token_quota=1,
     )
 
 
@@ -190,6 +202,43 @@ async def test_chat_stream_emite_fragmento_de_feedback_ao_vivo(
     assert "/feedback" in resposta.text
 
 
+async def test_chat_stream_fragmento_referencia_recomendacao_do_turno(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    """O fragmento é o da recomendação deste turno, nunca de turnos anteriores."""
+    motor_async, motor_sync = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque suficiente", fontes="estoque")],
+    )
+
+    resposta = await client.get(
+        "/chat/stream", params={"pergunta": "como está o estoque?"}
+    )
+    esperado = _id_ultima_recomendacao(motor_sync)
+
+    assert resposta.status_code == 200
+    assert f"feedback-{esperado}" in resposta.text
+    assert f"/recomendacoes/{esperado}/feedback" in resposta.text
+
+
+def _id_ultima_recomendacao(motor_sync: Engine) -> UUID:
+    from sqlalchemy import select
+
+    from gestlog.db.models import Recommendation
+
+    consulta = (
+        select(Recommendation.id).order_by(Recommendation.created_at.desc()).limit(1)
+    )
+    with motor_sync.connect() as conexao:
+        return conexao.execute(consulta).scalar_one()
+
+
 async def test_chat_stream_sem_recomendacao_nao_emite_fontes(
     client: AsyncClient,
     app: FastAPI,
@@ -207,6 +256,39 @@ async def test_chat_stream_sem_recomendacao_nao_emite_fontes(
     )
 
     assert resposta.status_code == 200
+    assert "event: fontes" not in resposta.text
+
+
+async def test_chat_stream_quota_estourada_nao_emite_fontes(
+    client: AsyncClient,
+    app: FastAPI,
+    engines: tuple[AsyncEngine, Engine],
+    fake_model_cls: type,
+) -> None:
+    """Turno bloqueado por quota não reaproveita botões do turno anterior.
+
+    A quota estourada não persiste turno; sem a recomendação do próprio
+    turno em si, o stream não pode emitir ``event: fontes`` de forma alguma.
+    """
+    motor_async, _ = engines
+    await _criar_usuario_com_empresa(motor_async, "a@empresa.com")
+    await _login(client, "a@empresa.com")
+    app.dependency_overrides[get_chat_model] = lambda: fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_tool_comum("Há estoque suficiente", fontes="estoque")],
+        tokens=10,
+    )
+    primeira = await client.get(
+        "/chat/stream", params={"pergunta": "como está o estoque?"}
+    )
+    assert primeira.status_code == 200
+    assert "event: fontes" in primeira.text
+
+    app.dependency_overrides[get_settings] = _settings_quota_baixa
+    resposta = await client.get("/chat/stream", params={"pergunta": "e agora?"})
+
+    assert resposta.status_code == 200
+    assert MENSAGEM_QUOTA_EXCEDIDA in resposta.text
     assert "event: fontes" not in resposta.text
 
 
@@ -257,14 +339,15 @@ async def test_chat_stream_falha_do_grafo_responde_amigavel(
     await _login(client, "a@empresa.com")
     app.dependency_overrides[get_chat_model] = lambda: fake_model_cls()
 
-    def _explode(self: CopilotService, pergunta: str) -> str:
+    def _explode(self: CopilotService, pergunta: str) -> tuple[str, UUID | None]:
         raise GraphRecursionError("recursion limit reached")
 
-    monkeypatch.setattr(CopilotService, "answer", _explode)
+    monkeypatch.setattr(CopilotService, "answer_com_recomendacao", _explode)
 
     resposta = await client.get("/chat/stream", params={"pergunta": "oi"})
 
     assert resposta.status_code == 200
     assert MENSAGEM_ERRO_COPILOTO in resposta.text
     assert "recursion limit reached" not in resposta.text
+    assert "event: fontes" not in resposta.text
     assert "event: fim" in resposta.text

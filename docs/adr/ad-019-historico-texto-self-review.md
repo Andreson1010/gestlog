@@ -27,11 +27,12 @@ conversa podia aparecer em ordem diferente entre acessos, e
 um turno anterior. O flake já havia se manifestado nos testes localmente
 antes de virar decisão de arquitetura.
 
-**D4** — os botões de aceitar/descartar só apareciam após recarregar a
-página: o turno ao vivo era entregue por SSE (`T18/T19`), mas o fragmento de
-feedback era renderizado apenas na passada sem estado do histórico. O
-operador tomava a decisão a tempo, mas num fluxo dois cliques atrás do que
-o produto promete.
+**D4** — os botões de aceitar/descartar eram alcançáveis apenas pela
+resposta do POST de feedback (`web/feedback.py`): nem o turno ao vivo (por
+SSE, `T18/T19`) nem o reload do histórico os exibiam — a página do histórico
+renderiza pergunta/resposta, sem fragmento. O operador só chegava à decisão
+por um caminho que exigia saber que a rota existia, dois cliques atrás do
+que o produto promete.
 
 O objetivo único desta entrega é fazer o histórico do turno ao vivo ser
 **correto (ordem estável), sem teto (Text) e completo (botões no ato)** —
@@ -89,21 +90,25 @@ exatamente a sequência que produzia o flake.
 
 O HTML dos botões não pode ser renderizado em dois lugares com regras
 divergentes — nada pior para o operador do que aceitar na tela ao vivo e
-ver a decisão "desaparecer" no reload. O `web/feedback.py` passa a expor
-`fragmento_feedback(recommendation_id, decisao)`, usado tanto pela rota de
-feedback (resposta POST que troca o fragmento com `hx-swap="outerHTML"`)
-quanto pelo stream. Em `web/chat.py`, `_fragmento_do_ultimo_turno` pede o
-último `Turno` recém-persistido ao `CopilotService.historico()` e emite o
+ver a decisão "desaparecer" na resposta do POST. O `web/feedback.py` passa
+a expor `fragmento_feedback(recommendation_id, decisao)`, usado tanto pela
+rota de feedback (resposta POST que troca o fragmento com
+`hx-swap="outerHTML"`) quanto pelo stream. Em `web/chat.py`, o stream recebe
+de `CopilotService.answer_com_recomendacao` o `(resposta, recomendacao_id)`
+do **turno que o stream criou** — nunca inferido do histórico — e emite o
 fragmento no evento `fontes`; estando esse evento **condicional** (`if
-fragmento`), os turnos sem recomendação (fora de escopo/insuficiente)
-ficam sem botões por decisão de domínio, não por acidente. O cálculo do
-fragmento fica no ramo `else` do `answer`, com `try/except` próprio: (i)
-erro do copiloto → resposta de fallback **sem** fragmento (nada novo há
-para decidir); (ii) resposta OK, mas falha ao montar o fragmento → o turno
-mantém a resposta e perde só os botões, que voltam a existir no próprio
-reload — o log pega o evento para investigação. Fragmento carrega
-`decisao=None`: dois botões habilitados e "Sem decisão", estado correto
-para a recomendação recém-criada.
+fragmento`), os turnos sem recomendação ficam sem botões por decisão de
+domínio, não por acidente. O guard é semântico e cobre o caso de quota
+estourada: `answer_com_recomendacao` devolve `(MENSAGEM_QUOTA_EXCEDIDA,
+None)` porque quota não persiste turno (emissão derivada do último histórico
+emitiria os botões da recomendação ANTERIOR — achado HIGH do code review,
+corrigido antes do merge). O cálculo do fragmento fica no ramo `else` do
+`answer_com_recomendacao`, com `try/except` próprio: (i) erro do copiloto →
+resposta de fallback **sem** fragmento (nada novo há para decidir); (ii)
+resposta OK, mas falha ao montar o fragmento → o turno mantém a resposta e
+perde só os botões — o log pega o evento para investigação. Fragmento
+carrega `decisao=None`: dois botões habilitados e "Sem decisão", estado
+correto para a recomendação recém-criada.
 
 **4. Escopo SSE no ancestral comum (achado do self-review, D4)**
 
@@ -135,12 +140,16 @@ e `sse-swap="fontes"` na tela. A ordem dos eventos é garantida pelo servidor
   semeia valor curto antes do `downgrade` e o valida de volta — o cenário
   "dado longo + downgrade" é deliberadamente não suportado (e documentado
   aqui como contracaso).
-* **Duas `SELECT`s de `max` por gravação, com indexes por conversa:** a
-  alternativa era uma única query com `UNION`. O custo extra é uma
-  roundtrip por mensagem/recomendação por turno — tabela de conversa
-  individual é pequena, e o caminho já paga `flush` na mesma conexão. A
-  versão em duas queries é idiomática, tipada e cobre cada modelo
-  separadamente nos testes.
+* **Duas `SELECT`s de `max` por gravação, com índice composto por conversa:**
+  a alternativa era uma única query com `UNION`. O custo extra é uma
+  roundtrip por mensagem/recomendação por turno — e o caminho já paga
+  `flush` na mesma conexão. A versão em duas queries é idiomática, tipada e
+  cobre cada modelo separadamente nos testes. O acesso é indexado: a mesma
+  migração `d5e6f8a2b7c4` cria `ix_{message,recommendation}_conversa_criado`
+  (`conversation_id, created_at`) — sem ele, cada `max` varreria a tabela
+  global de tenants (achado do code review: FK não cria índice em nenhum
+  dialeto); o `downgrade` remove os índices e o teste de migração fixa
+  colunas cobertas em `upgrade` e ausência em `downgrade`.
 * **Serialização de carimbo no Python, não no banco:** dois processos
   gravando a mesma conversa **concorrentemente** ainda poderiam empatar
   (ambos leem o mesmo último carimbo). Hoje a conversa pertence a um único
@@ -220,3 +229,30 @@ e `sse-swap="fontes"` na tela. A ordem dos eventos é garantida pelo servidor
 * **Paridade do downgrade no teste de migração (baixa, L-037):** o teste
   conferia o tipo restaurado mas não o dado lido de volta; acrescentada
   asserção de conteúdo ("curto") por coluna após o `downgrade`.
+
+## Achados endereçados no code review independente (round 2)
+
+* **Fragmento stale no caminho de quota (HIGH):** o ramo de sucesso chamava
+  sempre `_fragmento_do_ultimo_turno` (último turno do `historico()`); como
+  quota estourada não persiste turno (`copilot/service.py`), o evento
+  `fontes` poderia carregar os botões da recomendação ANTERIOR dentro do
+  turno bloqueado — decisão gravada na recomendação errada. Corrigido na
+  raiz: `registrar_turno` devolve o id da recomendação gravada e
+  `answer_com_recomendacao(pergunta) -> (resposta, recomendacao_id)` o
+  expõe; `web/chat.py` emite o fragmento **só** a partir desse id (quota,
+  fora de escopo e erro → `None` → sem `fontes`). `answer()` permanece com
+  o contrato antigo para callers simples (CLI/testes). Testes novos fixam
+  o contrato: quota sem `fontes`, erro do grafo sem `fontes`, fragmento
+  referenciando o id do turno corrente, e `answer_com_recomendacao` em
+  ambos os caminhos do service.
+* **Carimbo sem índice (duplicado em Minor):** cada `max(created_at)`
+  varreria a tabela global sem índice (`conversation_id` não cria índice em
+  nenhum dialeto). Índices compostos adicionados e cobertos no teste de
+  migração (presentes no upgrade, ausentes no downgrade).
+* **ADR imprecisa sobre reload (doc):** o texto afirmava que os botões
+  "voltavam no reload" — o histórico nunca renderizou o fragmento (o teste
+  da UI já fixava a ausência). Descrição corrigida para o estado real
+  (fragmento apenas na resposta do POST, agora também no stream).
+* Recomendação de follow-up aceita em parte: teste da UI passa a validar
+  **ascendência** do `sse-swap` (parser HTML, não grep de string) fechando o
+  modo de falha da L-046.

@@ -244,21 +244,28 @@ def registrar_turno(
     pergunta: str,
     resposta: str,
     recomendacao: Recomendacao | None = None,
-) -> None:
-    """Grava pergunta, resposta e (se houver base) a recomendação na conversa."""
+) -> UUID | None:
+    """Grava pergunta, resposta e (se houver base) a recomendação na conversa.
+
+    Devolve o id da recomendação gravada (``None`` em turno sem recomendação),
+    para o caller referenciar exatamente o turno criado sem reler o histórico.
+    """
     conversa = ConversationRepository(session).get_or_create(empresa_id, user_id)
     mensagens = MessageRepository(session)
     mensagens.add_message(conversa.id, "user", pergunta)
     mensagens.add_message(conversa.id, "assistant", resposta)
+    recomendacao_id: UUID | None = None
     if recomendacao is not None and not recomendacao.insuficiente:
-        RecommendationRepository(session).add_recommendation(
+        gravada = RecommendationRepository(session).add_recommendation(
             conversa.id,
             recomendacao.dominio,
             recomendacao.texto,
             recomendacao.justificativa,
             list(recomendacao.fontes),
         )
+        recomendacao_id = gravada.id
     session.commit()
+    return recomendacao_id
 
 
 @dataclass(frozen=True)
@@ -290,18 +297,24 @@ class CopilotService:
         return carregar_historico(self.session, self.empresa_id, self.user_id)
 
     def answer(self, pergunta: str) -> str:
+        """Roda o grafo e responde com o texto do turno; para callers simples."""
+        return self.answer_com_recomendacao(pergunta)[0]
+
+    def answer_com_recomendacao(self, pergunta: str) -> tuple[str, UUID | None]:
         """Roda o grafo, estrutura a recomendação, persiste o turno e responde.
 
         A pergunta é redigida antes de ir ao LLM e a versão redigida é a que fica
         no histórico; o texto original não é enviado ao provedor nem persistido.
         A quota mensal é checada antes da chamada: ao estourar, devolve uma
-        mensagem clara sem chamar o modelo.
+        mensagem clara sem chamar o modelo. Devolve ``(resposta, recomendacao_id)``,
+        onde o id é ``None`` em turno sem recomendação (fora de escopo, quota
+        estourada) — nunca inferido de turnos anteriores.
         """
         resolvido = self.settings or get_settings()
         try:
             check_quota(self.session, self.empresa_id, resolvido)
         except QuotaExcedida:
-            return MENSAGEM_QUOTA_EXCEDIDA
+            return MENSAGEM_QUOTA_EXCEDIDA, None
         redacao = redact(pergunta)
         grafo = build_graph(
             model=self.model,
@@ -329,7 +342,7 @@ class CopilotService:
             resolvido.llm_model,
             int(estado.get("tokens_usados", 0)),
         )
-        registrar_turno(
+        registrar_id = registrar_turno(
             self.session,
             self.empresa_id,
             self.user_id,
@@ -337,4 +350,4 @@ class CopilotService:
             resposta,
             recomendacao,
         )
-        return resposta
+        return resposta, registrar_id

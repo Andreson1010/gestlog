@@ -6,6 +6,7 @@ import logging
 from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -52,13 +53,19 @@ def _stream_resposta(resposta: str, fragmento: str) -> Iterator[str]:
     yield _evento("fim", "[DONE]")
 
 
-def _fragmento_do_ultimo_turno(servico: CopilotService) -> str:
-    """HTML de aceitar/descartar da recomendação do turno recém-criado."""
-    turnos = servico.historico()
-    if not turnos or turnos[-1].recomendacao_id is None:
+def _fragmento_da_recomendacao(recomendacao_id: UUID | None) -> str:
+    """HTML de aceitar/descartar da recomendação do turno recém-criado.
+
+    O id vem de ``answer_com_recomendacao`` (turno deste stream): nesse caminho
+    não há decisão anterior (quota estourada e fora de escopo devolvem ``None``).
+    """
+    if recomendacao_id is None:
         return ""
-    ultimo = turnos[-1]
-    return fragmento_feedback(ultimo.recomendacao_id, ultimo.decisao)
+    try:
+        return fragmento_feedback(recomendacao_id, None)
+    except Exception:
+        logger.exception("Falha ao montar o fragmento de feedback do turno")
+        return ""
 
 
 def create_chat_router() -> APIRouter:
@@ -83,17 +90,13 @@ def create_chat_router() -> APIRouter:
             settings=settings,
         )
         try:
-            resposta = servico.answer(pergunta)
+            resposta, recomendacao_id = servico.answer_com_recomendacao(pergunta)
         except Exception:
             logger.exception("Falha ao responder a pergunta do copiloto")
             resposta = MENSAGEM_ERRO_COPILOTO
             fragmento = ""
         else:
-            try:
-                fragmento = _fragmento_do_ultimo_turno(servico)
-            except Exception:
-                logger.exception("Falha ao montar o fragmento de feedback do turno")
-                fragmento = ""
+            fragmento = _fragmento_da_recomendacao(recomendacao_id)
         return StreamingResponse(
             _stream_resposta(resposta, fragmento),
             media_type=_MEDIA_TYPE_SSE,
