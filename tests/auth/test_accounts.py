@@ -21,7 +21,7 @@ from gestlog.auth.accounts import (
     criar_convite,
 )
 from gestlog.config import Settings
-from gestlog.db.models import Convite, User
+from gestlog.db.models import Convite, Empresa, User
 from gestlog.db.session import (
     build_async_engine,
     build_async_session_factory,
@@ -107,6 +107,66 @@ async def test_convite_para_email_divergente_em_caixa_e_recusado(
         await criar_convite(
             session, empresa.id, "  ANA@X.com ", "operador", validade_dias=1
         )
+
+
+async def test_convite_para_email_legado_case_divergente_e_recusado(
+    session: AsyncSession, engine: AsyncEngine
+) -> None:
+    """Linha legada crua ('Ana@x.com') também é vista pelo guard (I-1).
+
+    O seed grava o e-mail SEM normalizar (dado anterior à T2): a busca do
+    guard compara ``lower`` no BANCO com a entrada normalizada, então convidar
+    'ana@x.com' levanta ``ConviteDuplicadoError`` em vez de criar um convite
+    REAL para e-mail que já tem conta.
+    """
+    factory = build_async_session_factory(engine)
+    async with factory() as sessao:
+        sessao.add(
+            User(
+                email="Ana@x.com",
+                hashed_password="hash-de-teste",
+                is_active=True,
+                is_superuser=False,
+                is_verified=False,
+            )
+        )
+        await sessao.commit()
+
+    async with factory() as sessao:
+        with pytest.raises(ConviteDuplicadoError):
+            await criar_convite(
+                sessao, await _empresa_qualquer(sessao), "ana@x.com", "operador", 1
+            )
+
+
+async def test_cadastro_para_email_legado_case_divergente_e_recusado(
+    session: AsyncSession, engine: AsyncEngine
+) -> None:
+    """Cadastro sobre linha legada case-divergente é recusado (I-1)."""
+    factory = build_async_session_factory(engine)
+    async with factory() as sessao:
+        sessao.add(
+            User(
+                email="Ana@x.com",
+                hashed_password="hash-de-teste",
+                is_active=True,
+                is_superuser=False,
+                is_verified=False,
+            )
+        )
+        await sessao.commit()
+
+    async with factory() as sessao:
+        with pytest.raises(exceptions.UserAlreadyExists):
+            await criar_conta(sessao, "Outra", "ana@x.com", _SENHA)
+
+
+async def _empresa_qualquer(sessao: AsyncSession) -> UUID:
+    """Cria uma empresa descartável e devolve o id (pai da FK de convite)."""
+    empresa = Empresa(nome="Empresa Do Convite")
+    sessao.add(empresa)
+    await sessao.commit()
+    return empresa.id
 
 
 async def test_convite_persiste_email_normalizado(

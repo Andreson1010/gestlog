@@ -40,8 +40,14 @@ def normalizar_email(email: str) -> str:
 
 
 async def _por_email(session: AsyncSession, email: str) -> User | None:
-    """Busca um usuário pelo e-mail normalizado (sem escopo de empresa)."""
-    stmt = select(User).where(User.email == normalizar_email(email))
+    """Busca um usuário comparando sem caixa no BANCO (sem escopo de empresa).
+
+    A coluna é normalizada pelo dialeto (``lower``) e a entrada pelo helper
+    (``casefold``): linha legada gravada sem normalização (pré-T2) também é
+    vista pelos guards — o índice funcional fica como última defesa, não
+    primeira.
+    """
+    stmt = select(User).where(func.lower(User.email) == normalizar_email(email))
     return (await session.execute(stmt)).scalars().first()
 
 

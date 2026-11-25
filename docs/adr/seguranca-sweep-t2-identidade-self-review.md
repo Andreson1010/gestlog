@@ -24,19 +24,28 @@ dado sujo precisa de diagnóstico acionável, não de uma migração morta.
 (IDT-01)**
 
 `normalizar_email(email)` (`strip` + `casefold`) em `auth/accounts.py` é o único
-ponto de verdade: `_por_email` compara normalizado, `_novo_usuario` persiste
-normalizado (cobre `criar_conta` E `aceitar_convite` — o aceite herda o e-mail
-já canônico do convite), e `criar_convite` grava o canônico em `Convite.email`.
-Os schemas (`ContaCreate`/`ConviteCreate`) continuam recebendo `EmailStr`
-intacto — normalizar no schema multiplicaria pontos de verdade; normalizar no
-caso de uso significa que QUALQUER caminho que grave `User` ou `Convite` nasce
-canônico. Dado antigo não normalizado no banco não vira falso negativo: a
-comparação (`_por_email`) normaliza a ENTRADA, e o índice funcional (abaixo)
-garante o banco contra corridas. No login, o caminho é o do FastAPI Users:
-`SQLAlchemyUserDatabase.get_by_email` filtra `func.lower(coluna) ==
-func.lower(entrada)` — comparação case-insensitive feita no BANCO, não em
-Python, então o `casefold` do cadastro e o `lower` do login concordam no dialeto
-(limite exótico documentado nas limitações).
+ponto de verdade: `_por_email` compara `func.lower(coluna)` NO BANCO com a
+entrada normalizada, `_novo_usuario` persiste normalizado (cobre `criar_conta`
+E `aceitar_convite` — o aceite herda o e-mail já canônico do convite), e
+`criar_convite` grava o canônico em `Convite.email`. Os schemas
+(`ContaCreate`/`ConviteCreate`) continuam recebendo `EmailStr` intacto —
+normalizar no schema multiplicaria pontos de verdade; normalizar no caso de uso
+significa que QUALQUER caminho que grave `User` ou `Convite` nasce canônico.
+Dado antigo não normalizado no banco não vira falso negativo: a comparação
+(`_por_email`) normaliza AMBOS os lados — a entrada com `casefold` em Python e
+a coluna com `lower` do dialeto, dentro do `WHERE`. (Achado do code review do
+PR #82: comparar só a entrada com a coluna crua deixava uma linha legada
+case-divergente — `Ana@x.com` — invisível aos guards, e `criar_convite` criava
+convite REAL para e-mail que já tem conta; agora `criar_convite`,
+`criar_conta` e `aceitar_convite` enxergam a linha legada, e o índice
+funcional abaixo vira última defesa contra corridas, não primeira.) No login,
+o caminho é o do FastAPI Users: `SQLAlchemyUserDatabase.get_by_email` filtra
+`func.lower(coluna) == func.lower(entrada)` — comparação case-insensitive feita
+no BANCO, não em Python, então o `casefold` do cadastro e o `lower` do login
+concordam no dialeto (limite exótico documentado nas limitações — e o mesmo
+gap `casefold` vs `lower` do §3 vale para o `WHERE` do `_por_email`; nesses
+casos raros o guard pode não ver a variante exótica, e a `IntegrityError` do
+índice funcional recusa a gravação).
 
 **2. Índice único FUNCIONAL em `lower(email)`, não coluna normalizada (IDT-02)**
 
