@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import threading
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from apoio import criar_usuario
-from sqlalchemy.orm import Session
+from sqlalchemy import delete
+from sqlalchemy.orm import Session, sessionmaker
 
 from gestlog.config import Settings
 from gestlog.copilot.metering import (
@@ -26,7 +27,8 @@ from gestlog.copilot.service import (
     CopilotService,
 )
 from gestlog.db import build_session_factory
-from gestlog.repositories.empresas import EmpresaRepository
+from gestlog.db.models import Empresa, UsageRecord
+from gestlog.repositories.empresas import EmpresaInexistente, EmpresaRepository
 from gestlog.repositories.telemetry import UsageRepository
 
 
@@ -34,6 +36,21 @@ def _empresa(session: Session, nome: str) -> UUID:
     empresa = EmpresaRepository(session).create(nome)
     session.commit()
     return empresa.id
+
+
+def _limpar_empresa(factory: sessionmaker[Session], empresa_id: UUID) -> None:
+    """Apaga as linhas da empresa no banco persistente (commit próprio).
+
+    Os testes de corrida gravam fora do savepoint do ``db_session``; sem a
+    limpeza, ``usage_record``/``empresa`` vazam no ``gestlog-pg`` e contaminam
+    o somatório do teto global em reruns (L-038).
+    """
+    with factory() as limpeza:
+        limpeza.execute(
+            delete(UsageRecord).where(UsageRecord.empresa_id == empresa_id)
+        )
+        limpeza.execute(delete(Empresa).where(Empresa.id == empresa_id))
+        limpeza.commit()
 
 
 def _turno_tool(resposta: str) -> list[dict]:
@@ -50,22 +67,29 @@ def _turno_tool(resposta: str) -> list[dict]:
 def test_turno_so_supervisor_conta_tokens(
     db_session: Session, fake_model_cls: type
 ) -> None:
-    """Turno FINISH direto registra tokens do supervisor, sem metadata (C-1)."""
+    """Turno FINISH direto registra tokens do supervisor, sem metadata (C-1).
+
+    A magnitude mínima vem do payload do roteamento (geração em ``tool_calls``
+    com ``content`` vazio): rotear não pode custar apenas o piso de 1 token (I-2).
+    """
+    model = fake_model_cls(routes=["FINISH"])
     empresa = _empresa(db_session, "A")
     servico = CopilotService(
         session=db_session,
         empresa_id=empresa,
         user_id=criar_usuario(db_session),
-        model=fake_model_cls(routes=["FINISH"]),
+        model=model,
         settings=Settings(_env_file=None),
     )
 
     resposta, _ = servico.answer_com_recomendacao("capital da França?")
 
+    magnitude = len(str(model._payload_roteamento("FINISH"))) // 4
+    assert magnitude > 1
     assert resposta == MENSAGEM_FORA_DE_ESCOPO
     registros = UsageRepository(db_session).list(empresa)
     assert len(registros) == 1
-    assert registros[0].tokens > 0
+    assert registros[0].tokens >= magnitude
 
 
 def test_record_usage_soma_por_empresa(db_session: Session) -> None:
@@ -201,6 +225,56 @@ def test_teto_global_com_folga_nao_bloqueia(db_session: Session) -> None:
     assert check_teto_global(db_session, settings, datetime.now(UTC)) is None
 
 
+def test_check_empresa_dispara_antes_do_teto_global(db_session: Session) -> None:
+    """Ordem empresa→global: mesmo com o somatório estourado, o erro é o da empresa.
+
+    Se o teto global fosse checado antes, a exceção viria do sentinela
+    ``UUID(int=0)``; a ordem correta reporta a quota própria da empresa.
+    """
+    settings = Settings(_env_file=None, llm_monthly_token_quota=100)
+    repo = EmpresaRepository(db_session)
+    a = repo.create("A", token_quota_mensal=10)
+    b = repo.create("B")
+    record_usage(db_session, a.id, "qwen", 10)
+    record_usage(db_session, b.id, "qwen", 90)
+    db_session.commit()
+
+    with pytest.raises(QuotaExcedida) as excinfo:
+        check_quota(db_session, a, settings)
+
+    assert excinfo.value.empresa_id == a.id
+    assert excinfo.value.quota == 10
+
+
+def test_turno_bloqueado_somente_pelo_teto_global(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    """A empresa tem folga própria; quem bloqueia é a salvaguarda do somatório."""
+    settings = Settings(_env_file=None, llm_monthly_token_quota=100)
+    repo = EmpresaRepository(db_session)
+    a = repo.create("A")
+    b = repo.create("B")
+    record_usage(db_session, a.id, "qwen", 100)
+    db_session.commit()
+    model = fake_model_cls(
+        routes=["estoque", "FINISH"],
+        tool_calls=[_turno_tool("repor")],
+    )
+    servico = CopilotService(
+        session=db_session,
+        empresa_id=b.id,
+        user_id=criar_usuario(db_session),
+        model=model,
+        settings=settings,
+    )
+
+    resposta, recomendacao_id = servico.answer_com_recomendacao("estoque?")
+
+    assert resposta == MENSAGEM_QUOTA_EXCEDIDA
+    assert recomendacao_id is None
+    assert model.mensagens_recebidas == []
+
+
 def test_teto_global_rejeita_datetime_sem_fuso(db_session: Session) -> None:
     settings = Settings(_env_file=None)
 
@@ -216,6 +290,15 @@ def test_create_empresa_recusa_quota_nao_positiva(db_session: Session) -> None:
 
     with pytest.raises(ValueError):
         repo.create("Negativa", token_quota_mensal=-5)
+
+
+def test_travar_empresa_inexistente_levanta_erro_de_dominio(
+    db_session: Session,
+) -> None:
+    """L-4: lock de empresa ausente falha com erro de domínio, não NoResultFound."""
+
+    with pytest.raises(EmpresaInexistente):
+        travar_empresa(db_session, uuid4())
 
 
 def test_quota_estourada_devolve_mensagem_nao_500(
@@ -287,28 +370,31 @@ def test_corrida_da_quota_tem_um_vencedor_somente(engine_postgres) -> None:
         empresa_id = empresa.id
     resultados: list[str] = []
 
-    def turno() -> None:
-        with factory() as sessao:
-            try:
-                travada = travar_empresa(sessao, empresa_id)
-                check_quota(sessao, travada, settings)
-                record_usage(sessao, empresa_id, "qwen", 10)
-                sessao.commit()
-                resultados.append("venceu")
-            except QuotaExcedida:
-                resultados.append("bloqueado")
+    try:
+        def turno() -> None:
+            with factory() as sessao:
+                try:
+                    travada = travar_empresa(sessao, empresa_id)
+                    check_quota(sessao, travada, settings)
+                    record_usage(sessao, empresa_id, "qwen", 10)
+                    sessao.commit()
+                    resultados.append("venceu")
+                except QuotaExcedida:
+                    resultados.append("bloqueado")
 
-    fios = [threading.Thread(target=turno, daemon=True) for _ in range(2)]
-    for fio in fios:
-        fio.start()
-    for fio in fios:
-        fio.join(timeout=60)
+        fios = [threading.Thread(target=turno, daemon=True) for _ in range(2)]
+        for fio in fios:
+            fio.start()
+        for fio in fios:
+            fio.join(timeout=60)
 
-    assert sorted(resultados) == ["bloqueado", "venceu"]
-    with factory() as conferencia:
-        registros = UsageRepository(conferencia).list(empresa_id)
-        assert len(registros) == 1
-        assert sum(r.tokens for r in registros) == 10
+        assert sorted(resultados) == ["bloqueado", "venceu"]
+        with factory() as conferencia:
+            registros = UsageRepository(conferencia).list(empresa_id)
+            assert len(registros) == 1
+            assert sum(r.tokens for r in registros) == 10
+    finally:
+        _limpar_empresa(factory, empresa_id)
 
 
 def test_lock_por_linha_nao_bloqueia_outra_empresa(engine_postgres) -> None:
@@ -322,9 +408,13 @@ def test_lock_por_linha_nao_bloqueia_outra_empresa(engine_postgres) -> None:
         b = repo.create("B", token_quota_mensal=10)
         preparo.commit()
 
-    with factory() as sessao_a:
-        travar_empresa(sessao_a, a.id)
-        with factory() as sessao_b:
-            travar_empresa(sessao_b, b.id)
-            sessao_b.rollback()
-        sessao_a.rollback()
+    try:
+        with factory() as sessao_a:
+            travar_empresa(sessao_a, a.id)
+            with factory() as sessao_b:
+                travar_empresa(sessao_b, b.id)
+                sessao_b.rollback()
+            sessao_a.rollback()
+    finally:
+        _limpar_empresa(factory, a.id)
+        _limpar_empresa(factory, b.id)

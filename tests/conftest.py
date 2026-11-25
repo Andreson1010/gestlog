@@ -52,6 +52,15 @@ class FakeChatModel:
             "total_tokens": self._tokens,
         }
 
+    def _payload_roteamento(self, route: str) -> list[dict[str, Any]]:
+        """Tool call bruta imitando o function calling real do roteador.
+
+        Com ``include_raw=True``, a resposta crua de structured output vem com
+        ``content`` vazio e a decisão na geração de ``tool_calls`` — é esse
+        payload que a estimativa de tokens precisa cobrir (I-2).
+        """
+        return [{"function": {"name": "RouteDecision", "arguments": route}}]
+
     def with_structured_output(self, schema: type, **_: Any) -> Any:
         """Devolve o shape do ``include_raw=True``: ``{"raw", "parsed"}``."""
         modelo = self
@@ -63,7 +72,13 @@ class FakeChatModel:
                 recebidas.append(messages)
                 route = routes.pop(0) if routes else "FINISH"
                 return {
-                    "raw": AIMessage(content="", usage_metadata=modelo._uso()),
+                    "raw": AIMessage(
+                        content="",
+                        additional_kwargs={
+                            "tool_calls": modelo._payload_roteamento(route)
+                        },
+                        usage_metadata=modelo._uso(),
+                    ),
                     "parsed": schema(next=route),
                 }
 

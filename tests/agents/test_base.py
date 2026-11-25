@@ -19,6 +19,32 @@ def test_tokens_sem_metadata_sao_estimados_nunca_zero() -> None:
     assert tokens_da_mensagem(metadata_zero) > 0
 
 
+def test_estimativa_cobre_tool_calls_do_payload() -> None:
+    """A geração de structured output fica em tool_calls e entra na estimativa."""
+    chamadas = [
+        {
+            "name": "rota",
+            "args": {"next": "estoque", "reasoning": "x" * 40},
+            "id": "call-1",
+            "type": "tool_call",
+        }
+    ]
+    com_chamadas = AIMessage(content="", tool_calls=chamadas)
+    vazia = AIMessage(content="")
+
+    assert tokens_da_mensagem(com_chamadas) > tokens_da_mensagem(vazia)
+    assert tokens_da_mensagem(com_chamadas) >= len(str(chamadas)) // 4
+
+
+def test_estimativa_cobre_tool_call_bruta_em_additional_kwargs() -> None:
+    """Respostas cruas de function calling carregam a chamada em additional_kwargs."""
+    chamadas = [{"function": {"name": "RouteDecision", "arguments": "FINISH"}}]
+    mensagem = AIMessage(content="", additional_kwargs={"tool_calls": chamadas})
+
+    assert tokens_da_mensagem(mensagem) >= len(str(chamadas)) // 4
+    assert tokens_da_mensagem(mensagem) > 1
+
+
 def test_tokens_reportados_quando_metadata_presente() -> None:
     mensagem = AIMessage(
         content="x",

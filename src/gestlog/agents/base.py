@@ -28,17 +28,34 @@ class SpecialistOutput(TypedDict, total=False):
 SpecialistNode = Callable[[AgentState], SpecialistOutput]
 
 
+def _tamanho_do_payload(mensagem: BaseMessage | None) -> int:
+    """Comprimento do payload completo: ``content`` somado às tool calls.
+
+    Com structured output, a geração pode não estar em ``content`` (vazio) e
+    sim nas ``tool_calls`` — parseadas no atributo ou cruas em
+    ``additional_kwargs`` (function calling). Medir só o ``content``
+    subestimaria o roteamento para o piso (I-2).
+    """
+    if mensagem is None:
+        return 0
+    conteudo = str(getattr(mensagem, "content", "") or "")
+    chamadas = getattr(mensagem, "tool_calls", None) or (
+        getattr(mensagem, "additional_kwargs", None) or {}
+    ).get("tool_calls")
+    return len(conteudo) + (len(str(chamadas)) if chamadas else 0)
+
+
 def tokens_da_mensagem(mensagem: BaseMessage | None) -> int:
     """Tokens reportados pela mensagem; sem metadata, estimativa conservadora.
 
-    A estimativa usa ``max(1, len(texto) // 4)`` (~4 chars/token) com piso de 1:
-    a meta é não subestimar o uso, então até mensagem vazia conta um token.
+    A estimativa usa ``max(1, payload // 4)`` (~4 chars/token) sobre o payload
+    completo (``content`` + ``tool_calls``), com piso de 1: a meta é não
+    subestimar o uso, então até mensagem vazia conta um token.
     """
     uso = getattr(mensagem, "usage_metadata", None)
     if isinstance(uso, Mapping) and int(uso.get("total_tokens") or 0) > 0:
         return int(uso["total_tokens"])
-    conteudo = str(getattr(mensagem, "content", "") or "")
-    return max(1, len(conteudo) // 4)
+    return max(1, _tamanho_do_payload(mensagem) // 4)
 
 
 def _fragmento(
