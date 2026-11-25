@@ -39,6 +39,7 @@ def create_onboarding_router() -> APIRouter:
         corpo: ContaCreate,
         session: Annotated[AsyncSession, Depends(get_async_session)],
     ) -> dict[str, str]:
+        """Cria empresa e admin; corrida de unicidade devolve 409, não 500."""
         try:
             empresa, usuario = await accounts.criar_conta(
                 session, corpo.nome_empresa, corpo.email, corpo.senha
@@ -46,6 +47,12 @@ def create_onboarding_router() -> APIRouter:
         except exceptions.UserAlreadyExists as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
+                detail="E-mail já cadastrado.",
+            ) from exc
+        except IntegrityError as exc:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
                 detail="E-mail já cadastrado.",
             ) from exc
         return {"empresa_id": str(empresa.id), "usuario_id": str(usuario.id)}

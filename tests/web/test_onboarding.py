@@ -160,6 +160,27 @@ async def test_onboarding_com_email_repetido_retorna_400(client: AsyncClient) ->
     assert repetido.status_code == 400
 
 
+async def test_onboarding_corrida_de_email_retorna_409(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Corrida de unicidade (índice funcional) devolve 409, não 500 (IDT-02)."""
+    from sqlalchemy.exc import IntegrityError
+
+    import gestlog.web.onboarding as onboarding_module
+
+    async def _colidir(*args: object, **kwargs: object) -> tuple[Empresa, User]:
+        raise IntegrityError("insert", {}, Exception("duplicado"))
+
+    monkeypatch.setattr(onboarding_module.accounts, "criar_conta", _colidir)
+
+    resposta = await client.post(
+        "/onboarding",
+        json={"nome_empresa": "Outra", "email": "nova@empresa.com", "senha": _SENHA},
+    )
+
+    assert resposta.status_code == 409
+
+
 async def test_admin_convida_usuario_para_a_empresa(client: AsyncClient) -> None:
     dados = await _criar_conta(client)
     await _login(client, "admin@empresa.com")
