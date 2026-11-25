@@ -25,6 +25,10 @@ Thumbs.db
 .opencode/worktrees/
 .opencode/node_modules/
 
+# skills de agente (mattpocock, instaladas via npx skills)
+.agents/
+skills-lock.json
+
 # Playwright MCP (snapshots/console gerados)
 .playwright-mcp/
 

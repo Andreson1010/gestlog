@@ -1,147 +1,152 @@
-# Contexto da Sessão — revisão de modelos + follow-ups do PR #74
+# Contexto da Sessão — skills mattpocock: instalação, poda de redundâncias e gitignore
 
-> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-10-26.
-> Branch: `chore/followups-review-76` @ `10575e1`+fix (PR #77; base `main` @ `bce9c48`).
-> Após o squash-merge do #77, `main` passa a apontar para o squash deste PR.
+> Handoff persistente. `/end` grava, `/start` lê. Última atualização: 2026-11-25.
+> Branch: `main` · HEAD: `c45b7a2` (squash do #80) = `origin/main`.
 
 ## Estado atual
 
-- **gestlog**: fluxo multiagente LangGraph (supervisor + transporte/fornecedores/estoque)
-  com tools `@tool`. Remote `origin` = https://github.com/Andreson1010/gestlog (privado).
-- `main` @ `bce9c48` (pós-merge do #76; o #77 soma o squash próprio); tags
-  `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
-- **PR #74 MERGED** (squash `24128ac`): a suíte roda em Postgres no CI (matriz de dialetos;
-  AD-031 no STATE). **PR #75 MERGED** (squash `7d7999f`): follow-ups do review do #74.
-  Branches apagadas (local e remota). **PR #76 MERGED** (squash `bce9c48`): WIP de
-  config/docs (modelos pagos, permissão do revisor, memória de sessão, ADR didático)
-  comitado em 3 commits; branch `chore/wip-pos-74` apagada.
-- **PR #76** — code review independente: **APPROVE** (0 CRITICAL/HIGH, 1 MEDIUM + 3 LOW);
-  M-1 (handoff defasado no CONTEXT) corrigido em `7d58e04` — lição **L-042**;
-  follow-ups LOW (sandbox do pytest no revisor; realocar regra da L-033) registrados
-  nos "Próximos passos". Resquício no pwsh: `rg` não existe — usar cmdlets/Grep.
-- **Modelos (tudo pago)**: default do projeto e builders em `opencode-go/glm-5.3-flash`;
-  revisor `code-reviewer-agent` em `opencode-go/deepseek-v4.1-flash` (independência real
-  de lab). Ambos testados OK após a renovação da key do `opencode-go`.
-- Stack (AD-007): FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users;
-  LLM via endpoint compatível com OpenAI (Ollama local por padrão).
-- **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` / `demo12345`),
-  `serve_dev.py` fora do repo.
+- **gestlog**: multiagente LangGraph (supervisor + transporte/fornecedores/estoque),
+  FastAPI + Jinja2/HTMX/SSE + Postgres (`empresa_id`) + FastAPI Users.
+- `main` @ `c45b7a2`; tags `v0.1.0`..`v0.4.0`; `pyproject`/`uv.lock` em **0.4.0**.
+- **Dívidas D1–D7: TODAS MERGEADAS** (PRs #78/#79/#80, 2026-11-06) — nada de
+  código em aberto.
+- **Gates**: último gate (2026-11-06) → 607 passed, 1 skipped, 99,04%; nesta
+  sessão NÃO houve mudança de código, gates não rodados.
+- **Modelos (tudo pago)**: builders/default `opencode-go/glm-5.3-flash`; revisor
+  `code-reviewer-agent` em `opencode-go/deepseek-v4.1-flash`.
+- **Harness de dev**: `http://127.0.0.1:8000` (login `demo@gestlog.local` /
+  `demo12345`), `serve_dev.py` fora do repo.
 
-## O que foi feito nesta sessão
+## O que foi feito nesta sessão (2026-11-25) — CONCLUÍDO
 
-- **Code review desbloqueado**: causa dos 3 travamentos do `code-reviewer-agent` era
-  `bash "*": ask` (em subagente não-interativo o pedido de aprovação bloqueia a tool call).
-  Trocado por allowlist read-only + catch-all `deny` em
-  `.opencode/agent/code-reviewer-agent.md`; lição **L-040**.
-- **Modelos verificados**: `opencode/*-free` existem e respondem, mas o GLM free é
-  200K/32K e lento (7–196 s); o DeepSeek free foi rápido. Usuário decidiu **tudo pago**;
-  config ajustada/validada (após ida-e-volta registrada em **L-039**).
-- **PR #74**: code review independente → **APPROVE** (0 CRITICAL/HIGH, 1 MEDIUM + 3 LOW);
-  squash-merge `24128ac`; branch `refactor/postgres-no-ci` apagada. O LOW-4 era **válido**
-  (`.opencode/CONTEXT.md`/`LESSONS.md` estavam no commit) — meu descarte inicial foi
-  corrigido; lição **L-041**.
-- **PR #75 (follow-ups)**: `PRAGMA foreign_keys=ON` no SQLite do `db_session` (+ teste
-  ancorado em FK órfã), `pythonpath = ["src", "tests"]`, nota de `CONNECT`/`postgres` no
-  `TESTING.md`; ADR `docs/adr/pr74-review-followups-self-review.md`; self-review + code
-  review **APPROVE** (2 LOW documentais corrigidos); squash-merge `7d7999f`.
-- **Gates**: SQLite **573 passed, 1 skipped, 99.23%**; Postgres **573 passed, 1 skipped**;
-  CI `quality` + `postgres` verdes nos dois PRs.
-- **Documento didático**: `docs/adr/pr74-review-followups-explicacao.md` criado;
-  commitado no PR #76 (commit `895fafc`), com linhas do `ci.yml` corrigidas no review.
+- **Skills mattpocock instaladas**: `npx skills@latest add mattpocock/skills
+  -a opencode` → 39 skills em `.agents/skills/` (nível projeto).
+- **Poda 39 → 14**:
+  - 4 duplicadas removidas: `grill-me`, `grill-with-docs` (já em
+    `~/.agents/skills/`), `code-review` (≈ `code-reviewer` do repo), `tdd`
+    (≈ `tdd-workflow` global).
+  - 21 removidas por redundância/inaplicabilidade (análise vs feature-factory,
+    ship-feature, `/end`+CONTEXT.md, `/lesson`, `write-fluid-hybrid-adr`,
+    allowlist opencode): `domain-modeling` (auto-invoca em ADR), `pr`
+    (auto-invoca em body de PR), `setup-matt-pocock-skills`, `to-spec`,
+    `to-tickets`, `wayfinder`, `triage`, `implement`, `implement-spec`,
+    `software-factory` (fluxo de spec/tickets/tracker dele), `chief-of-staff`
+    (memória paralela + Critical Risk Snyk), `handoff`/`claude-handoff` (vs
+    `/end`), `retro` (vs `/lesson`), `research` (vs `codebase-researcher`),
+    `improve-codebase-architecture`/`setup-ts-deep-modules`/
+    `migrate-to-shoehorn`/`scaffold-exercises`/`setup-pre-commit` (TS/JS/Husky),
+    `git-guardrails-claude-code` (hooks Claude Code; já há allowlist opencode).
+  - Mantidas (14): `ask-matt`, `codebase-design`, `diagnosing-bugs`, `grilling`
+    (invocada pela grill-me global), `loop-me`, `prototype`, `teach`,
+    `to-questionnaire`, `wait-what`, `wizard`, `writing-beats`,
+    `writing-for-agents`, `writing-fragments`, `writing-shape`.
+- **`.gitignore`**: adicionadas regras para `.agents/` e `skills-lock.json`.
+- **Lições**: L-051 registrada (contagem declarada vs lista real); LESSONS.md
+  consolidada (29 linhas, antigos L-029..L-044 comprimidos a uma linha).
+- Nenhuma mudança de código, testes ou `docs/specs/` nesta sessão.
 
 ## Decisões e regras (não esquecer)
 
-- **Modelos**: builders/default `opencode-go/glm-5.3-flash`; revisor
-  `opencode-go/deepseek-v4.1-flash` (lab independente). Free tier: 200K/32K, lento,
-  promo temporária — não usar sem confirmar trade-off.
-- **Subagente**: nunca `bash "*": ask`; allowlist read-only explícita + `deny`
-  (falha rápida); **negação por flag casa a flag em QUALQUER posição** (`git diff
-  *--output*`) e DEVE vir DEPOIS dos allows — última regra vence (ver L-043);
-  mudança em `.opencode/agent/*` só vale em sessão nova; prompt sem
-  pipe/variável/backtick/script no pwsh.
-- **FK no SQLite de teste**: pragma só no `db_session` (`tests/conftest.py:104-116`,
-  chamado em `:130`), **nunca** em `build_engine` — produção é Postgres
-  (`src/gestlog/config.py:34`) e `libs` não muda por requisito de teste.
-- **FK para `user.id` usa `GUID`** (não `Uuid`): `Uuid` grava hex 32 no SQLite e quebra
-  JOIN com o FastAPI Users.
-- **Relatórios**: empresa de `exigir_papel(*PAPEIS_APROVADORES)` (nunca URL/query);
-  401 sem sessão, 403 operador, 404 domínio inválido, 422 `de > ate`/data malformada;
-  recorte UTC inclusivo; CSV `;`/`utf-8-sig`/RFC 4180: o **texto de cada célula
-  do CSV é idêntico ao texto da célula correspondente na tela, EXCETO a
-  neutralização de fórmulas** — célula que começa com `= + - @` (ou tab/CR)
-  recebe `'` como prefixo no CSV (`csv_relatorios.py::neutralizar`; contrato
-  anti CSV-injection). Sem formatador única compartilhada — o contrato é
-  textual; cobertura: teste de aceitação por domínio compara linhas do CSV com
-  a tabela HTML (estoque: `test_relatorios_export.py` — fórmulas em `:178-195`;
-  transporte: `:78`; fornecedores: `test_relatorios_fornecedores.py`).
-- **Processo**: self-review (`developer-self-reviewer` + ADR) → PR → code review
-  independente (`code-reviewer-agent`, só reporta) → squash-merge. `main` **nunca**
-  recebe push direto.
-- **Supervisor anti-loop**: repetir especialista → `FINISH`. Memória de erros em
+- **Skills**: `.agents/skills/` é git-ignorado por decisão — skills de terceiros
+  não versionadas no repo; antes de instalar skills novas, verificar conflito de
+  gatilho (model-invoked) com skills/agentes do fluxo próprio.
+- **Invocação de skills**: sem `disable-model-invocation` o agente dispara sozinho
+  pela `description`; com a flag, só por comando explícito do usuário.
+- **Processo**: self-review → PR → code review independente → squash-merge;
+  `main` nunca recebe push direto; feature-factory (story-writer → spec-writer →
+  builders → self-review → test-verifier → validator) e `ship-feature` são o
+  fluxo canônico — skills externas não o contornam.
+- **Gate local**: sempre WSL2 (`wsl -d Ubuntu -u root -- gestlog-gate`) — host
+  Windows bloqueado pelo SAC (L-035); editar/patchear arquivos SEM cmdlets de
+  conteúdo pwsh (L-050).
+- **Convite**: aceite só cria CONTA NOVA — jamais redefine senha de e-mail
+  registrado (takeover cross-tenant; L-048/ADR `ad-015-...`).
+- **Rate limiter**: singleton em memória; ao escalar réplicas, trocar store
+  (Redis) mantendo interface.
+- **Modelos**: builders GLM pago; revisor DeepSeek; free tier só com confirmação
+  (L-039).
+- Regras detalhadas das sessões anteriores: ver ADRs em `docs/adr/` e
   `.opencode/LESSONS.md`.
 
 ## Próximos passos / bloqueios
 
-1. **Follow-ups do review do #76** (LOW) — **concluídos no PR #77** (branch
-   `chore/followups-review-76`): `git fetch origin` exato na allowlist do revisor +
-   nota de fronteira de confiança do pytest (L-1); regra da L-033 realocada na
-   seção Relatórios acima com exceção de neutralização de fórmulas + teste novo
-   `test_for_33` (fornecedores CSV×tela) (L-3). O review do próprio #77 endureceu
-   a allowlist por 3 rodadas (fetch exato, `git branch` restrito, negações por
-   flag em qualquer posição) — lição **L-043**.
-   **Pendente pós-merge**: a allowlist nova só entra em vigor em SESSÃO NOVA (config
-   é snapshot no início); no próximo review, conferir o ruleset efetivo com
-   `opencode debug agent`. `ship-feature` passo 5 manda sincronizar a base antes do spawn.
-2. **Débitos** (nenhum em andamento):
-   - `String(4000)`/`Text` (migração pontual em `message.conteudo_redigido`/`recommendation.texto`);
-   - flake de `created_at` empatado em `tests/copilot/test_service.py` (pré-existente, Windows);
-   - T23/AD-019 (botões no turno ao vivo + ordenação monotônica); rate limiting/convite
-     por token (AD-015); empresa ativa; `evals/` no CI.
-3. **Gate local via WSL2**: `wsl -d Ubuntu -u root -- gestlog-gate` → **573 passed, 99.23%**;
-   focado `... gestlog-gate tests/test_db.py --no-cov -q`; Postgres:
-   `wsl -d Ubuntu -u root -- bash /mnt/c/Users/ander/AppData/Local/Temp/opencode/gestlog-pg-gate.sh`
-   (Docker `gestlog-pg`, porta 5433).
-4. **Sem bloqueios ativos.**
+1. **ÉPICO ATIVO `feat/seguranca-sweep`** (aprovado 2026-11-25): quitar C-1 +
+   13 IMPORTANTES da varredura — 6 tasks, 1 PR cada contra a integração.
+   Story aprovada; decisões das 8 open questions tomadas:
+   (1) quota por empresa = coluna nullable c/ fallback ao settings global;
+   (2) consumo histórico conta, sem reset; (3) `is_verified` nasce False
+   (nenhuma rota exige verified — conferido); (4) duplicatas de e-mail:
+   migração fail-fast p/ resolução manual; (5) `retention_days<=0`: rotina
+   recusa purgar + CheckConstraint; (6) `fontes` divergente: filtra p/ tools
+   realmente consultadas, nunca recusa turno; (7) sem `usage_metadata`:
+   estimar `max(1, len//4)`, nunca 0; (8) resposta de convite sempre
+   genérica, conflito só em log/auditoria.
+   Achados LOW (CSRF token, pool_pre_ping, dedup ItemCorrecao, etc.) ficaram
+   de fora (backlog). Relatório completo da varredura: 2 reviews
+   `code-reviewer-agent` de 2026-11-25 (auth+web / dados+LLM) — C-1 quota
+   inoperante é BLOCK.
+2. **Roadmap registrado nas ADRs (futuro, não bloqueante)**: entrega do token
+   por e-mail; aceite autenticado para vínculo de usuário existente; store
+   Redis p/ rate limit em réplicas; `get_sync_session`→`web/deps.py`, remover
+   TOOLS mock (STATE "Débitos técnicos herdados"); higiene do comando `/end`
+   (ainda menciona o MCP graphify).
+3. Decisões pendentes do autor: PDF `docs/business/KipperDev-...pdf` segue não
+   rastreado; `.gitignore`/handoffs desta sessão ainda não commitados.
+4. Docker Desktop precisa estar rodando para a matriz Postgres local (`docker
+   start gestlog-pg`).
+5. Sem bloqueios ativos.
 
 ## WIP local (não commitado)
 
-- Limpo após o commit deste PR (branch `chore/followups-review-76`): nada pendente
-  além do PDF abaixo.
-- `??`: `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado de
-  propósito, decisão do autor).
+- `M`: `.gitignore` (`.agents/` + `skills-lock.json`), `.opencode/CONTEXT.md`,
+  `.opencode/LESSONS.md` (memória desta sessão — commitados pelo `/end`
+  conforme fluxo anterior).
+- `??`: `docs/business/KipperDev-Guia-Seguranca-Vibe-Coding.pdf` (não rastreado
+  de propósito, decisão do autor).
+- `.agents/skills/` e `skills-lock.json`: ignorados pelo git.
+- Nota: `.venv` do repo ficou com binários Linux (WSL) — `uv sync --extra dev`
+  no host se precisar do venv Windows.
 
 ## Artefatos do graphify
 
-- **graphify indisponível** — verificado agora: `opencode mcp list` → `graphify failed`
-  ("MCP error -32000: Connection closed"); a config aponta para
-  `C:\Users\ander\8_projetos\medasist\graphify-out\graph.json` (projeto errado).
-  `list_mcp_resources` e `list_mcp_resource_templates` → `[]`. Números **não verificados**
-  — não inventar.
+- **Graphify indisponível** — MCP removido da config no PR #78; ferramentas não
+  presentes nesta sessão. Nós/arestas/comunidades: não verificado.
+- `graphify-out/` LOCAL existe (grafo de 2026-09-21, commit `5845358f`) e é
+  ignorado por design — não remover do `.gitignore` nem comitar.
 
 ## Documentos de projeto relevantes
 
-- **Projeto**: `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` (STATE contém AD-031).
-- **Codebase**: `docs/specs/codebase/TESTING.md` (matriz Postgres + `CONNECT` + pragma).
+- **Projeto**: `docs/specs/project/{PROJECT,ROADMAP,STATE}.md` — intocados nesta
+  sessão (última alteração no PR #80).
+- **Codebase**: `docs/specs/codebase/TESTING.md` (matriz Postgres; intocado).
 - **Features**: `docs/specs/features/{f1-mvp,f2-hitl,ui-beautifului,relatorios-operacionais}/*`.
-- **ADRs**: `docs/adr/` (43 arquivos; desta sessão:
-  `pr74-review-followups-self-review.md` e `pr74-review-followups-explicacao.md`).
-- **Business**: `docs/business/PRD.md`; PDF `KipperDev-Guia-Seguranca-Vibe-Coding.pdf`
-  (não rastreado).
-- **Config/skills**: `AGENTS.md`, `README.md`, `Makefile`, `opencode.json`,
-  `.opencode/{agent,skills,plugin}/`.
-- **Mudou nesta sessão**: `AGENTS.md`, `opencode.json`, 3 `.opencode/agent/*.md`,
-  `.opencode/skills/ship-feature/SKILL.md`, `.opencode/LESSONS.md`,
-  `docs/adr/pr74-review-followups-{self-review,explicacao}.md`,
-  `docs/specs/codebase/TESTING.md`, `tests/{conftest,test_db}.py`, `pyproject.toml`.
-  O #74 (mergeado agora) também trouxe `STATE.md`, `README.md` e `.github/workflows/ci.yml`.
+- **ADRs**: `docs/adr/` — nenhuma nova nesta sessão (últimas: `d1-remove-graphify`,
+  `ad-019-historico-texto`, `ad-015-rate-limit-convite`, `empresa-ativa-cookie`).
+- **Business**: `docs/business/PRD.md`; PDF KipperDev (não rastreado, intocado).
+- **Config/skills**: `AGENTS.md`, `README.md`, `Makefile`, `opencode.json`
+  (intocados); `.opencode/{agent,skills,plugin,command}/` intocados
+  (`end.md` ainda menciona graphify — higiene futura); `.agents/skills/`
+  (14 skills mattpocock podadas) e `skills-lock.json` — git-ignorados.
+- **Skills do repo**: `.opencode/skills/{build-with-tests,code-reviewer,
+  feature-factory,git-workflow,ship-feature,write-fluid-hybrid-adr}` — canônicas,
+  intocadas.
 
 ---
 
 # Histórico (sessões anteriores, resumido)
 
-- **2026-10-22 (sessão anterior)**: débito Postgres no CI (matriz de dialetos) implementado;
-  self-review + ADR `postgres-ci-self-review.md`; PR #74 aberto e verde; key do revisor expirada.
-- **2026-10-07**: AD-027 quitado (FKs de `user.id` → `GUID`, PR #73); self-review + APPROVE.
-- **2026-10-06**: code review/merge de FU-2..FU-7; gate local via WSL2 (Smart App Control).
-- **2026-09-30**: feature relatórios (#66) + release v0.4.0 (#67); FU-1 (#68).
+- **2026-11-06**: quitação D1–D7 via PRs #78 (D1, graphify removido),
+  #79 (D2–D4: Text+índices, carimbo monotônico, botões SSE) e #80 (D5–D7:
+  rate limit, convite só cria conta nova, empresa ativa, evals CI). Lições
+  L-045..L-050. Self-review + ADR + code review independente por PR.
+- **2026-10-28**: sessão de quitação D1–D7 trabalhada (código/testes/docs
+  prontos; PRs ficaram para 2026-11-06). Allowlist do revisor validada.
+- **2026-10-26**: endurecimento da allowlist do revisor em 4 rodadas de review do
+  #77 (fuzzing real); L-043; PRs #76/#77 mergeados (config de modelos, catch-all
+  deny no revisor, memória de sessão, ADR didático).
+- **2026-10-22**: débito Postgres no CI (matriz de dialetos) — PR #74; code-reviewer
+  desbloqueado (L-040); decisão "tudo pago" (L-039); self-reviews + ADRs.
+- **2026-10-07**: AD-027 quitado (FKs de `user.id` → `GUID`, PR #73); APPROVE.
+- **2026-10-06**: FU-2..FU-7 mergeados; gate local via WSL2 (Smart App Control).
+- **2026-09-30**: relatórios operacionais (#66) + release v0.4.0 (#67); FU-1 (#68).
 - **2026-09-18**: F1 completa (34/34) + release v0.1.0.

@@ -1,43 +1,39 @@
 # Lições (memória de erros — projeto gestlog)
 
-> Só erro real, já corrigido e observado; mais recente no topo.
-> Formato: `Gatilho / Erro / Regra / Evidência`. Ver "Loop de auto-melhoria" no `AGENTS.md`.
+> Só erro real, já corrigido e observado; mais recente no topo. Formato detalhado em AGENTS.md ("Loop de auto-melhoria").
 
-## L-043 · 2026-10-26 · permissões/allowlist de git
-- **Gatilho/Erro**: liberei `git fetch origin*`, `git branch*` e `git diff/log/show*` no revisor sem validar bypass: refspec reescrevia `origin/main`, `git branch -f/-D/-m` reescrevia refs locais, negação ancorada por posição era contornável (`git diff --stat --output=arquivo` casou o allow e gravou) e `--no-index` lia arquivo do host. **Regra**: negação por flag deve casar em QUALQUER posição (`git diff *--output*`) e vir DEPOIS dos allows (última regra vence); valide a allowlist EXECUTANDO os bypass NA sessão em que o ruleset já é o novo (`opencode debug agent`) — antes disso, simule o matcher. Evidência: review do #77 (rodadas 1–4), fuzzing real; consertos em `475123a`, `10575e1`, `75d9f92` + fix.
+## L-051 · 2026-11-25 · contagem declarada divergente da lista real
+Gatilho/Erro: declarei "21 para remover, 14 para manter" com a tabela listando só 19 — o usuário aprovou "remover as 21" e a execução literal deixaria 2 de fora. Regra: antes de pedir aprovação sobre um conjunto, reconcile a contagem com a listagem item a item; diferença revela item implícito não decidido. Evidência: podar `.agents/skills/` nesta sessão — reconciliado em execução (+`improve-codebase-architecture`, +`research`).
 
-## L-042 · 2026-10-26 · handoff/estado commitado
-- **Gatilho/Erro**: comitei no PR #76 um CONTEXT.md descrevendo estado inexistente no HEAD (config listada como "não commitada" já dentro do commit; ADR recém-commitada listada como pendente) — review achou M-1. **Regra**: antes de commitar o handoff, reclasse as seções para o estado resultante do próprio commit (não o anterior); confirme com `git status`/`git show`. Evidência: review do #76, M-1 corrigido em `7d58e04`.
+## L-050 · 2026-11-06 · shell/pwsh destrói UTF-8 de .md edits
+Gatilho/Erro: usei `Get-Content -Raw`/`Set-Content` (pwsh) para trocar texto em ADRs .md — a leitura/wait-write em encoding gerado corrompeu acentos ("número"→"nmero") em DOIS arquivos; e patches salvos via `Out-File` vieram com CRLF e falhavam `git apply` contra blob LF. Regra: editar arquivo via ferramenta de edição do agente (Read/Edit/Write), nunca cmdlets de conteúdo pwsh; patch p/ `git apply` gerar com `[IO.File]::WriteAllText` e LF (verify `--check` antes de aplicar). Evidência: revert+redo de `docs/adr/{ad-015,empresa-ativa}-...md`; patch `models_wip_convite.patch` reprovado 2x.
 
-## L-041 · 2026-10-22 · review/validação de achado
-- **Gatilho/Erro**: o review do #74 apontou `.opencode/CONTEXT.md`/`LESSONS.md` como commitados e eu declarei o achado "inválido" por supor que eram mudanças locais; `git show --name-only 24128ac` provou que estavam no commit. **Regra**: antes de invalidar achado por escopo, confirme no git o que o commit contém — suposição não vale. Evidência: registro corrigido no CONTEXT.
+## L-049 · 2026-11-06 · premissa de estado do repo sem conferir filesystem
+Gatilho/Erro: no PR #78, self-review/removeu a regra `graphify-out/` do `.gitignore` sob "não há graphify-out aqui" — o diretório EXISTIA (grafo gerado do próprio gestlog, ignorado por design no #41); a busca usada respeita `.gitignore` e era cega ao próprio artefato avaliado, desprotegendo 2GB+ de dado ignorado ao `git add .`. Regra: premissa "caminho não existe / regra morta" verifica com `git status --ignored` ou listagem no filesystem — ferramenta de busca que respeita `.gitignore` nunca confirma um artefato ignorado. Evidência: review I-1 do PR #78 (refutação por `GRAPH_REPORT.md`, commit `5845358`); regra restaurada em `8a3e65d`.
 
-## L-040 · 2026-10-22 · subagentes/permissões
-- **Gatilho/Erro**: `code-reviewer-agent` travou 3x no #74 porque `bash "*": ask` bloqueia em subagente não-interativo (o modelo tenta contornar e encerra sem relatório). **Regra**: subagente precisa de allowlist read-only + catch-all `deny` (falha rápida, nunca `ask`) e prompt proibindo pipe/variável/script. Evidência: `opencode debug agent` → `bash *: deny`; review do #74 concluído.
+## L-048 · 2026-11-06 · convite/token como prova de posse de e-mail
+Gatilho/Erro: desenhei o aceite do convite redefinindo a senha de `User` global já registrado ("convite-assume-acesso") com o token entregue AO CONVIDADOR — qualquer pessoa pode criar empresa via `/onboarding`, convidar o e-mail da vítima e tomar a conta (takeover cross-tenant); CRITICAL achado no review independente do PR #80. Regra: token que o EMISSOR possui nunca prova posse do e-mail; fluxo sem autenticação NUNCA altera credencial de usuário existente — convite só cria conta nova, com guard "e-mail registrado → recusa" (defense-in-depth) e teste cross-tenant que discrimina a versão vulnerável (guard de vínculo na empresa convidante não basta). Evidência: review CRITICAL PR #80; fix em `accounts.py` (`criar_convite`/`aceitar_convite`) + `ConviteEmailRegistradoError` → commit `d77c5b6`; testes `test_convite_de_outra_empresa_nao_toca_credencial_da_vitima`/`test_convite_para_email_registrado_retorna_409`.
 
-## L-039 · 2026-10-22 · agentes/modelos
-- **Gatilho/Erro**: "caso sim, coloque builders em GLM free" foi lido como gatilho e eu troquei o fluxo sem confirmar, mesmo com o free inferior ao pago; usuário corrigiu. **Regra**: quando a verificação quebra a premissa do pedido, pare e pergunte antes de editar config. Evidência: revertido para pago (builders `opencode-go/glm-5.3-flash`, revisor `opencode-go/deepseek-v4.1-flash`).
+## L-047 · 2026-11-06 · rate-limit/ordem da poda dentro da contagem
+Gatilho/Erro: implementei a poda do `RateLimiter` DEPOIS do `setdefault` com gatilho `>` — a chave corrente era removida no meio da própria contagem e o `append` gravava num deque órfão fora do dict (tentativa sem registro, limite furável); `>` sobre tamanho pré-inserção também não disparava na borda, revelado pelo teste. Regra: poda de estrutura mutável por uso só ANTES de inserir a chave corrente; gatilho por tamanho que testa pré-inserção usa `>=`; teste da borda (teto monkeypatchado) na frente — deixou fechar o ciclo vermelho→verde. Evidência: `src/gestlog/web/rate_limit.py` (`_podar` antes do `setdefault`, `>=`); `tests/web/test_rate_limit.py::test_limitador_poda_chaves_sem_marca_viva`; conserto no self-review D5 (→ `11bf860`).
 
-## L-038 · 2026-10-22 · testes/cobertura da matriz
-- **Gatilho/Erro**: matriz Postgres ligada só ao `db_session`; `tests/test_db.py` ficou em SQLite e o STATE dizia "~92 testes" (medido 117/120). **Regra**: ao criar matriz de dialetos, migre todo fixture de banco e meça a cobertura alegada. Evidência: `tests/test_db.py` → `db_session`; AD-031 corrigida.
+## L-046 · 2026-11-06 · htmx/escopo do sse-swap da extensão SSE
+Gatilho/Erro: acrescentei `sse-swap="fontes"` num div IRMÃO do elemento com `sse-connect` — a extensão 2.2.2 acha a fonte só em ANCESTRAIS (`getClosestMatch`) e os eventos só chegam a ela se houver `hx-ext="sse"` na ascendência (`Ft/Un` do htmx 2.0.4): elemento órfão, evento `(event: fontes)`.postMessage nunca renderizado, e teste SSE só validava o lado do servidor. Regra: em `htmx-ext-sse`, `hx-ext="sse"` + `sse-connect` + `sse-close` vão no ancestral comum a TODOS os `sse-swap`; antes de aninhar atributos de extensão, leia o código da extensão quanto a como acha fonte e listeners (não confie no uso que "parece" idiomático). Evidência: review D2+D3+D4 de 2026-11-06; sse.js (bigskysoftware/htmx-extensions) `registerSSE`/`ensureEventSourceOnElement`; conserto em `chat_turno.html`.
 
-## L-037 · 2026-10-07 · testes/migração de dados
-- **Gatilho/Erro**: teste da migração `b7d2e9a4f108` validava 1 de 5 colunas e não cobria `downgrade` com dado (reincidiu L-029). **Regra**: 1 asserção por coluna (valor + efeito no JOIN) em `upgrade` **e** `downgrade`. Evidência: `tests/test_migrations.py::test_migracao_normaliza_fk_user_para_guid`.
+## L-045 · 2026-11-06 · docs/checkbox parcial num item multi-dívida
+Gatilho/Erro: no STATE.md marquei `[x]` no item "Débitos técnicos herdados" com 3 dos 5 débitos ainda pendentes (recaída direta da L-044, agora por subitem). Regra: item com parte quitada parte pendente fica `[ ]` listando só o residual, com nota da data dos subitens quitados; se necessário, fatie o item. Evidência: STATE.md linhas 611–616 corrigidas no review D2+D3+D4 de 2026-11-06.
 
-## L-036 · 2026-10-06 · alembic/geração
-- **Gatilho/Erro**: brigar com `script.py.mako` para deixá-lo black-clean; `${repr()}`/`${imports}` quebram e o autogenerate não passa pelo template. **Regra**: deixe o `[post_write_hooks]` do `alembic.ini` (ruff --fix + black) formatar o arquivo gerado. Evidência: PR #72 (`f348d0b`).
+## Anteriores (uma linha por erro)
 
-## L-035 · 2026-10-06 · ambiente/Windows SAC
-- **Gatilho/Erro**: recriei o venv em 3.13 para driblar o Smart App Control; o bloqueio só migrou de DLL (`psycopg`). **Regra**: não troque interpretador por causa do SAC; rode o gate no WSL2 sobre `/mnt/c` (venv fora do repo) ou no CI. Evidência: `gestlog-gate` → 573 passed.
-
-## L-034 · 2026-10-06 · shell/pwsh + git/PR
-- **Gatilho/Erro**: `head`/`tail`/`rg` não existem no pwsh; backtick em `--body` e `"$VAR"`/`$(...)` no `wsl bash -lc` quebram. **Regra**: cmdlets nativos (`Select-Object`/`Select-String`); markdown via `--body-file`; comandos WSL em script `.sh`; sincronize `origin` antes do PR. Evidência: PRs #47/#55/#67/#68.
-
-## L-032 · 2026-09-28 · tipagem (dispatchers/Select)
-- **Gatilho/Erro**: dispatcher e `Select` sem anotação apagavam a união real. **Regra**: anote `_Resumo = A | B | C` e `Select[tuple[X]]`; valide antes do `getattr`. Evidência: `audit/eventos.py`; T6/T7/T9.
-
-## L-031 · 2026-09-28 · testes/timezone SQLite
-- **Gatilho/Erro**: datetime aware relido do SQLite volta naive. **Regra**: normalize (`.replace(tzinfo=UTC)`) no teste, sem alterar produção. Evidência: `tests/test_repositories.py`.
-
-## L-029 · 2026-09-27 · testes/ancoragem (absorve L-026/L-028)
-- **Gatilho/Erro**: asserção em affordance/ORM truthy e autofix de linter sobre `Row` não são seguros. **Regra**: ancore no dado/estado do critério; 1 teste por elemento do conjunto. Evidência: `test_inc_02`; `repositories/users.py::emails` (revertido).
+- **L-044** (2026-10-28): checkbox de dívida `[x]` antes de implementar (STATE.md AD-015) → só com código escrito E gate verde; implemente primeiro, documente depois.
+- **L-043** (2026-10-26): allowlist do revisor contornável (refspec, `branch -f`, negação ancorada, `--no-index`) → negação por flag casa em QUALQUER posição e vem DEPOIS dos allows; valide EXECUTANDO bypass com ruleset novo.
+- **L-042** (2026-10-26): comitei CONTEXT.md com estado inexistente no HEAD; invalidei achado sem conferir commit → confirme com `git status`/`git show` antes de alegar estado (absorve L-041).
+- **L-040** (2026-10-22): `bash "*": ask` travou subagente não-interativo 3x → allowlist read-only + catch-all `deny` (nunca `ask`); prompt sem pipe/variável/script.
+- **L-039** (2026-10-22): pedido ambíguo lido como decisão (builders p/ GLM free) → quando a verificação quebra a premissa do pedido, pare e pergunte antes de editar config.
+- **L-038** (2026-10-22): matriz Postgres ligada só ao `db_session`; `test_db.py` ficou em SQLite → ao criar matriz de dialetos, migre todo fixture de banco e meça a cobertura alegada.
+- **L-037** (2026-10-07): teste de migração validava 1 de 5 colunas, sem downgrade → 1 asserção por coluna (valor + efeito no JOIN) em `upgrade` **e** `downgrade`.
+- **L-035** (2026-10-06): recriei venv em 3.13 para driblar o SAC; bloqueio só migrou de DLL → não troque interpretador por causa do SAC; gate no WSL2 ou CI.
+- **L-034** (2026-10-06): `head`/`tail`/`rg` não existem no pwsh; backtick e `"$VAR"` em `wsl bash -lc` quebram → cmdlets nativos; `--body-file`; comandos WSL em script `.sh`.
+- **L-032** (2026-09-28): dispatcher/`Select` sem anotação apagavam a união → anote `_Resumo = A | B | C` e `Select[tuple[X]]`; valide antes do `getattr`.
+- **L-031** (2026-09-28): datetime aware relido do SQLite volta naive → normalize (`.replace(tzinfo=UTC)`) no teste, sem alterar produção.
+- **L-029** (2026-09-27): asserção em affordance/ORM truthy e autofix de linter sobre `Row` não são seguros → ancore no dado/estado do critério; 1 teste por elemento do conjunto (absorve L-026/L-028).
