@@ -363,6 +363,54 @@ def test_migracao_postgres_nao_altera_fk_user(
     assert [_contagem_join(engine, t, c) for t, c in _FKS_USER] == [1] * len(_FKS_USER)
 
 
+_REV_QUOTA = "f1a2b3c4d5e6"
+
+
+def test_migracao_quota_da_empresa_coluna(alembic_config: tuple[Config, str]) -> None:
+    """A coluna de quota nasce no upgrade, aceita NULL e some no downgrade (QUO-04)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "e8a1c5d9f3b7")
+
+    antes = {c["name"] for c in inspect(create_engine(db_url)).get_columns("empresa")}
+    assert "token_quota_mensal" not in antes
+
+    command.upgrade(cfg, "head")
+
+    engine = create_engine(db_url)
+    depois = {c["name"] for c in inspect(engine).get_columns("empresa")}
+    assert "token_quota_mensal" in depois
+
+    empresa_com_quota = uuid4().hex
+    empresa_sem_quota = uuid4().hex
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, token_quota_mensal, retention_days, "
+                "created_at) VALUES (:id, 'ComQuota', 500, NULL, CURRENT_TIMESTAMP)"
+            ),
+            {"id": empresa_com_quota},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, retention_days, created_at) "
+                "VALUES (:id, 'SemQuota', NULL, CURRENT_TIMESTAMP)"
+            ),
+            {"id": empresa_sem_quota},
+        )
+        lidas = dict(
+            conn.execute(text("SELECT nome, token_quota_mensal FROM empresa")).all()
+        )
+    assert lidas["ComQuota"] == 500
+    assert lidas["SemQuota"] is None
+
+    command.downgrade(cfg, "e8a1c5d9f3b7")
+
+    sem_coluna = {
+        c["name"] for c in inspect(create_engine(db_url)).get_columns("empresa")
+    }
+    assert "token_quota_mensal" not in sem_coluna
+
+
 def test_convite_tem_tabela_e_upgrade_downgrade_simetricos(
     alembic_config: tuple[Config, str],
 ) -> None:

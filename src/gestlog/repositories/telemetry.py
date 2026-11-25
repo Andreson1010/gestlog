@@ -30,9 +30,16 @@ class UsageRepository(EmpresaScopedRepository[UsageRecord]):
         return int(self.session.execute(stmt).scalar_one())
 
     def total_tokens_desde(self, empresa_id: UUID, desde: datetime) -> int:
-        """Soma os tokens consumidos pela empresa a partir de ``desde``."""
+        """Soma os tokens consumidos pelo empresa a partir de ``desde``."""
         stmt = select(func.coalesce(func.sum(UsageRecord.tokens), 0)).where(
             UsageRecord.empresa_id == empresa_id,
+            UsageRecord.created_at >= desde,
+        )
+        return int(self.session.execute(stmt).scalar_one())
+
+    def total_geral_desde(self, desde: datetime) -> int:
+        """Soma os tokens de TODAS as empresas a partir de ``desde`` (teto global)."""
+        stmt = select(func.coalesce(func.sum(UsageRecord.tokens), 0)).where(
             UsageRecord.created_at >= desde,
         )
         return int(self.session.execute(stmt).scalar_one())
