@@ -50,7 +50,7 @@ def _turno_tool(resposta: str) -> list[dict]:
 def test_turno_so_supervisor_conta_tokens(
     db_session: Session, fake_model_cls: type
 ) -> None:
-    """Turno com rota FINISH direta registra tokens do supervisor, sem metadata (C-1)."""
+    """Turno FINISH direto registra tokens do supervisor, sem metadata (C-1)."""
     empresa = _empresa(db_session, "A")
     servico = CopilotService(
         session=db_session,
@@ -157,7 +157,7 @@ def test_quota_da_empresa_sobrepoe_o_global_e_null_cai_para_settings(
 
 
 def test_check_quota_usa_quota_da_empresa_travada(db_session: Session) -> None:
-    """A empresa travada dita a quota; consumo histórico conta sem reset (I-8/EDG-12)."""
+    """A empresa travada dita a quota; histórico conta sem reset (I-8/EDG-12)."""
     settings = Settings(_env_file=None, llm_monthly_token_quota=1_000_000)
     repo = EmpresaRepository(db_session)
     empresa = repo.create("A", token_quota_mensal=50)

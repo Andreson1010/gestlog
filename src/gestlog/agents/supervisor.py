@@ -71,9 +71,7 @@ def create_supervisor_node(
         visitados = set(state.get("especialistas_visitados") or [])
         retorno = router.invoke([SystemMessage(content=system_prompt), *mensagens])
         decisao = retorno.get("parsed") if isinstance(retorno, dict) else None
-        route: Route = (
-            decisao.next if isinstance(decisao, RouteDecision) else "FINISH"
-        )
+        route: Route = decisao.next if isinstance(decisao, RouteDecision) else "FINISH"
         tokens = tokens_da_mensagem(
             retorno.get("raw") if isinstance(retorno, dict) else None
         )

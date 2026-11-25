@@ -22,7 +22,7 @@ class FakeChatModel:
     """Modelo fake: fila de rotas para o supervisor e resposta fixa para especialistas.
 
     - ``routes``: destinos devolvidos em sequência por ``with_structured_output``
-      (no shape do ``include_raw=True``: ``{"raw": AIMessage, "parsed": RouteDecision}``).
+      (shape do ``include_raw=True``: ``{"raw": AIMessage, "parsed": RouteDecision}``).
     - ``tool_calls``: lista de passos; cada passo é uma lista de tool calls.
     - ``final``: resposta textual após esgotar os tool calls.
     """
