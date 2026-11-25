@@ -1,4 +1,4 @@
-"""Redação de PII (nomes, endereços e telefones) antes do envio ao LLM.
+"""Redação de PII (e-mails, documentos, nomes, endereços e telefones) antes do LLM.
 
 A redação é determinística e baseada em expressões regulares e em uma lista de
 nomes comuns (allowlist), sem chamar o LLM. O texto original é preservado por
@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from functools import cache
 
 from gestlog.privacy.politica import (
+    CATEGORIA_DOCUMENTO,
+    CATEGORIA_EMAIL,
     CATEGORIA_ENDERECO,
     CATEGORIA_NOME,
     CATEGORIA_TELEFONE,
@@ -34,6 +36,11 @@ _CEP: re.Pattern[str] = re.compile(r"\b\d{5}-\d{3}\b")
 _TELEFONE: re.Pattern[str] = re.compile(
     r"(?:(?:\+|00)\s?55\s?)?(?:\(?\d{2}\)?[\s.-]?)(?:9\d{4}|\d{4})[\s.-]?\d{4}\b"
 )
+_EMAIL: re.Pattern[str] = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+)
+_CNPJ: re.Pattern[str] = re.compile(r"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")
+_CPF: re.Pattern[str] = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
 
 
 @dataclass(frozen=True)
@@ -70,8 +77,17 @@ def _padrao_nomes(nomes: frozenset[str]) -> re.Pattern[str]:
 
 
 def _regras(politica: PoliticaRedacao) -> tuple[tuple[str, re.Pattern[str], str], ...]:
-    """Monta a sequência de redação com categoria, padrão e marcador."""
+    """Monta a sequência de redação com categoria, padrão e marcador.
+
+    A ordem é fixa: e-mail primeiro (o ``@`` o torna disjunto das demais);
+    documento antes de telefone (os dois compartilham dígitos pontuados — um
+    CPF mascarado vira ``[DOCUMENTO]``, nunca ``[TELEFONE]``); CNPJ antes de
+    CPF remove a ambiguidade entre as máscaras; o restante segue como antes.
+    """
     return (
+        (CATEGORIA_EMAIL, _EMAIL, politica.marcador_email),
+        (CATEGORIA_DOCUMENTO, _CNPJ, politica.marcador_documento),
+        (CATEGORIA_DOCUMENTO, _CPF, politica.marcador_documento),
         (CATEGORIA_TELEFONE, _TELEFONE, politica.marcador_telefone),
         (CATEGORIA_ENDERECO, _ENDERECO, politica.marcador_endereco),
         (CATEGORIA_ENDERECO, _CEP, politica.marcador_endereco),
@@ -83,10 +99,11 @@ def redact(
     texto: str,
     politica: PoliticaRedacao = POLITICA_PADRAO,
 ) -> RedactedText:
-    """Devolve ``texto`` sem nomes, endereços e telefones reconhecíveis.
+    """Devolve ``texto`` sem e-mails, documentos, nomes, endereços e telefones.
 
     Texto sem PII passa intacto (``categorias`` vazio). A substituição é feita
-    por marcadores como ``[NOME]``, ``[ENDERECO]`` e ``[TELEFONE]``.
+    por marcadores como ``[EMAIL]``, ``[DOCUMENTO]``, ``[NOME]``, ``[ENDERECO]``
+    e ``[TELEFONE]``.
     """
     resultado = texto
     categorias: list[str] = []

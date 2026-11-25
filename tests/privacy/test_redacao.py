@@ -31,7 +31,6 @@ def test_texto_vazio() -> None:
     [
         "(11) 98765-4321",
         "11 98765-4321",
-        "11987654321",
         "(11) 3456-7890",
         "+55 11 98765-4321",
     ],
@@ -42,6 +41,71 @@ def test_telefones_redigidos(texto: str) -> None:
     assert "98765" not in resultado.texto
     assert "3456" not in resultado.texto
     assert "telefone" in resultado.categorias
+
+
+def test_telefone_sem_mascara_de_onze_digitos_vira_documento() -> None:
+    """Telefone sem máscara e CPF compartilham 11 dígitos; documento vem antes.
+
+    A ordem fixa do design (documento antes de telefone) redige o run de
+    dígitos como ``[DOCUMENTO]`` — a redação nunca é perdida, só a categoria
+    do caso ambíguo sem máscara.
+    """
+    resultado = redact("Ligar para 11987654321 antes da coleta")
+    assert "11987654321" not in resultado.texto
+    assert resultado.categorias == ("documento",)
+
+
+def test_email_redigido() -> None:
+    resultado = redact("Confirmar com ana.silva@empresa.com.br o recebimento")
+    assert "[EMAIL]" in resultado.texto
+    assert "ana.silva" not in resultado.texto
+    assert "@" not in resultado.texto
+    assert resultado.categorias == ("email",)
+
+
+@pytest.mark.parametrize(
+    "documento",
+    ["12.345.678/0001-99", "12345678000199"],
+)
+def test_cnpj_redigido_como_documento(documento: str) -> None:
+    resultado = redact(f"CNPJ do fornecedor: {documento} na nota")
+    assert "[DOCUMENTO]" in resultado.texto
+    assert "0001" not in resultado.texto
+    assert resultado.categorias == ("documento",)
+
+
+@pytest.mark.parametrize(
+    "documento",
+    ["123.456.789-01", "12345678901"],
+)
+def test_cpf_redigido_como_documento(documento: str) -> None:
+    resultado = redact(f"CPF do contato: {documento} na nota")
+    assert "[DOCUMENTO]" in resultado.texto
+    assert "789" not in resultado.texto
+    assert resultado.categorias == ("documento",)
+
+
+def test_cpf_nao_e_capturado_como_telefone() -> None:
+    resultado = redact("Documento do motorista: 123.456.789-01 na coleta")
+    assert resultado.texto.count("[DOCUMENTO]") == 1
+    assert "[TELEFONE]" not in resultado.texto
+    assert resultado.categorias == ("documento",)
+
+
+def test_cnpj_nao_e_capturado_como_cpf() -> None:
+    resultado = redact("CNPJ do parceiro: 12.345.678/0001-99 na nota")
+    assert resultado.texto.count("[DOCUMENTO]") == 1
+    assert "[EMAIL]" not in resultado.texto
+    assert resultado.categorias == ("documento",)
+
+
+def test_email_cpf_e_cnpj_sao_redigidos_juntos() -> None:
+    texto = "Enviar para ana@x.com, CPF 123.456.789-01, CNPJ 12.345.678/0001-99"
+    resultado = redact(texto)
+    assert resultado.categorias == ("email", "documento")
+    assert "@" not in resultado.texto
+    assert "123.456" not in resultado.texto
+    assert "12345678000199" not in resultado.texto
 
 
 def test_endereco_redigido() -> None:

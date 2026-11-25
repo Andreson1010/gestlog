@@ -248,6 +248,42 @@ def test_answer_redige_pii_antes_do_llm(
     assert "[TELEFONE]" in prompt
 
 
+def test_email_cpf_e_cnpj_sao_redigidos_antes_do_llm(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    """PII-01: e-mail, CPF e CNPJ não chegam ao modelo, ao histórico nem à auditoria."""
+    empresa = _empresa(db_session, "A")
+    usuario = criar_usuario(db_session)
+    model = fake_model_cls(
+        routes=["transporte", "FINISH"],
+        tool_calls=[_tool_comum("coleta agendada", fontes="TMS")],
+    )
+    servico = _service(db_session, model, empresa, usuario)
+
+    servico.answer(
+        "Enviar para ana.silva@x.com, CPF 123.456.789-01 "
+        "e CNPJ 12.345.678/0001-99: qual o prazo da coleta?"
+    )
+
+    prompt = _texto_recebido(model)
+    assert model.mensagens_recebidas
+    assert "ana.silva@x.com" not in prompt
+    assert "123.456.789-01" not in prompt
+    assert "12.345.678/0001-99" not in prompt
+    assert "[EMAIL]" in prompt
+    assert "[DOCUMENTO]" in prompt
+    pergunta = servico.historico()[0].pergunta
+    assert "ana.silva@x.com" not in pergunta
+    assert "123.456.789-01" not in pergunta
+    assert "12.345.678/0001-99" not in pergunta
+    assert "[EMAIL]" in pergunta
+    assert "[DOCUMENTO]" in pergunta
+    por_evento = {
+        evento.evento: evento for evento in AuditRepository(db_session).list(empresa)
+    }
+    assert set(por_evento["pergunta"].detalhe["pii"]) == {"email", "documento"}
+
+
 def test_answer_persiste_pergunta_redigida(
     db_session: Session, fake_model_cls: type
 ) -> None:
