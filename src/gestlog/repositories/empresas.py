@@ -11,16 +11,47 @@ from gestlog.db.models import Empresa, Membership
 from gestlog.repositories.base import EmpresaScopedRepository
 
 
+class EmpresaInexistente(Exception):
+    """Erro levantado quando a empresa consultada não existe no banco."""
+
+
 class EmpresaRepository:
     """Criação e leitura de empresas-clientes."""
 
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def create(self, nome: str, retention_days: int | None = None) -> Empresa:
-        """Cria um empresa."""
-        empresa = Empresa(nome=nome, retention_days=retention_days)
+    def create(
+        self,
+        nome: str,
+        retention_days: int | None = None,
+        token_quota_mensal: int | None = None,
+    ) -> Empresa:
+        """Cria um empresa, recusando quota não positiva (erro antes do banco)."""
+        if token_quota_mensal is not None and token_quota_mensal <= 0:
+            raise ValueError("token_quota_mensal deve ser maior que zero.")
+        empresa = Empresa(
+            nome=nome,
+            retention_days=retention_days,
+            token_quota_mensal=token_quota_mensal,
+        )
         self.session.add(empresa)
+        self.session.flush()
+        return empresa
+
+    def travar(self, empresa_id: UUID) -> Empresa:
+        """Carrega a linha da empresa com lock de escrita (serializa por empresa).
+
+        O ``FOR UPDATE`` mantém o lock até o commit do chamador: dois turnos da
+        MESMA empresa se serializam no check/record da quota (I-8); linhas de
+        outras empresas nunca disputam o mesmo lock (EDG-02). O ``flush``
+        força o round-trip do lock no dialeto que o suporta. Empresa ausente
+        falha com ``EmpresaInexistente`` — erro de domínio, não interno do ORM.
+        """
+        stmt = select(Empresa).where(Empresa.id == empresa_id).with_for_update()
+        empresa = self.session.execute(stmt).scalars().one_or_none()
+        if empresa is None:
+            raise EmpresaInexistente(f"Empresa {empresa_id} não existe.")
         self.session.flush()
         return empresa
 

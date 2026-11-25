@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from uuid import UUID
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -22,7 +23,13 @@ from sqlalchemy.orm import Session
 
 from gestlog.audit import EVENTO_PERGUNTA, EVENTO_RECOMENDACAO, registrar_evento
 from gestlog.config import Settings, get_settings
-from gestlog.copilot.metering import QuotaExcedida, check_quota, record_usage
+from gestlog.copilot.metering import (
+    QuotaExcedida,
+    check_quota,
+    check_teto_global,
+    record_usage,
+    travar_empresa,
+)
 from gestlog.db.models import Message, Recommendation
 from gestlog.graph import build_graph, run_query
 from gestlog.privacy import redact
@@ -296,6 +303,27 @@ class CopilotService:
         """Devolve os turnos já gravados da conversa do usuário no tenant."""
         return carregar_historico(self.session, self.empresa_id, self.user_id)
 
+    def _checar_quota(self, resolvido: Settings) -> None:
+        """Serializa o turno e valida a quota da empresa e o teto global (I-8).
+
+        O lock da linha da empresa vive até o commit do turno, que já inclui o
+        ``record_usage``: check e record ficam na mesma transação serializada.
+        """
+        empresa = travar_empresa(self.session, self.empresa_id)
+        check_quota(self.session, empresa, resolvido)
+        check_teto_global(self.session, resolvido, datetime.now(UTC))
+
+    def _rodar_grafo(self, pergunta_redigida: str, resolvido: Settings) -> dict:
+        """Roda o grafo com as tools do tenant e devolve o estado final."""
+        grafo = build_graph(
+            model=self.model,
+            settings=resolvido,
+            specialist_tools=self.tools_por_dominio(),
+        )
+        return run_query(
+            grafo, pergunta_redigida, recursion_limit=resolvido.recursion_limit
+        )
+
     def answer(self, pergunta: str) -> str:
         """Roda o grafo e responde com o texto do turno; para callers simples."""
         return self.answer_com_recomendacao(pergunta)[0]
@@ -305,25 +333,19 @@ class CopilotService:
 
         A pergunta é redigida antes de ir ao LLM e a versão redigida é a que fica
         no histórico; o texto original não é enviado ao provedor nem persistido.
-        A quota mensal é checada antes da chamada: ao estourar, devolve uma
-        mensagem clara sem chamar o modelo. Devolve ``(resposta, recomendacao_id)``,
-        onde o id é ``None`` em turno sem recomendação (fora de escopo, quota
-        estourada) — nunca inferido de turnos anteriores.
+        A empresa é travada antes da chamada: ao estourar a quota dela (ou o teto
+        global), devolve uma mensagem clara sem chamar o modelo. Devolve
+        ``(resposta, recomendacao_id)``, onde o id é ``None`` em turno sem
+        recomendação (fora de escopo, quota estourada) — nunca inferido de
+        turnos anteriores.
         """
         resolvido = self.settings or get_settings()
         try:
-            check_quota(self.session, self.empresa_id, resolvido)
+            self._checar_quota(resolvido)
         except QuotaExcedida:
             return MENSAGEM_QUOTA_EXCEDIDA, None
         redacao = redact(pergunta)
-        grafo = build_graph(
-            model=self.model,
-            settings=resolvido,
-            specialist_tools=self.tools_por_dominio(),
-        )
-        estado = run_query(
-            grafo, redacao.texto, recursion_limit=resolvido.recursion_limit
-        )
+        estado = self._rodar_grafo(redacao.texto, resolvido)
         bruto = texto_resposta(estado["messages"])
         dominio = str(estado.get("dominio", ""))
         recomendacao = extrair_recomendacao(bruto, dominio)

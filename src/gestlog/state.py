@@ -19,8 +19,9 @@ class AgentState(TypedDict):
     decisão mais recente do supervisor, consumida pelas arestas condicionais.
     ``dominio`` registra qual especialista encerrou a resposta com a ferramenta
     comum, permitindo ao copiloto estruturar a recomendação (T21).
-    ``tokens_usados`` soma (reducer ``operator.add``) os tokens reportados pelos
-    especialistas, base da medição de uso da T27/T28.
+    ``tokens_usados`` soma (reducer ``operator.add``) os tokens reportados por
+    cada nó do grafo — roteamentos do supervisor e respostas dos especialistas,
+    base da medição de uso da T27/T28.
     ``especialistas_visitados`` acumula (reducer ``operator.add``) os domínios já
     executados, para o supervisor não reencaminhar em ciclo ao mesmo especialista.
     """

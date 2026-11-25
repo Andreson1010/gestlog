@@ -37,6 +37,13 @@ class UsageRepository(EmpresaScopedRepository[UsageRecord]):
         )
         return int(self.session.execute(stmt).scalar_one())
 
+    def total_geral_desde(self, desde: datetime) -> int:
+        """Soma os tokens de TODAS as empresas a partir de ``desde`` (teto global)."""
+        stmt = select(func.coalesce(func.sum(UsageRecord.tokens), 0)).where(
+            UsageRecord.created_at >= desde,
+        )
+        return int(self.session.execute(stmt).scalar_one())
+
 
 class AuditRepository(EmpresaScopedRepository[AuditLog]):
     """Eventos de auditoria por empresa."""

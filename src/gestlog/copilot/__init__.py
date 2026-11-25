@@ -5,7 +5,10 @@ from __future__ import annotations
 from gestlog.copilot.metering import (
     QuotaExcedida,
     check_quota,
+    check_teto_global,
+    quota_da_empresa,
     record_usage,
+    travar_empresa,
     uso_no_mes,
 )
 from gestlog.copilot.service import (
@@ -34,10 +37,13 @@ __all__ = [
     "Turno",
     "carregar_historico",
     "check_quota",
+    "check_teto_global",
     "extrair_recomendacao",
+    "quota_da_empresa",
     "record_usage",
     "registrar_turno",
     "texto_principal",
     "texto_resposta",
+    "travar_empresa",
     "uso_no_mes",
 ]

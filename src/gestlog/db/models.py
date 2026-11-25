@@ -40,6 +40,7 @@ class Empresa(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(120))
     retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    token_quota_mensal: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_agora
     )
