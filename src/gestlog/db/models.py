@@ -22,8 +22,9 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from gestlog.db.base import Base
 
@@ -51,9 +52,20 @@ class Empresa(Base):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
-    """Usuário autenticável (base do FastAPI Users)."""
+    """Usuário autenticável (base do FastAPI Users).
+
+    Além do unique bruto da coluna (herdado do mixin, sensível a caixa), o
+    índice único funcional em ``lower(email)`` (IDT-02) garante a unicidade
+    canônica da identidade nos dois dialetos — autogenerate ignora índices
+    de expressão, então a migração correspondente é escrita à mão.
+    """
 
     __tablename__ = "user"
+
+    @declared_attr.directive
+    def __table_args__(cls) -> tuple[Index, ...]:
+        """Índice único funcional em ``lower(email)`` (IDT-02)."""
+        return (Index("uq_user_email_ci", func.lower(cls.email), unique=True),)
 
 
 class Membership(Base):

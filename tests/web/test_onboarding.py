@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
@@ -159,6 +160,66 @@ async def test_onboarding_com_email_repetido_retorna_400(client: AsyncClient) ->
     assert repetido.status_code == 400
 
 
+async def test_onboarding_corrida_de_email_retorna_409(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Corrida de unicidade (índice funcional) devolve 409, não 500 (IDT-02)."""
+    from sqlalchemy.exc import IntegrityError
+
+    import gestlog.web.onboarding as onboarding_module
+
+    async def _colidir(*args: object, **kwargs: object) -> tuple[Empresa, User]:
+        raise IntegrityError("insert", {}, Exception("duplicado"))
+
+    monkeypatch.setattr(onboarding_module.accounts, "criar_conta", _colidir)
+
+    resposta = await client.post(
+        "/onboarding",
+        json={"nome_empresa": "Outra", "email": "nova@empresa.com", "senha": _SENHA},
+    )
+
+    assert resposta.status_code == 409
+
+
+async def test_onboarding_colisao_real_do_indice_retorna_409(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Colisão REAL do índice funcional devolve 409 (não exceção stubada).
+
+    Complementa o teste da corrida: o guard fica cego à linha concorrente
+    (janela entre a leitura e o INSERT), a variante case-divergente já está
+    gravada e o INSERT colide de verdade com ``uq_user_email_ci`` — o erro
+    vem do banco, e o handler devolve 409 com rollback.
+    """
+    factory = build_async_session_factory(engine)
+    async with factory() as sessao:
+        sessao.add(
+            User(
+                email="Nova@Empresa.com",
+                hashed_password=PasswordHelper().hash(_SENHA),
+                is_active=True,
+                is_verified=False,
+            )
+        )
+        await sessao.commit()
+
+    async def _cego(*args: object, **kwargs: object) -> None:
+        return None
+
+    import gestlog.web.onboarding as onboarding_module
+
+    monkeypatch.setattr(onboarding_module.accounts, "_por_email", _cego)
+
+    resposta = await client.post(
+        "/onboarding",
+        json={"nome_empresa": "Outra", "email": "nova@empresa.com", "senha": _SENHA},
+    )
+
+    assert resposta.status_code == 409
+
+
 async def test_admin_convida_usuario_para_a_empresa(client: AsyncClient) -> None:
     dados = await _criar_conta(client)
     await _login(client, "admin@empresa.com")
@@ -207,40 +268,52 @@ async def test_convite_exige_papel_admin(client: AsyncClient) -> None:
     assert resposta.status_code == 403
 
 
-async def test_convite_duplicado_retorna_409(client: AsyncClient) -> None:
-    await _criar_conta(client)
-    await _login(client, "admin@empresa.com")
-    corpo = {"email": "operador@empresa.com", "papel": "operador"}
+async def test_convidar_email_registrado_responde_como_novo_e_nao_aceita_decoy(
+    client: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """E-mail registrado: 201 indistinguível e token decoy inutilizável (IDT-04).
 
-    convite = await client.post("/empresa/convites", json=corpo)
-    assert convite.status_code == 201
-    aceite = await client.post(
-        "/convites/aceitar",
-        json={"token": convite.json()["token"], "senha": _SENHA},
-    )
-    assert aceite.status_code == 201
-
-    duplicado = await client.post("/empresa/convites", json=corpo)
-
-    assert duplicado.status_code == 409
-
-
-async def test_convite_para_email_registrado_retorna_409(client: AsyncClient) -> None:
-    """E-mail registrado (em qualquer empresa) não gera convite (AD-015).
-
-    O token fica em poder do CONVIDADOR, não do convidado: só convites para
-    e-mail novo podem ser criados — nunca há redefinição de credencial
-    global.
+    A resposta de conflito tem o mesmo status/shape da de sucesso (anti-
+    enumerate); o token decoy nunca foi persistido, logo o aceite o recusa;
+    o conflito aparece apenas no log de servidor.
     """
     await _criar_conta(client)
     await _login(client, "admin@empresa.com")
+    corpo = {"email": "admin@empresa.com", "papel": "operador"}
 
-    resposta = await client.post(
-        "/empresa/convites",
-        json={"email": "admin@empresa.com", "papel": "operador"},
+    with caplog.at_level(logging.WARNING, logger="gestlog.web.onboarding"):
+        resposta = await client.post("/empresa/convites", json=corpo)
+
+    assert resposta.status_code == 201
+    assert set(resposta.json()) == {"email", "papel", "token"}
+    assert resposta.json()["email"] == corpo["email"]
+    assert resposta.json()["papel"] == corpo["papel"]
+    assert corpo["email"] in caplog.text
+    assert "já registrado" in caplog.text
+
+    aceite = await client.post(
+        "/convites/aceitar",
+        json={"token": resposta.json()["token"], "senha": _SENHA},
+    )
+    assert aceite.status_code == 400
+
+
+async def test_convite_de_email_registrado_e_indistinguivel_de_novo(
+    client: AsyncClient,
+) -> None:
+    """Status/shape do conflito idênticos aos da resposta de e-mail novo."""
+    await _criar_conta(client)
+    await _login(client, "admin@empresa.com")
+
+    registrado = await client.post(
+        "/empresa/convites", json={"email": "admin@empresa.com", "papel": "operador"}
+    )
+    novo = await client.post(
+        "/empresa/convites", json={"email": "nova@empresa.com", "papel": "gestor"}
     )
 
-    assert resposta.status_code == 409
+    assert registrado.status_code == novo.status_code == 201
+    assert set(registrado.json()) == set(novo.json())
 
 
 async def test_convite_de_outra_empresa_nao_toca_credencial_da_vitima(
@@ -249,11 +322,11 @@ async def test_convite_de_outra_empresa_nao_toca_credencial_da_vitima(
     """Cenário cross-tenant do code review: A em outro tenant não é alvo.
 
     Com o único guard antigo (vínculo na empresa convidante), o admin de B
-    podia convidar o e-mail da vítima de A, receber o token e redefinir a
-    senha global dela. Agora: convite → 409; convite forjado para B → aceite
-    recusado e credencial da vítima intacta (login original 204, senha do
-    atacante recusada) — sem conflito de ``uq_membership`` mascarando o
-    resultado.
+    podia convidar o e-mail da vítima de A e tomar a conta. Agora: convite
+    devolve 201 com token decoy (nunca persistido); convite forjado para B →
+    aceite recusado e credencial da vítima intacta (login original 204,
+    senha do atacante recusada) — sem conflito de ``uq_membership``
+    mascarando o resultado.
     """
     dados = await _criar_conta(client, email="atacante@b.com", nome="Empresa Atacante")
     factory = build_async_session_factory(engine)
@@ -277,7 +350,13 @@ async def test_convite_de_outra_empresa_nao_toca_credencial_da_vitima(
         "/empresa/convites",
         json={"email": "vitima@x.com", "papel": "operador"},
     )
-    assert convite.status_code == 409
+    assert convite.status_code == 201
+    decoy = convite.json()["token"]
+    aceite_decoy = await client.post(
+        "/convites/aceitar",
+        json={"token": decoy, "senha": "senha-do-atacante-999"},
+    )
+    assert aceite_decoy.status_code == 400
 
     session2 = build_async_session_factory(engine)
     async with session2() as sessao:

@@ -12,6 +12,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError
 
 
 @pytest.fixture
@@ -364,6 +365,69 @@ def test_migracao_postgres_nao_altera_fk_user(
 
 
 _REV_QUOTA = "f1a2b3c4d5e6"
+_REV_EMAIL_CI = "f2b3c4d5e6f7"
+
+
+def _semear_usuarios(engine: Engine, emails: list[str]) -> None:
+    """Grava usuários com os e-mails dados (semeadura bruta para migrações)."""
+    with engine.begin() as conn:
+        for email in emails:
+            conn.execute(
+                text(
+                    'INSERT INTO "user" (id, email, hashed_password, is_active, '
+                    "is_superuser, is_verified) "
+                    "VALUES (:id, :email, 'x', TRUE, FALSE, TRUE)"
+                ),
+                {"id": str(uuid4()), "email": email},
+            )
+
+
+def _tem_indice_email_ci(engine: Engine) -> bool:
+    """Presença do índice funcional no catálogo (inspetor pula expressões)."""
+    if engine.dialect.name == "sqlite":
+        stmt = text(
+            "SELECT count(*) FROM sqlite_master "
+            "WHERE type = 'index' AND name = 'uq_user_email_ci'"
+        )
+    else:
+        stmt = text(
+            "SELECT count(*) FROM pg_indexes WHERE indexname = 'uq_user_email_ci'"
+        )
+    with engine.connect() as conn:
+        return bool(conn.execute(stmt).scalar_one())
+
+
+def test_migracao_aborta_com_duplicatas_de_email(
+    alembic_config: tuple[Config, str],
+) -> None:
+    """E-mails case-divergentes abortam o upgrade listando conflitos (IDT-02)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, _REV_QUOTA)
+    engine = create_engine(db_url)
+    _semear_usuarios(engine, ["Ana@X.COM", "ana@x.com"])
+
+    with pytest.raises(RuntimeError, match="ana@x.com"):
+        command.upgrade(cfg, "head")
+
+
+def test_migracao_email_ci_indice_round_trip(
+    alembic_config: tuple[Config, str],
+) -> None:
+    """Sem duplicatas: índice nasce, recusa colisão e some no downgrade (IDT-02)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, "head")
+    engine = create_engine(db_url)
+
+    assert _tem_indice_email_ci(engine)
+
+    _semear_usuarios(engine, ["ana@x.com"])
+    with pytest.raises(IntegrityError):
+        _semear_usuarios(engine, ["Ana@X.COM"])
+
+    command.downgrade(cfg, _REV_QUOTA)
+
+    assert not _tem_indice_email_ci(engine)
+    _semear_usuarios(engine, ["Ana@X.COM"])
 
 
 def test_migracao_quota_da_empresa_coluna(alembic_config: tuple[Config, str]) -> None:

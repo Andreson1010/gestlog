@@ -40,6 +40,18 @@ def _settings() -> Settings:
     )
 
 
+def _settings_limite_1() -> Settings:
+    """Settings com limite de 1 tentativa por janela (roda o 429 cedo)."""
+    return Settings(
+        _env_file=None,
+        database_url="sqlite+aiosqlite:///:memory:",
+        auth_secret="segredo-de-teste-com-pelo-menos-32-bytes",
+        auth_cookie_secure=False,
+        rate_limit_tentativas=1,
+        rate_limit_janela_segundos=86_400,
+    )
+
+
 @pytest.fixture
 async def engine() -> AsyncIterator[AsyncEngine]:
     motor = build_async_engine(_settings())
@@ -151,6 +163,51 @@ async def test_cadastro_email_duplicado_nao_cria_outra_empresa(
     assert resposta.status_code == 400
     assert "já cadastrado" in resposta.text
     assert await _contar(engine, Empresa) == 1
+
+
+async def test_cadastro_email_case_divergente_e_recusado(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    """'A@Empresa.Com' colide com 'a@empresa.com' registrado (EDG-05/IDT-01)."""
+    await _criar_usuario_com_empresa(engine, "a@empresa.com")
+
+    resposta = await client.post("/cadastro", data={**_CONTA, "email": "A@Empresa.Com"})
+
+    assert resposta.status_code == 400
+    assert "já cadastrado" in resposta.text
+    assert await _contar(engine, Empresa) == 1
+
+
+async def test_cadastro_limitado_por_janela(app: FastAPI, client: AsyncClient) -> None:
+    """Rajada em POST /cadastro recebe 429; o GET da página continua livre (IDT-03)."""
+    app.dependency_overrides[get_settings] = _settings_limite_1
+
+    primeira = await client.post("/cadastro", data=_CONTA, follow_redirects=False)
+    segunda = await client.post(
+        "/cadastro",
+        data={**_CONTA, "email": "outra@empresa.com"},
+        follow_redirects=False,
+    )
+    pagina = await client.get("/cadastro")
+
+    assert primeira.status_code == 303
+    assert segunda.status_code == 429
+    assert pagina.status_code == 200
+
+
+async def test_cadastro_conta_nao_verificada_consegue_logar(
+    client: AsyncClient, engine: AsyncEngine
+) -> None:
+    """Conta nasce ``is_verified=False`` e o login não exige verificação (IDT-05)."""
+    resposta = await client.post("/cadastro", data=_CONTA, follow_redirects=False)
+
+    assert resposta.status_code == 303
+    factory = build_async_session_factory(engine)
+    async with factory() as session:
+        usuario = (await session.execute(select(User))).scalars().one()
+        assert usuario.is_verified is False
+
+    await _login(client, _CONTA["email"], _CONTA["senha"])
 
 
 async def test_cadastro_senha_curta_recusa(client: AsyncClient) -> None:
