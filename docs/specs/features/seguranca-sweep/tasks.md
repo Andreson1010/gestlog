@@ -109,12 +109,8 @@ migration · **Gate**: completo
 - [x] Migração `f2b3c4d5e6f7` (down `f1a2b3c4d5e6`): fail-fast de duplicatas
       (`GROUP BY lower(email) HAVING count(*) > 1` → `RuntimeError` listando) +
       `op.create_index` com expressão (IDT-02).
-- [ ] ADR da task: procedimento de resolução manual de duplicatas de e-mail
-      (fase de self-review; deve cobrir: diagnóstico das duplicatas via
-      `SELECT lower(email), count(*) FROM "user" GROUP BY lower(email) HAVING
-      count(*) > 1`; decisão de qual linha preservar; `UPDATE` para a forma
-      canônica — strip+casefold — e reexecução do `alembic upgrade head`;
-      janela de lock de escrita do `CREATE UNIQUE INDEX` no Postgres).
+- [x] ADR da task: procedimento de resolução manual de duplicatas de e-mail
+      (`docs/adr/seguranca-sweep-t2-identidade-self-review.md`).
 
 **Where**: `auth/accounts.py`, `web/app.py`, `web/onboarding.py`, `db/models.py`,
 `alembic/versions/` (nova), `tests/auth/test_accounts.py`,

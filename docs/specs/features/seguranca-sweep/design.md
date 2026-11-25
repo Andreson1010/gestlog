@@ -261,11 +261,12 @@ except ConviteDuplicadoError as exc:
             "token": secrets.token_urlsafe(32)}  # decoy: nunca persistido
 ```
 
-Status/shape/tempo de resposta idênticos ao caso novo; o decoy não aceita (nunca
-vira linha em `convite`); o log do servidor carrega o contexto do conflito
-(inclui o e-mail — log interno; a resposta HTTP nunca o revela). O guard de
-`aceitar_convite` para e-mail registrado (`ConviteEmailRegistradoError`) **não
-muda** — é a defesa de takeover do L-048/AD-015.
+Status/shape idênticos; timing não é garantido (aceito no ADR §3). O decoy não
+aceita (nunca vira linha em `convite`); o log do servidor carrega o contexto do
+conflito (inclui o e-mail — log interno; a resposta HTTP nunca o revela). O
+guard de `aceitar_convite` para e-mail registrado
+(`ConviteEmailRegistradoError`) **não muda** — é a defesa de takeover do
+L-048/AD-015.
 
 ### `is_verified=False` (IDT-05)
 
