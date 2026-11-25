@@ -10,6 +10,7 @@ from uuid import UUID
 import pytest
 from fastapi_users import exceptions
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from gestlog.auth import accounts
@@ -167,6 +168,41 @@ async def _empresa_qualquer(sessao: AsyncSession) -> UUID:
     sessao.add(empresa)
     await sessao.commit()
     return empresa.id
+
+
+async def test_create_all_aplica_indice_unico_case_insensitive(
+    engine: AsyncEngine,
+) -> None:
+    """O create_all do init_async_db também instala o índice funcional (IDT-02).
+
+    Guarda o ``@declared_attr`` do modelo: sem o ``__table_args__`` do
+    ``User``, o ``create_all`` não criaria ``uq_user_email_ci`` e o INSERT
+    case-divergente passaria sem erro.
+    """
+    factory = build_async_session_factory(engine)
+    async with factory() as sessao:
+        sessao.add(
+            User(
+                email="ana@x.com",
+                hashed_password="hash-de-teste",
+                is_active=True,
+                is_superuser=False,
+                is_verified=False,
+            )
+        )
+        await sessao.commit()
+
+        sessao.add(
+            User(
+                email="Ana@X.com",
+                hashed_password="hash-de-teste",
+                is_active=True,
+                is_superuser=False,
+                is_verified=False,
+            )
+        )
+        with pytest.raises(IntegrityError):
+            await sessao.flush()
 
 
 async def test_convite_persiste_email_normalizado(

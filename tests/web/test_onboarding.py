@@ -181,6 +181,45 @@ async def test_onboarding_corrida_de_email_retorna_409(
     assert resposta.status_code == 409
 
 
+async def test_onboarding_colisao_real_do_indice_retorna_409(
+    client: AsyncClient,
+    engine: AsyncEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Colisão REAL do índice funcional devolve 409 (não exceção stubada).
+
+    Complementa o teste da corrida: o guard fica cego à linha concorrente
+    (janela entre a leitura e o INSERT), a variante case-divergente já está
+    gravada e o INSERT colide de verdade com ``uq_user_email_ci`` — o erro
+    vem do banco, e o handler devolve 409 com rollback.
+    """
+    factory = build_async_session_factory(engine)
+    async with factory() as sessao:
+        sessao.add(
+            User(
+                email="Nova@Empresa.com",
+                hashed_password=PasswordHelper().hash(_SENHA),
+                is_active=True,
+                is_verified=False,
+            )
+        )
+        await sessao.commit()
+
+    async def _cego(*args: object, **kwargs: object) -> None:
+        return None
+
+    import gestlog.web.onboarding as onboarding_module
+
+    monkeypatch.setattr(onboarding_module.accounts, "_por_email", _cego)
+
+    resposta = await client.post(
+        "/onboarding",
+        json={"nome_empresa": "Outra", "email": "nova@empresa.com", "senha": _SENHA},
+    )
+
+    assert resposta.status_code == 409
+
+
 async def test_admin_convida_usuario_para_a_empresa(client: AsyncClient) -> None:
     dados = await _criar_conta(client)
     await _login(client, "admin@empresa.com")
