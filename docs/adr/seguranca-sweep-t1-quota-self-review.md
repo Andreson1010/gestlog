@@ -115,6 +115,18 @@ contrato — deixá-lo velho quebraria a suíte inteira; o parâmetro extra
 
 ## 4. Limitações Conhecidas
 
+* **Corrida cross-tenant no teto global (aceita — L-2):** o lock é por linha de
+  empresa, então o somatório do `check_teto_global` não é serializado — duas
+  empresas simultâneas podem, juntas, atravessar o teto global antes de a
+  salvaguarda perceber. A salvaguarda é aproximada por construção: serializá-la
+  exigiria um lock global (toda empresa disputando o mesmo recurso), trocando
+  isolamento por contenção cruzada — exatamente o que o EDG-02 proíbe. A
+  revisão fica condicionada a um requisito de teto global exato.
+* **Janela do lock depende da T6 (L-1):** o lock da linha da empresa fica preso
+  durante a chamada LLM; sem `llm_timeout_s` (T6, mesmo release do épico), uma
+  pendura do provedor mantém o lock indefinidamente para os turnos seguintes da
+  MESMA empresa. A mitigação chega com a T6; a pendura pré-existia no código de
+  hoje (sem lock), o lock apenas a torna visível por tenant.
 * `check_teto_global` reporta a empresa sentinela `UUID(int=0)` na exceção — o
   bloqueio global não tem dono; a mensagem é genérica de propósito.
 * A estimativa trata `content` multimodal (lista) pelo comprimento do `str` —
