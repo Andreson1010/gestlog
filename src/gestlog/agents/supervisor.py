@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Any
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -29,7 +28,9 @@ class RouteDecision(BaseModel):
     reasoning: str = Field(default="", description="Justificativa curta da decisão.")
 
 
-SupervisorNode = Callable[[AgentState], dict[str, Any]]
+SupervisorRetorno = dict[str, Route | int]
+
+SupervisorNode = Callable[[AgentState], SupervisorRetorno]
 
 
 def build_supervisor_prompt() -> str:
@@ -66,7 +67,7 @@ def create_supervisor_node(
     router = model.with_structured_output(RouteDecision, include_raw=True)
     system_prompt = prompt or build_supervisor_prompt()
 
-    def node(state: AgentState) -> dict[str, Any]:
+    def node(state: AgentState) -> SupervisorRetorno:
         mensagens: list[BaseMessage] = list(state.get("messages") or [])
         visitados = set(state.get("especialistas_visitados") or [])
         retorno = router.invoke([SystemMessage(content=system_prompt), *mensagens])
