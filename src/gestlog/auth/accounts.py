@@ -34,19 +34,28 @@ class ConviteDuplicadoError(Exception):
     """E-mail já registrado no sistema (em qualquer empresa)."""
 
 
+def normalizar_email(email: str) -> str:
+    """E-mail canônico para comparação e persistência (strip + casefold)."""
+    return email.strip().casefold()
+
+
 async def _por_email(session: AsyncSession, email: str) -> User | None:
-    """Busca um usuário pelo e-mail (sem escopo de empresa)."""
-    stmt = select(User).where(User.email == email)
+    """Busca um usuário pelo e-mail normalizado (sem escopo de empresa)."""
+    stmt = select(User).where(User.email == normalizar_email(email))
     return (await session.execute(stmt)).scalars().first()
 
 
 def _novo_usuario(email: str, senha: str) -> User:
-    """Constrói um usuário ativo e verificado com a senha já hasheada."""
+    """Constrói um usuário ativo com senha hasheada e e-mail normalizado.
+
+    ``is_verified=False`` (IDT-05): nenhuma rota exige verificação hoje — a
+    verificação por e-mail segue no roadmap.
+    """
     return User(
-        email=email,
+        email=normalizar_email(email),
         hashed_password=_password_helper.hash(senha),
         is_active=True,
-        is_verified=True,
+        is_verified=False,
     )
 
 
@@ -99,7 +108,7 @@ async def criar_convite(
     token = secrets.token_urlsafe(32)
     convite = Convite(
         empresa_id=empresa_id,
-        email=email,
+        email=normalizar_email(email),
         papel=papel,
         token_hash=_hash_token(token),
         expira_em=datetime.now(UTC) + timedelta(days=validade_dias),
