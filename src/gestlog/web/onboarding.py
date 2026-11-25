@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,6 +26,8 @@ from gestlog.web.schemas import (
     ConviteAceiteCreate,
     ConviteCreate,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def create_onboarding_router() -> APIRouter:
@@ -53,7 +57,13 @@ def create_onboarding_router() -> APIRouter:
         session: Annotated[AsyncSession, Depends(get_async_session)],
         settings: Annotated[Settings, Depends(get_settings)],
     ) -> dict[str, str]:
-        """Cria o convite e devolve o token (entrega por e-mail é futura)."""
+        """Cria o convite e devolve o token (entrega por e-mail é futura).
+
+        Para e-mail já registrado a resposta é indistinguível da de e-mail
+        novo (anti-enumerate, IDT-04): o token devolvido é decoy — nunca é
+        persistido, logo o aceite o recusa — e o conflito aparece só no log
+        de servidor.
+        """
         try:
             _, token = await accounts.criar_convite(
                 session,
@@ -63,10 +73,14 @@ def create_onboarding_router() -> APIRouter:
                 settings.convite_validade_dias,
             )
         except ConviteDuplicadoError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="E-mail já registrado no sistema; convite só cria conta nova.",
-            ) from exc
+            logger.warning(
+                "Convite para e-mail já registrado (%s); resposta genérica.", exc
+            )
+            return {
+                "email": corpo.email,
+                "papel": corpo.papel,
+                "token": secrets.token_urlsafe(32),
+            }
         return {"email": corpo.email, "papel": corpo.papel, "token": token}
 
     @router.post("/convites/aceitar", status_code=status.HTTP_201_CREATED)

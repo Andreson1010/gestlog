@@ -180,7 +180,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
         return _render_cadastro(request)
 
-    @aplicacao.post("/cadastro", response_class=HTMLResponse)
+    @aplicacao.post(
+        "/cadastro",
+        response_class=HTMLResponse,
+        dependencies=[Depends(limitar("cadastro"))],
+    )
     async def cadastro(
         request: Request,
         session: Annotated[AsyncSession, Depends(get_async_session)],
