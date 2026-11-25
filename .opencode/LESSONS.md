@@ -2,6 +2,21 @@
 
 > Só erro real, já corrigido e observado; mais recente no topo. Formato detalhado em AGENTS.md ("Loop de auto-melhoria").
 
+## L-056 · 2026-11-25 · índice único novo sem auditar IntegrityError nas rotas
+Gatilho/Erro: a T2 criou o índice funcional `uq_user_email_ci` (case-insensitive) e alargou a superfície de corrida de cadastro, mas a rota API `/onboarding` não capturava `IntegrityError` — corrida de cadastro case-divergente devolvia 500 (a rota web `/cadastro` já tratava com 409). Regra: ao introduzir/restringir um índice único que amplie a unicidade, auditar TODAS as rotas/casos de uso que gravam no recurso — handler de `IntegrityError` com rollback e resposta de conflito em cada uma. Evidência: self-review da T2 — `test_onboarding_corrida_de_email_retorna_409` + handler em `onboarding.py` (commit `3550264`).
+
+## L-055 · 2026-11-25 · diff "em massa" cross-EOL antes de reverter
+Gatilho/Erro: após rodar `black -w` pelo WSL, li `git diff --stat` TAMBÉM no WSL e vi 260 arquivos/43k linhas "reformatadas" — concluí dano em massa e quase executei `git checkout -- .` (que descartaria edições legítimas pendentes). Regra: git do host (`core.autocrlf=true`) e git do WSL (sem config) divergem sobre EOL no mesmo repo — estado de working copy verifica-se pelo git do HOST antes de qualquer reversão em massa; diff/stat do WSL em repo Windows é ruído CRLF. Evidência: `git status`/`diff --stat` do host mostraram só 5 arquivos reais (2 do black, 2 meus edits E501, LESSONS).
+
+## L-054 · 2026-11-25 · tool call fake fora do formato canônico
+Gatilho/Erro: no teste de estimativa de tokens construí tool call fake como `{"name","args"}` sem `id`/`type` — o AIMessage do langchain recusou (`tool_call() missing 'id'`) e o teste falhou por shape, não pelo critério. Regra: TODA tool call fake segue o formato completo do AGENTS.md (`{"name","args","id","type":"tool_call"}`) — inclusive quando serve só de payload de contagem; conferir o contrato do fixture antes de inventar dict mínimo. Evidência: `tests/agents/test_base.py::test_estimativa_cobre_tool_calls_do_payload` — TypeError no verde, corrigido com o formato canônico.
+
+## L-053 · 2026-11-25 · stash não pega mudança já commitada
+Gatilho/Erro: para rodar o teste discriminante contra a versão vulnerável, tentei `git stash push -- src/gestlog/agents/supervisor.py` — "No local changes to save": a mudança da task estava COMMITADA na branch, e stash só move alterações do working tree. Regra: para testar contra versão de outra ref de um arquivo commitado, `git restore --source <ref> -- <path>` (revertendo com `git restore --source HEAD -- <path>` e conferindo `git status`); stash é para working tree suja. Evidência: self-review da T1 — revert empírico do discriminante C-1 (`test_turno_so_supervisor_conta_tokens` → `assert 0 > 0` na versão de `main`).
+
+## L-052 · 2026-11-25 · alvo do alembic downgrade é o pai da mudança
+Gatilho/Erro: no teste da migração T1 usei `command.downgrade(cfg, _REV_QUOTA)` para "remover a coluna" — o downgrade vai ATÉ a revision, e f1a2b3c4d5e6 é justamente a que CRIA a coluna; o assert final pegou a coluna ainda presente. Regra: para provar que uma revision X foi desfeita, `downgrade` alveja o PAI de X (padrão do próprio repo: `downgrade(cfg, "d5e6f8a2b7c4")` no teste de convites); reconfirmar a semântica "upgrade/downgrade TO rev" antes de escrever o round-trip. Evidência: `tests/test_migrations.py::test_migracao_quota_da_empresa_coluna` — assert falhou, corrigido para `downgrade(cfg, "e8a1c5d9f3b7")`.
+
 ## L-051 · 2026-11-25 · contagem declarada divergente da lista real
 Gatilho/Erro: declarei "21 para remover, 14 para manter" com a tabela listando só 19 — o usuário aprovou "remover as 21" e a execução literal deixaria 2 de fora. Regra: antes de pedir aprovação sobre um conjunto, reconcile a contagem com a listagem item a item; diferença revela item implícito não decidido. Evidência: podar `.agents/skills/` nesta sessão — reconciliado em execução (+`improve-codebase-architecture`, +`research`).
 
