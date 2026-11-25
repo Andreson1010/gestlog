@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
+from apoio import criar_usuario
 from sqlalchemy.orm import Session
 
 from gestlog.config import Settings
@@ -15,6 +16,7 @@ from gestlog.copilot.metering import (
     record_usage,
     uso_no_mes,
 )
+from gestlog.copilot.service import MENSAGEM_FORA_DE_ESCOPO, CopilotService
 from gestlog.repositories.empresas import EmpresaRepository
 from gestlog.repositories.telemetry import UsageRepository
 
@@ -23,6 +25,27 @@ def _empresa(session: Session, nome: str) -> UUID:
     empresa = EmpresaRepository(session).create(nome)
     session.commit()
     return empresa.id
+
+
+def test_turno_so_supervisor_conta_tokens(
+    db_session: Session, fake_model_cls: type
+) -> None:
+    """Turno com rota FINISH direta registra tokens do supervisor, sem metadata (C-1)."""
+    empresa = _empresa(db_session, "A")
+    servico = CopilotService(
+        session=db_session,
+        empresa_id=empresa,
+        user_id=criar_usuario(db_session),
+        model=fake_model_cls(routes=["FINISH"]),
+        settings=Settings(_env_file=None),
+    )
+
+    resposta, _ = servico.answer_com_recomendacao("capital da França?")
+
+    assert resposta == MENSAGEM_FORA_DE_ESCOPO
+    registros = UsageRepository(db_session).list(empresa)
+    assert len(registros) == 1
+    assert registros[0].tokens > 0
 
 
 def test_record_usage_soma_por_empresa(db_session: Session) -> None:

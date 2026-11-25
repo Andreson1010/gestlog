@@ -21,7 +21,8 @@ VAR_POSTGRES = "GESTLOG_TEST_DATABASE_URL"
 class FakeChatModel:
     """Modelo fake: fila de rotas para o supervisor e resposta fixa para especialistas.
 
-    - ``routes``: destinos devolvidos em sequência por ``with_structured_output``.
+    - ``routes``: destinos devolvidos em sequência por ``with_structured_output``
+      (no shape do ``include_raw=True``: ``{"raw": AIMessage, "parsed": RouteDecision}``).
     - ``tool_calls``: lista de passos; cada passo é uma lista de tool calls.
     - ``final``: resposta textual após esgotar os tool calls.
     """
@@ -51,15 +52,20 @@ class FakeChatModel:
             "total_tokens": self._tokens,
         }
 
-    def with_structured_output(self, schema: type) -> Any:
+    def with_structured_output(self, schema: type, **_: Any) -> Any:
+        """Devolve o shape do ``include_raw=True``: ``{"raw", "parsed"}``."""
+        modelo = self
         routes = self._routes
         recebidas = self.mensagens_recebidas
 
         class _Router:
-            def invoke(self, messages: list[BaseMessage]) -> Any:
+            def invoke(self, messages: list[BaseMessage]) -> dict[str, Any]:
                 recebidas.append(messages)
                 route = routes.pop(0) if routes else "FINISH"
-                return schema(next=route)
+                return {
+                    "raw": AIMessage(content="", usage_metadata=modelo._uso()),
+                    "parsed": schema(next=route),
+                }
 
         return _Router()
 

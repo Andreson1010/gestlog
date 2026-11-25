@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from typing import Any
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
+from gestlog.agents.base import tokens_da_mensagem
 from gestlog.state import AgentState, Route, SpecialistName
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ class RouteDecision(BaseModel):
     reasoning: str = Field(default="", description="Justificativa curta da decisão.")
 
 
-SupervisorNode = Callable[[AgentState], dict[str, Route]]
+SupervisorNode = Callable[[AgentState], dict[str, Any]]
 
 
 def build_supervisor_prompt() -> str:
@@ -50,27 +52,36 @@ def create_supervisor_node(
 ) -> SupervisorNode:
     """Cria o nó de roteamento usando saída estruturada (``RouteDecision``).
 
-    O modelo configurado precisa suportar structured output / function calling.
-    Se o modelo decidir reencaminhar para um especialista que já respondeu
-    (presente em ``especialistas_visitados``), o nó força ``FINISH``: isso impede
-    que o supervisor entre em ciclo com o mesmo especialista quando o modelo não
-    sinaliza conclusão, sem bloquear o encadeamento de especialistas distintos.
+    O roteador é criado com ``include_raw=True`` para que a mensagem bruta
+    (com os tokens reportados ou estimados) também seja acessível: o nó devolve
+    ``{"next", "tokens_usados"}`` e o reducer do estado soma a contagem do
+    roteamento à dos especialistas. O modelo configurado precisa suportar
+    structured output / function calling. Se a saída veio malformada
+    (``parsing_error``/sem ``parsed``) ou o modelo decidir reencaminhar para um
+    especialista já visitado (presente em ``especialistas_visitados``), o nó
+    força ``FINISH``: isso impede que o supervisor entre em ciclo com o mesmo
+    especialista quando o modelo não sinaliza conclusão, sem bloquear o
+    encadeamento de especialistas distintos.
     """
-    router = model.with_structured_output(RouteDecision)
+    router = model.with_structured_output(RouteDecision, include_raw=True)
     system_prompt = prompt or build_supervisor_prompt()
 
-    def node(state: AgentState) -> dict[str, Route]:
+    def node(state: AgentState) -> dict[str, Any]:
         mensagens: list[BaseMessage] = list(state.get("messages") or [])
         visitados = set(state.get("especialistas_visitados") or [])
-        decision = router.invoke([SystemMessage(content=system_prompt), *mensagens])
+        retorno = router.invoke([SystemMessage(content=system_prompt), *mensagens])
+        decisao = retorno.get("parsed") if isinstance(retorno, dict) else None
         route: Route = (
-            decision.next if isinstance(decision, RouteDecision) else "FINISH"
+            decisao.next if isinstance(decisao, RouteDecision) else "FINISH"
+        )
+        tokens = tokens_da_mensagem(
+            retorno.get("raw") if isinstance(retorno, dict) else None
         )
         if route in visitados:
             logger.info("Supervisor evitou repetir %s; encerrando.", route)
             route = "FINISH"
         else:
             logger.info("Supervisor encaminhou para %s", route)
-        return {"next": route}
+        return {"next": route, "tokens_usados": tokens}
 
     return node

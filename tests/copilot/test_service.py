@@ -332,13 +332,14 @@ def test_answer_registra_uso_do_mes(db_session: Session, fake_model_cls: type) -
 
     registros = UsageRepository(db_session).list(empresa)
     assert len(registros) == 1
-    assert registros[0].tokens == 10
+    assert registros[0].tokens == 30
     assert registros[0].modelo == Settings(_env_file=None).llm_model
 
 
 def test_answer_soma_tokens_de_multiplos_especialistas(
     db_session: Session, fake_model_cls: type
 ) -> None:
+    """O total do turno soma supervisor (3 roteamentos) + especialistas (2)."""
     empresa = _empresa(db_session, "A")
     model = fake_model_cls(
         routes=["estoque", "transporte", "FINISH"],
@@ -353,7 +354,7 @@ def test_answer_soma_tokens_de_multiplos_especialistas(
 
     registros = UsageRepository(db_session).list(empresa)
     assert len(registros) == 1
-    assert registros[0].tokens == 20
+    assert registros[0].tokens == 50
 
 
 def test_answer_bloqueia_quota_sem_chamar_llm(

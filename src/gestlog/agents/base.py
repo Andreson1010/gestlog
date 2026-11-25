@@ -28,12 +28,17 @@ class SpecialistOutput(TypedDict, total=False):
 SpecialistNode = Callable[[AgentState], SpecialistOutput]
 
 
-def _tokens_da_resposta(response: BaseMessage) -> int:
-    """Soma os tokens reportados pelo modelo na resposta, quando houver."""
-    uso = getattr(response, "usage_metadata", None)
-    if not isinstance(uso, Mapping):
-        return 0
-    return int(uso.get("total_tokens") or 0)
+def tokens_da_mensagem(mensagem: BaseMessage | None) -> int:
+    """Tokens reportados pela mensagem; sem metadata, estimativa conservadora.
+
+    A estimativa usa ``max(1, len(texto) // 4)`` (~4 chars/token) com piso de 1:
+    a meta é não subestimar o uso, então até mensagem vazia conta um token.
+    """
+    uso = getattr(mensagem, "usage_metadata", None)
+    if isinstance(uso, Mapping) and int(uso.get("total_tokens") or 0) > 0:
+        return int(uso["total_tokens"])
+    conteudo = str(getattr(mensagem, "content", "") or "")
+    return max(1, len(conteudo) // 4)
 
 
 def _fragmento(
@@ -77,7 +82,7 @@ def create_specialist_node(
         tokens = 0
         for _ in range(max_steps):
             response = model_with_tools.invoke(messages)
-            tokens += _tokens_da_resposta(response)
+            tokens += tokens_da_mensagem(response)
             if not isinstance(response, AIMessage) or not response.tool_calls:
                 return _fragmento(name, [response], tokens)
             terminal = None
