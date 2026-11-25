@@ -410,7 +410,9 @@ def test_migracao_aborta_com_duplicatas_de_email(
         command.upgrade(cfg, "head")
 
 
-def test_migracao_email_ci_indice_round_trip(alembic_config: tuple[Config, str]) -> None:
+def test_migracao_email_ci_indice_round_trip(
+    alembic_config: tuple[Config, str],
+) -> None:
     """Sem duplicatas: índice nasce, recusa colisão e some no downgrade (IDT-02)."""
     cfg, db_url = alembic_config
     command.upgrade(cfg, "head")

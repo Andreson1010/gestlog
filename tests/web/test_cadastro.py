@@ -178,9 +178,7 @@ async def test_cadastro_email_case_divergente_e_recusado(
     assert await _contar(engine, Empresa) == 1
 
 
-async def test_cadastro_limitado_por_janela(
-    app: FastAPI, client: AsyncClient
-) -> None:
+async def test_cadastro_limitado_por_janela(app: FastAPI, client: AsyncClient) -> None:
     """Rajada em POST /cadastro recebe 429; o GET da página continua livre (IDT-03)."""
     app.dependency_overrides[get_settings] = _settings_limite_1
 

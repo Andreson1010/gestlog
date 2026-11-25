@@ -143,7 +143,7 @@ async def test_conta_nasce_is_verified_false(session: AsyncSession) -> None:
 async def test_aceite_de_email_registrado_continua_recusando(
     session: AsyncSession, engine: AsyncEngine
 ) -> None:
-    """Guard do takeover (L-048/AD-015) intacto: aceite não altera credencial (EDG-08)."""
+    """Guard do takeover (L-048/AD-015) intacto: aceite não muda credencial (EDG-08)."""
     empresa, admin = await criar_conta(
         session, "Empresa A", "admin@empresa.com", _SENHA
     )

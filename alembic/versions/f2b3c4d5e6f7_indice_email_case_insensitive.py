@@ -25,8 +25,7 @@ _INDICE = "uq_user_email_ci"
 def _emails_duplicados(conexao: Connection) -> list[str]:
     """E-mails que colidem ao ignorar caixa (resolução manual no ADR da task)."""
     stmt = sa.text(
-        'SELECT lower(email) FROM "user" '
-        "GROUP BY lower(email) HAVING count(*) > 1"
+        'SELECT lower(email) FROM "user" ' "GROUP BY lower(email) HAVING count(*) > 1"
     )
     return [str(linha[0]) for linha in conexao.execute(stmt)]
 
