@@ -46,9 +46,7 @@ def _limpar_empresa(factory: sessionmaker[Session], empresa_id: UUID) -> None:
     o somatório do teto global em reruns (L-038).
     """
     with factory() as limpeza:
-        limpeza.execute(
-            delete(UsageRecord).where(UsageRecord.empresa_id == empresa_id)
-        )
+        limpeza.execute(delete(UsageRecord).where(UsageRecord.empresa_id == empresa_id))
         limpeza.execute(delete(Empresa).where(Empresa.id == empresa_id))
         limpeza.commit()
 
@@ -371,6 +369,7 @@ def test_corrida_da_quota_tem_um_vencedor_somente(engine_postgres) -> None:
     resultados: list[str] = []
 
     try:
+
         def turno() -> None:
             with factory() as sessao:
                 try:
