@@ -36,9 +36,7 @@ _CEP: re.Pattern[str] = re.compile(r"\b\d{5}-\d{3}\b")
 _TELEFONE: re.Pattern[str] = re.compile(
     r"(?:(?:\+|00)\s?55\s?)?(?:\(?\d{2}\)?[\s.-]?)(?:9\d{4}|\d{4})[\s.-]?\d{4}\b"
 )
-_EMAIL: re.Pattern[str] = re.compile(
-    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
-)
+_EMAIL: re.Pattern[str] = re.compile(r"\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 _CNPJ: re.Pattern[str] = re.compile(r"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")
 _CPF: re.Pattern[str] = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
 

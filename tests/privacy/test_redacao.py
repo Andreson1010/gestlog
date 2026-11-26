@@ -55,10 +55,14 @@ def test_telefone_sem_mascara_de_onze_digitos_vira_documento() -> None:
     assert resultado.categorias == ("documento",)
 
 
-def test_email_redigido() -> None:
-    resultado = redact("Confirmar com ana.silva@empresa.com.br o recebimento")
+@pytest.mark.parametrize(
+    "email",
+    ["ana.silva@empresa.com.br", "joão@empresa.com"],
+)
+def test_email_redigido(email: str) -> None:
+    resultado = redact(f"Confirmar com {email} o recebimento")
     assert "[EMAIL]" in resultado.texto
-    assert "ana.silva" not in resultado.texto
+    assert email not in resultado.texto
     assert "@" not in resultado.texto
     assert resultado.categorias == ("email",)
 
