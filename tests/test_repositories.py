@@ -7,8 +7,10 @@ from uuid import UUID, uuid4
 
 import pytest
 from apoio import criar_usuario
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from gestlog.db.models import Empresa
 from gestlog.repositories.catalog import (
     StockRepository,
     SupplierRepository,
@@ -31,6 +33,17 @@ def _dois_empresas(session: Session) -> tuple[UUID, UUID]:
     t2 = repo.create("B")
     session.commit()
     return t1.id, t2.id
+
+
+def test_insert_empresa_retention_days_zero_e_recusado(db_session: Session) -> None:
+    """PII-04: repositório (ValueError) e banco (Check) recusam prazo não positivo."""
+    with pytest.raises(ValueError):
+        EmpresaRepository(db_session).create("Zero", retention_days=0)
+
+    db_session.add(Empresa(nome="Direta", retention_days=0))
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+    db_session.rollback()
 
 
 def test_stock_isolado_por_empresa(db_session: Session) -> None:

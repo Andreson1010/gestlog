@@ -43,11 +43,15 @@ def purgar_emails_de_convites(
         raise ValueError(
             "purgar_emails_de_convites exige um datetime com fuso horário."
         )
-    stmt = update(Convite).where(
-        Convite.empresa_id == empresa_id,
-        or_(Convite.expira_em <= agora, Convite.usado_em.is_not(None)),
-        Convite.email != "",
-    ).values(email="")
+    stmt = (
+        update(Convite)
+        .where(
+            Convite.empresa_id == empresa_id,
+            or_(Convite.expira_em <= agora, Convite.usado_em.is_not(None)),
+            Convite.email != "",
+        )
+        .values(email="")
+    )
     return int(session.execute(stmt).rowcount or 0)
 
 

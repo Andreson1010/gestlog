@@ -12,8 +12,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from gestlog.audit.retencao import (
-    purgar_expiradas,
     purgar_emails_de_convites,
+    purgar_expiradas,
     retencao_dias,
 )
 from gestlog.config import Settings
@@ -53,7 +53,8 @@ def _convite(
 
 def _conversa_antiga(session: Session, empresa_id: UUID) -> None:
     """Conversa criada além de qualquer prazo, alvo imediato da purga."""
-    conversa = ConversationRepository(session).create(empresa_id, criar_usuario(session))
+    repo = ConversationRepository(session)
+    conversa = repo.create(empresa_id, criar_usuario(session))
     conversa.created_at = datetime.now(UTC) - timedelta(days=60)
     session.commit()
 
