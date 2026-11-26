@@ -145,18 +145,18 @@ integration + migration · **Gate**: completo
 ### T3: PII/LGPD (I-5, I-10, I-11)
 
 **What**:
-- [ ] `privacy/politica.py`: `CATEGORIA_EMAIL`, `CATEGORIA_DOCUMENTO`, marcadores
+- [x] `privacy/politica.py`: `CATEGORIA_EMAIL`, `CATEGORIA_DOCUMENTO`, marcadores
       `[EMAIL]`/`[DOCUMENTO]` (PII-01).
-- [ ] `privacy/redacao.py`: `_EMAIL`, `_CNPJ`, `_CPF` na ordem EMAIL → CNPJ → CPF
+- [x] `privacy/redacao.py`: `_EMAIL`, `_CNPJ`, `_CPF` na ordem EMAIL → CNPJ → CPF
       → TELEFONE → ENDERECO → CEP → NOME (PII-01).
-- [ ] `audit/retencao.py`: fail-safe `retention_days <= 0` (recusa + `logger.error`
+- [x] `audit/retencao.py`: fail-safe `retention_days <= 0` (recusa + `logger.error`
       + `continue`) e `purgar_emails_de_convites` chamada de `purgar_expiradas`
       (PII-02/03).
-- [ ] `db/models.py`: `Empresa.__table_args__` com
+- [x] `db/models.py`: `Empresa.__table_args__` com
       `ck_empresa_retention_positiva`.
-- [ ] Migração `f3c4d5e6f7a8` (down `f2b3c4d5e6f7`): constraint via
+- [x] Migração `f3c4d5e6f7a8` (down `f2b3c4d5e6f7`): constraint via
       `batch_alter_table` (PII-04).
-- [ ] `repositories/empresas.py::create`: `ValueError` para `retention_days <= 0`
+- [x] `repositories/empresas.py::create`: `ValueError` para `retention_days <= 0`
       (PII-04).
 
 **Where**: `privacy/{politica,redacao}.py`, `audit/retencao.py`, `db/models.py`,
@@ -168,22 +168,24 @@ integration + migration · **Gate**: completo
 EDG-07 · **Tests**: unit + integration + migration · **Gate**: completo
 
 **Done when**:
-- [ ] `test_email_cpf_e_cnpj_sao_redigidos_antes_do_llm` (pergunta com os três →
+- [x] `test_email_cpf_e_cnpj_sao_redigidos_antes_do_llm` (pergunta com os três →
       texto ao `FakeChatModel.mensagens_recebidas` só tem marcadores; histórico
       idem; auditoria registra `email`/`documento`) — falha hoje (I-5
       discriminante).
-- [ ] `test_cpf_nao_e_capturado_como_telefone` (ordem das regexes; discriminante
+- [x] `test_cpf_nao_e_capturado_como_telefone` (ordem das regexes; discriminante
       por categoria).
-- [ ] `test_purga_zera_email_de_convites_expirados_e_usados` (linha preservada,
+- [x] `test_purga_zera_email_de_convites_expirados_e_usados` (linha preservada,
       `email=""`; convites válidos intocados) — I-10.
-- [ ] `test_retention_days_zero_recusa_purga_e_loga_erro` (empresa com 0: nada
+- [x] `test_retention_days_zero_recusa_purga_e_loga_erro` (empresa com 0: nada
       purgado; outra empresa com prazo válido purga normalmente; `caplog` tem o
       erro) — PII-03/EDG-07.
-- [ ] `test_insert_empresa_retention_days_zero_e_recusado` (`ValueError` no
+- [x] `test_insert_empresa_retention_days_zero_e_recusado` (`ValueError` no
       repositório e violação da constraint nos dois dialetos) — PII-04.
-- [ ] Migração: constraint criada no upgrade e removida no downgrade (1 asserção
+- [x] Migração: constraint criada no upgrade e removida no downgrade (1 asserção
       por efeito).
-- [ ] Gate completo verde nos dois dialetos.
+- [x] Gate completo verde nos dois dialetos (SQLite verde em 2026-11-25: 660
+      passed, cobertura 99,10%; Postgres no CI — daemon docker indisponível no
+      host).
 
 ---
 
