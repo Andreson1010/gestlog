@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from gestlog.privacy.politica import (
+    CATEGORIA_DOCUMENTO,
+    CATEGORIA_EMAIL,
     CATEGORIA_ENDERECO,
     CATEGORIA_NOME,
     CATEGORIA_TELEFONE,
@@ -12,6 +14,8 @@ from gestlog.privacy.politica import (
 from gestlog.privacy.redacao import RedactedText, redact
 
 __all__ = [
+    "CATEGORIA_DOCUMENTO",
+    "CATEGORIA_EMAIL",
     "CATEGORIA_ENDERECO",
     "CATEGORIA_NOME",
     "CATEGORIA_TELEFONE",

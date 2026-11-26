@@ -366,6 +366,7 @@ def test_migracao_postgres_nao_altera_fk_user(
 
 _REV_QUOTA = "f1a2b3c4d5e6"
 _REV_EMAIL_CI = "f2b3c4d5e6f7"
+_REV_RETENCAO = "f3c4d5e6f7a8"
 
 
 def _semear_usuarios(engine: Engine, emails: list[str]) -> None:
@@ -428,6 +429,48 @@ def test_migracao_email_ci_indice_round_trip(
 
     assert not _tem_indice_email_ci(engine)
     _semear_usuarios(engine, ["Ana@X.COM"])
+
+
+def _tem_constraint_retention(engine: Engine) -> bool:
+    """Presença da check constraint de retenção no catálogo do dialeto."""
+    checks = inspect(engine).get_check_constraints("empresa")
+    return "ck_empresa_retention_positiva" in {c["name"] for c in checks}
+
+
+def _semear_empresa_retention(engine: Engine, retention_days: int | None) -> None:
+    """Grava uma empresa com o prazo dado (semeadura bruta para migrações)."""
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO empresa (id, nome, retention_days, created_at) "
+                "VALUES (:id, 'A', :prazo, CURRENT_TIMESTAMP)"
+            ),
+            {"id": str(uuid4()), "prazo": retention_days},
+        )
+
+
+def test_migracao_retention_constraint_round_trip(
+    alembic_config: tuple[Config, str],
+) -> None:
+    """A constraint nasce no upgrade, recusa 0 e some no downgrade (PII-04)."""
+    cfg, db_url = alembic_config
+    command.upgrade(cfg, _REV_EMAIL_CI)
+
+    inspetor = inspect(create_engine(db_url))
+    antes = {c["name"] for c in inspetor.get_check_constraints("empresa")}
+    assert "ck_empresa_retention_positiva" not in antes
+
+    command.upgrade(cfg, "head")
+
+    engine = create_engine(db_url)
+    assert _tem_constraint_retention(engine)
+    with pytest.raises(IntegrityError):
+        _semear_empresa_retention(engine, 0)
+
+    command.downgrade(cfg, _REV_EMAIL_CI)
+
+    assert not _tem_constraint_retention(engine)
+    _semear_empresa_retention(engine, 0)
 
 
 def test_migracao_quota_da_empresa_coluna(alembic_config: tuple[Config, str]) -> None:

@@ -27,7 +27,15 @@ class EmpresaRepository:
         retention_days: int | None = None,
         token_quota_mensal: int | None = None,
     ) -> Empresa:
-        """Cria um empresa, recusando quota não positiva (erro antes do banco)."""
+        """Cria um empresa, recusando prazo de retenção e quota não positivos.
+
+        O erro de aplicação vem antes do erro de banco (PII-04): prazo de
+        retenção ``<= 0`` faria a rotina purgar tudo (fail-open) e quota
+        ``<= 0`` bloquearia todo uso — ambos são recusados aqui e, em última
+        instância, pela constraint no banco.
+        """
+        if retention_days is not None and retention_days <= 0:
+            raise ValueError("retention_days deve ser maior que zero.")
         if token_quota_mensal is not None and token_quota_mensal <= 0:
             raise ValueError("token_quota_mensal deve ser maior que zero.")
         empresa = Empresa(

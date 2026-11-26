@@ -98,6 +98,8 @@ class PoliticaRedacao:
     marcador_nome: str = "[NOME]"
     marcador_endereco: str = "[ENDERECO]"
     marcador_telefone: str = "[TELEFONE]"
+    marcador_email: str = "[EMAIL]"
+    marcador_documento: str = "[DOCUMENTO]"
 
 
 POLITICA_PADRAO = PoliticaRedacao()
@@ -105,3 +107,5 @@ POLITICA_PADRAO = PoliticaRedacao()
 CATEGORIA_NOME = "nome"
 CATEGORIA_ENDERECO = "endereco"
 CATEGORIA_TELEFONE = "telefone"
+CATEGORIA_EMAIL = "email"
+CATEGORIA_DOCUMENTO = "documento"

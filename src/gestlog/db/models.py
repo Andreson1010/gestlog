@@ -13,6 +13,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
 from fastapi_users_db_sqlalchemy.generics import GUID
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -34,9 +35,20 @@ def _agora() -> datetime:
 
 
 class Empresa(Base):
-    """Empresa-cliente (empresa) do SaaS."""
+    """Empresa-cliente (empresa) do SaaS.
+
+    ``retention_days`` inválido (``<= 0``) faria a rotina de retenção purgar
+    tudo (fail-open); a constraint recusa o valor já no banco (PII-04) —
+    ``NULL`` cai para o padrão do sistema, que é sempre positivo.
+    """
 
     __tablename__ = "empresa"
+    __table_args__ = (
+        CheckConstraint(
+            "retention_days IS NULL OR retention_days >= 1",
+            name="ck_empresa_retention_positiva",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     nome: Mapped[str] = mapped_column(String(120))
