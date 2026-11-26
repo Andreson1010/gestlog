@@ -2,6 +2,9 @@
 
 > Só erro real, já corrigido e observado; mais recente no topo. Formato detalhado em AGENTS.md ("Loop de auto-melhoria").
 
+## L-057 · 2026-11-25 · WSL sem distro explícita cai no docker-desktop
+Gatilho/Erro: no self-review da T3, chamei `wsl bash -lc "..."` três vezes — o distro DEFAULT do host é `docker-desktop` (sem bash) e o Windows `uv run` esbarrou no `.venv` Linux do repo ("Acesso negado" em `lib64`); só `wsl -d Ubuntu bash -lc` funciona. Regra: neste host, TODO comando de gate/WSL leva `-d Ubuntu` explicitamente (`wsl -d Ubuntu bash -lc "cd /mnt/c/... && uv run ..."`); o `.venv` do repo é Linux — nunca invocar `uv`/`pytest` pelo shell do host. Evidência: "bash: not found" 3x; gate verde na T3 (660 passed) via `-d Ubuntu`.
+
 ## L-056 · 2026-11-25 · índice único novo sem auditar IntegrityError nas rotas
 Gatilho/Erro: a T2 criou o índice funcional `uq_user_email_ci` (case-insensitive) e alargou a superfície de corrida de cadastro, mas a rota API `/onboarding` não capturava `IntegrityError` — corrida de cadastro case-divergente devolvia 500 (a rota web `/cadastro` já tratava com 409). Regra: ao introduzir/restringir um índice único que amplie a unicidade, auditar TODAS as rotas/casos de uso que gravam no recurso — handler de `IntegrityError` com rollback e resposta de conflito em cada uma. Evidência: self-review da T2 — `test_onboarding_corrida_de_email_retorna_409` + handler em `onboarding.py` (commit `3550264`).
 
